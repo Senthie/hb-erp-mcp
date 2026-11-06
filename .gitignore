@@ -1,0 +1,89 @@
+# ============================================================
+# erp-tools 忽略列表
+# 原则：只提交「源码 / 测试 / 打包脚本 / 文档」，运行期产物一律不入库。
+# 注意：以 / 开头表示只匹配仓库根目录，避免误伤 src 下的同名目录。
+# ============================================================
+
+# ── Python ───────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+*.egg
+.eggs/
+MANIFEST
+
+# ── 虚拟环境 / 包管理器 ───────────────────────────────────
+/.venv/
+/venv/
+/env/
+/ENV/
+
+# ── 构建 / 打包产物 ───────────────────────────────────────
+/build/
+/dist/
+/out/
+/output/
+/Output/
+# 注意：packaging/*.spec 是打包源文件，必须入库，所以不忽略 *.spec
+
+# ── 运行期数据（含真实客户信息，绝不入库）─────────────────
+/data/
+/old_data/
+/archive/raw-pages/
+/orders.csv
+/exports/
+
+# ── 凭据 / 会话（含明文 cookie，绝不入库）─────────────────
+/.env
+/.env.*
+!/.env.example
+/config.yaml
+!packaging/config.example.yaml
+*.local.yaml
+packaging/config.local.yaml
+local.settings.yaml
+/cookies/
+*.session.json
+*qxid-*.json
+*.pem
+*.key
+
+# ── 抓取中间产物 / 临时目录 ───────────────────────────────
+/.scratch/
+.captcha.*
+/tmp/
+/temp/
+
+# ── 日志 ─────────────────────────────────────────────────
+*.log
+/logs/
+
+# ── 测试 / 静态检查缓存 ───────────────────────────────────
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.pyright/
+.tox/
+.nox/
+.hypothesis/
+.cache/
+.coverage
+.coverage.*
+coverage.xml
+htmlcov/
+
+# ── 编辑器 / 操作系统 ─────────────────────────────────────
+.vscode/*
+!.vscode/settings.json
+!.vscode/extensions.json
+!.vscode/launch.json
+!.vscode/tasks.json
+.idea/
+.vs/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+desktop.ini

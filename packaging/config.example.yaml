@@ -1,0 +1,39 @@
+# erp-tools 配置文件
+#
+# 读取顺序（前者优先）：
+#   1. 命令行参数  --host / --user / --password / --config
+#   2. 系统环境变量 ERP_HOST / ERP_USERNAME / ERP_PASSWORD ...
+#   3. 用户级配置  %APPDATA%\erp-tools\config.yaml
+#   4. 程序目录    <安装目录>\config.yaml      ← 随包携带的这份
+#   5. 当前目录    .\config.yaml
+#   6. 旧版 .env   （仍兼容，优先级最低）
+#
+# 修改后可用 `erp config` 确认生效来源。
+
+erp:
+  # 内网：http://192.168.1.199:8889    外网：http://14.12.0.172:8889
+  host: http://192.168.1.199:8889
+  # 验证码服务在另一个端口；留空 = 自动用 host 的 8887 端口
+  captcha_host: ""
+  username: "21146"
+  # 密码明文存放，请自行控制文件权限；也可留空改用环境变量 ERP_PASSWORD
+  password: ""
+  # 请求业务页面前是否强制登录
+  require_auth: true
+
+runtime:
+  # 实测该 ERP 约 4~8 并发即饱和
+  max_concurrency: 8
+  request_delay: 0.0
+  timeout_connect: 10
+  timeout_read: 60
+  # 单页最多记录数（考勤/列表页一次取全靠它）
+  page_size_max: 5000
+  # 留空 = 数据目录下的 cookies（打包后为 %APPDATA%\erp-tools\cookies）
+  cookie_dir: ""
+
+qxid:
+  # 留空则登录后从菜单自动探测
+  quote: ""
+  quote_index: ""
+  attendance: ""

@@ -1,0 +1,31 @@
+[project]
+name = "erp-tools"
+version = "0.3.0"
+description = "华博 ERP 工具聚合：认证 / 权限探测 / 报价需求 / 考勤"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "beautifulsoup4>=4.15.0",
+    "ddddocr>=1.6.1",
+    "lxml>=6.1.1",
+    "pyyaml>=6.0",
+    "requests>=2.34.2",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8.0", "pyinstaller>=6.0"]
+
+[project.scripts]
+erp = "erp_tools.cli:main"
+
+[build-system]
+requires = ["uv_build>=0.12.16,<0.13.0"]
+build-backend = "uv_build"
+
+[tool.uv.build-backend]
+module-name = "erp_tools"
+module-root = "src"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]

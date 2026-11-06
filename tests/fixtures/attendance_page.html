@@ -1,0 +1,1402 @@
+1|#||4|106229|updatePanel|UpdatePanel1|
+                <div id="divbody" style="text-align: center; margin: 0 auto; overflow: auto;">
+                    <table cellspacing="0" cellpadding="0" width="100%" class="tableLine">
+                        <tr bgcolor="#e4e4e4">
+                            <td bgcolor='#E3EFFF'
+                                height="22px" align="right">
+                                <table cellspacing="0" cellpadding="0" width="100%" border="0" class="tableNoLine">
+                                    <tr>
+                                        <td width="25%" height="25px" align="left">&nbsp;&nbsp;<span id="lblTitle" ondblclick="AddInputData()" style="color:Blue;font-weight:bold;">  【考勤档案】</span>
+                                        </td>
+                                        <td width="*" height="25px" align="right">
+                                            
+                                            <a id="btnReadOrgKQData" href="javascript:__doPostBack(&#39;btnReadOrgKQData&#39;,&#39;&#39;)" style="font-weight:bold;">[读取考勤原始数据]</a>
+                                            
+                                            
+                                            
+                                            
+                                            
+                                            
+                                            
+                                            
+                                            
+                                            
+                                            
+                                            
+                                            
+                                            
+                                            <a id="btnSetPage" href="javascript:__doPostBack(&#39;btnSetPage&#39;,&#39;&#39;)" style="font-weight:bold;">[列表设置]</a>
+                                            
+                                            
+                                        </td>
+                                    </tr>
+                                </table>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>
+                                <table cellspacing="0" cellpadding="0" width="100%" border="0" class="tableNoLine">
+                                    <tr>
+                                        <td>
+                                            <table cellspacing="0" cellpadding="0" width="100%" border="0" class="tableNoLine">
+                                                <tr>
+                                                    <td height="22px" width="4%" align="right">考勤日期：
+                                                    </td>
+                                                    <td height="22px" width="4%" align="left">
+                                                        <select name="txtYF" onchange="javascript:setTimeout(&#39;__doPostBack(\&#39;txtYF\&#39;,\&#39;\&#39;)&#39;, 0)" id="txtYF" style="width:100%;">
+	<option selected="selected" value="2026-11">2026-11</option>
+	<option value="2026-10">2026-10</option>
+	<option value="2026-09">2026-09</option>
+	<option value="2026-08">2026-08</option>
+	<option value="2026-07">2026-07</option>
+	<option value="2026-06">2026-06</option>
+	<option value="2026-05">2026-05</option>
+	<option value="2026-04">2026-04</option>
+	<option value="2026-03">2026-03</option>
+	<option value="2026-02">2026-02</option>
+	<option value="2026-01">2026-01</option>
+	<option value="2025-12">2025-12</option>
+	<option value="2025-11">2025-11</option>
+	<option value="2025-10">2025-10</option>
+	<option value="2025-09">2025-09</option>
+	<option value="2025-08">2025-08</option>
+	<option value="2025-07">2025-07</option>
+	<option value="2025-06">2025-06</option>
+	<option value="2025-05">2025-05</option>
+	<option value="2025-04">2025-04</option>
+	<option value="2025-03">2025-03</option>
+	<option value="2025-02">2025-02</option>
+	<option value="2025-01">2025-01</option>
+	<option value="2024-12">2024-12</option>
+	<option value="2024-11">2024-11</option>
+	<option value="2024-10">2024-10</option>
+	<option value="2024-09">2024-09</option>
+	<option value="2024-08">2024-08</option>
+	<option value="2024-07">2024-07</option>
+	<option value="2024-06">2024-06</option>
+	<option value="2024-05">2024-05</option>
+	<option value="2024-04">2024-04</option>
+	<option value="2024-03">2024-03</option>
+	<option value="2024-02">2024-02</option>
+	<option value="2024-01">2024-01</option>
+	<option value="2023-12">2023-12</option>
+	<option value="2023-11">2023-11</option>
+	<option value="2023-10">2023-10</option>
+	<option value="2023-09">2023-09</option>
+	<option value="2023-08">2023-08</option>
+	<option value="2023-07">2023-07</option>
+	<option value="2023-06">2023-06</option>
+	<option value="2023-05">2023-05</option>
+	<option value="2023-04">2023-04</option>
+	<option value="2023-03">2023-03</option>
+	<option value="2023-02">2023-02</option>
+	<option value="2023-01">2023-01</option>
+	<option value="2022-12">2022-12</option>
+	<option value="2022-11">2022-11</option>
+	<option value="2022-10">2022-10</option>
+	<option value="2022-09">2022-09</option>
+	<option value="2022-08">2022-08</option>
+	<option value="2022-07">2022-07</option>
+	<option value="2022-06">2022-06</option>
+	<option value="2022-05">2022-05</option>
+	<option value="2022-04">2022-04</option>
+	<option value="2022-03">2022-03</option>
+	<option value="2022-02">2022-02</option>
+	<option value="2022-01">2022-01</option>
+	<option value="2021-12">2021-12</option>
+	<option value="2021-11">2021-11</option>
+	<option value="2021-10">2021-10</option>
+	<option value="2021-09">2021-09</option>
+	<option value="2021-08">2021-08</option>
+	<option value="2021-07">2021-07</option>
+	<option value="2021-06">2021-06</option>
+	<option value="2021-05">2021-05</option>
+	<option value="2021-04">2021-04</option>
+	<option value="2021-03">2021-03</option>
+	<option value="2021-02">2021-02</option>
+	<option value="2021-01">2021-01</option>
+	<option value="2020-12">2020-12</option>
+	<option value="2020-11">2020-11</option>
+	<option value="2020-10">2020-10</option>
+	<option value="2020-09">2020-09</option>
+	<option value="2020-08">2020-08</option>
+	<option value="2020-07">2020-07</option>
+	<option value="2020-06">2020-06</option>
+	<option value="2020-05">2020-05</option>
+	<option value="2020-04">2020-04</option>
+	<option value="2020-03">2020-03</option>
+	<option value="2020-02">2020-02</option>
+	<option value="2020-01">2020-01</option>
+	<option value="2019-12">2019-12</option>
+	<option value="2019-11">2019-11</option>
+	<option value="2019-10">2019-10</option>
+	<option value="2019-09">2019-09</option>
+	<option value="2019-08">2019-08</option>
+	<option value="2019-07">2019-07</option>
+	<option value="2019-06">2019-06</option>
+	<option value="2019-05">2019-05</option>
+	<option value="2019-04">2019-04</option>
+	<option value="2019-03">2019-03</option>
+	<option value="2019-02">2019-02</option>
+	<option value="2019-01">2019-01</option>
+	<option value="2018-12">2018-12</option>
+	<option value="2018-11">2018-11</option>
+	<option value="2018-10">2018-10</option>
+	<option value="2018-09">2018-09</option>
+	<option value="2018-08">2018-08</option>
+	<option value="2018-07">2018-07</option>
+	<option value="2018-06">2018-06</option>
+	<option value="2018-05">2018-05</option>
+	<option value="2018-04">2018-04</option>
+	<option value="2018-03">2018-03</option>
+	<option value="2018-02">2018-02</option>
+	<option value="2018-01">2018-01</option>
+	<option value="2017-12">2017-12</option>
+	<option value="2017-11">2017-11</option>
+	<option value="2017-10">2017-10</option>
+	<option value="2017-09">2017-09</option>
+	<option value="2017-08">2017-08</option>
+	<option value="2017-07">2017-07</option>
+	<option value="2017-06">2017-06</option>
+	<option value="2017-05">2017-05</option>
+	<option value="2017-04">2017-04</option>
+	<option value="2017-03">2017-03</option>
+	<option value="2017-02">2017-02</option>
+	<option value="2017-01">2017-01</option>
+	<option value="2016-12">2016-12</option>
+	<option value="2016-11">2016-11</option>
+	<option value="2016-10">2016-10</option>
+	<option value="2016-09">2016-09</option>
+	<option value="2016-08">2016-08</option>
+	<option value="2016-07">2016-07</option>
+	<option value="2016-06">2016-06</option>
+	<option value="2016-05">2016-05</option>
+	<option value="2016-04">2016-04</option>
+	<option value="2016-03">2016-03</option>
+	<option value="2016-02">2016-02</option>
+	<option value="2016-01">2016-01</option>
+	<option value="2015-12">2015-12</option>
+	<option value="2015-11">2015-11</option>
+	<option value="2015-10">2015-10</option>
+	<option value="2015-09">2015-09</option>
+	<option value="2015-08">2015-08</option>
+	<option value="2015-07">2015-07</option>
+	<option value="2015-06">2015-06</option>
+	<option value="2015-05">2015-05</option>
+	<option value="2015-04">2015-04</option>
+	<option value="2015-03">2015-03</option>
+	<option value="2015-02">2015-02</option>
+	<option value="2015-01">2015-01</option>
+	<option value="2014-12">2014-12</option>
+	<option value="2014-11">2014-11</option>
+	<option value="2014-10">2014-10</option>
+	<option value="2014-09">2014-09</option>
+	<option value="2014-08">2014-08</option>
+	<option value="2014-07">2014-07</option>
+	<option value="2014-06">2014-06</option>
+	<option value="2014-05">2014-05</option>
+	<option value="2014-04">2014-04</option>
+	<option value="2014-03">2014-03</option>
+	<option value="2014-02">2014-02</option>
+	<option value="2014-01">2014-01</option>
+	<option value="2013-12">2013-12</option>
+	<option value="2013-11">2013-11</option>
+	<option value="2013-10">2013-10</option>
+	<option value="2013-09">2013-09</option>
+	<option value="2013-08">2013-08</option>
+	<option value="2013-07">2013-07</option>
+	<option value="2013-06">2013-06</option>
+	<option value="2013-05">2013-05</option>
+	<option value="2013-04">2013-04</option>
+	<option value="2013-03">2013-03</option>
+	<option value="2013-02">2013-02</option>
+	<option value="2013-01">2013-01</option>
+	<option value="2012-12">2012-12</option>
+	<option value="2012-11">2012-11</option>
+	<option value="2012-10">2012-10</option>
+	<option value="2012-09">2012-09</option>
+	<option value="2012-08">2012-08</option>
+	<option value="2012-07">2012-07</option>
+	<option value="2012-06">2012-06</option>
+	<option value="2012-05">2012-05</option>
+	<option value="2012-04">2012-04</option>
+	<option value="2012-03">2012-03</option>
+	<option value="2012-02">2012-02</option>
+	<option value="2012-01">2012-01</option>
+	<option value="2011-12">2011-12</option>
+	<option value="2011-11">2011-11</option>
+
+</select>
+                                                    </td>
+                                                    <td height="22px" width="2%" align="left">
+                                                        <select name="txtKSDay" onchange="javascript:setTimeout(&#39;__doPostBack(\&#39;txtKSDay\&#39;,\&#39;\&#39;)&#39;, 0)" id="txtKSDay" style="width:100%;">
+	<option selected="selected" value="01">01</option>
+	<option value="02">02</option>
+	<option value="03">03</option>
+	<option value="04">04</option>
+	<option value="05">05</option>
+	<option value="06">06</option>
+	<option value="07">07</option>
+	<option value="08">08</option>
+	<option value="09">09</option>
+	<option value="10">10</option>
+	<option value="11">11</option>
+	<option value="12">12</option>
+	<option value="13">13</option>
+	<option value="14">14</option>
+	<option value="15">15</option>
+	<option value="16">16</option>
+	<option value="17">17</option>
+	<option value="18">18</option>
+	<option value="19">19</option>
+	<option value="20">20</option>
+	<option value="21">21</option>
+	<option value="22">22</option>
+	<option value="23">23</option>
+	<option value="24">24</option>
+	<option value="25">25</option>
+	<option value="26">26</option>
+	<option value="27">27</option>
+	<option value="28">28</option>
+	<option value="29">29</option>
+	<option value="30">30</option>
+
+</select>
+                                                    </td>
+                                                    <td height="22px" width="1%" align="center">至
+                                                    </td>
+                                                    <td height="22px" width="2%" align="left">
+                                                        <select name="txtJZDay" onchange="javascript:setTimeout(&#39;__doPostBack(\&#39;txtJZDay\&#39;,\&#39;\&#39;)&#39;, 0)" id="txtJZDay" style="width:100%;">
+	<option value="01">01</option>
+	<option value="02">02</option>
+	<option value="03">03</option>
+	<option value="04">04</option>
+	<option value="05">05</option>
+	<option value="06">06</option>
+	<option value="07">07</option>
+	<option value="08">08</option>
+	<option value="09">09</option>
+	<option value="10">10</option>
+	<option value="11">11</option>
+	<option value="12">12</option>
+	<option value="13">13</option>
+	<option value="14">14</option>
+	<option value="15">15</option>
+	<option value="16">16</option>
+	<option value="17">17</option>
+	<option value="18">18</option>
+	<option value="19">19</option>
+	<option value="20">20</option>
+	<option value="21">21</option>
+	<option value="22">22</option>
+	<option value="23">23</option>
+	<option value="24">24</option>
+	<option value="25">25</option>
+	<option value="26">26</option>
+	<option value="27">27</option>
+	<option value="28">28</option>
+	<option value="29">29</option>
+	<option selected="selected" value="30">30</option>
+
+</select>
+                                                    </td>
+                                                    <td style="height: 22px" align="left" width="3%">
+                                                        <select name="txtFXCX" id="txtFXCX" style="width:100%;">
+	<option selected="selected" value="1">本单查询</option>
+	<option value="2">历史数据</option>
+
+</select>
+                                                    </td>
+                                                    <td height="22px" width="4%" align="right">
+                                                        <select name="txtBMMCSelect" id="txtBMMCSelect" style="width:100%;">
+	<option selected="selected" value="2">当前部门</option>
+	<option value="1">历史部门</option>
+
+</select>
+                                                    </td>
+                                                    <td height="22px" width="8%" align="left">
+                                                        <select id="txtBMMC" class="comboBox" style="display:inline-block;width:180px;">
+
+</select>
+                                                    </td>
+                                                    <td width="3%" align="right">
+                                                        <span id="lblQuerySet" title="点击即可以进入【高级查询】界面" onclick="{ showdiv(&#39;系统正在打开窗体&lt;br/>请稍候........&lt;br/> &#39;); if (window.showModalDialog != null) { window.showModalDialog(&#39;../../SysPublic/PublicAdvanceQuery.aspx?QXID=2553&amp;time=20261105181816 452&#39;,&#39;&#39;, &#39;status:no;menubar:no;toolbar:no;location:no;titlebar:no; help: no; resizable: no;  center:yes;dialogHeight:575px;dialogWidth:1000px&#39;); if ($HB(&#39;btnAdvanceQuery&#39;) != null) $HB(&#39;btnAdvanceQuery&#39;).click(); closediv();  } else { $.ligerDialog.open({ height: 645, width: 1020, title: &#39;华博创新科技-ERP【高级查询】&#39;, url: &#39;../../SysPublic/PublicAdvanceQuery.aspx?QXID=2553&amp;time=20261105181816 452&#39;, onClosed: function (e) { if ($HB(&#39;btnAdvanceQuery&#39;) != null) $HB(&#39;btnAdvanceQuery&#39;).click(); closediv();}})} closediv(); }" style="color:Blue;cursor:hand;">查询：</span>
+                                                    </td>
+                                                    <td align="left" width="6%">
+                                                        <input name="txtKey" type="text" id="txtKey" title="关键字" style="width:100%;" />
+                                                    </td>
+                                                    <td style="height: 22px" align="left" width="4%">
+                                                        <select name="DropField" id="DropField" style="width:100%;">
+	<option selected="selected" value="BMMC">部门名称</option>
+	<option value="ZWMC">职位名称</option>
+	<option value="GKH">工卡号</option>
+	<option value="YGXM">姓名</option>
+	<option value="BZMC">班次</option>
+	<option value="Day">日</option>
+	<option value="Week">周</option>
+	<option value="DKKSSD1">上班(1)</option>
+	<option value="DKJZSD1">下班(1)</option>
+	<option value="DKKSSD2">上班(2)</option>
+	<option value="DKJZSD2">下班(2)</option>
+	<option value="DKKSSD3">上班(3)</option>
+	<option value="DKJZSD3">下班(3)</option>
+	<option value="KQYCSM">考勤异常说明</option>
+	<option value="SJCQZB">实出勤正班</option>
+	<option value="SJCQJB">实出勤加班</option>
+	<option value="YCQZB">应出勤正班</option>
+	<option value="YCQJB">应出勤加班</option>
+	<option value="SJCDFZ">实际迟到分钟</option>
+	<option value="CDFZ">迟到分钟</option>
+	<option value="SJZTFZ">实际早退分钟</option>
+	<option value="ZTFZ">早退分钟</option>
+	<option value="KGXS">旷工小时</option>
+	<option value="QJXS">请假小时</option>
+	<option value="XJXS">休假小时</option>
+	<option value="DLXJXS">休假(待料)小时</option>
+	<option value="BXXS">补休小时</option>
+	<option value="NJXS">年假小时</option>
+	<option value="FJXS">放假小时</option>
+	<option value="BJXS">病假小时</option>
+	<option value="SJZTFZPS">实际早退分钟(平时)</option>
+	<option value="SJZTFZPSJB">实际早退分钟(平时加班)</option>
+	<option value="SJZTFZXXRJB">实际早退分钟(休息日加班)</option>
+	<option value="SJZTFZJJRJB">实际早退分钟(节假日加班)</option>
+	<option value="SJCDFZPS">实际迟到分钟(平时)</option>
+	<option value="SJCDFZPSJB">实际迟到分钟(平时加班)</option>
+	<option value="SJCDFZXXRJB">实际迟到分钟(休息日加班)</option>
+	<option value="SJCDFZJJRJB">实际迟到分钟(节假日加班)</option>
+	<option value="SKJLOnThatDay">【刷卡记录（当天）】</option>
+	<option value="YSKQJL">【刷卡记录（原始）】</option>
+
+</select>
+                                                    </td>
+                                                    <td height="22px" width="4%" align="right">打卡异常：
+                                                    </td>
+                                                    <td style="height: 22px" align="left" width="4%">
+                                                        <select name="txtDKYC" id="txtDKYC" onmouseover="mess()" style="width:100%;">
+	<option selected="selected" value="正常+异常">正常+异常</option>
+	<option value="所有异常(存在迟到、早退、正班或加班不足)">所有异常(存在迟到、早退、正班或加班不足)</option>
+	<option value="正班异常(存在迟早、早退、正班不足)">正班异常(存在迟早、早退、正班不足)</option>
+	<option value="正班或加班打卡次数不够">正班或加班打卡次数不够</option>
+	<option value="正班打卡次数不够">正班打卡次数不够</option>
+	<option value="加班打卡次数不够">加班打卡次数不够</option>
+	<option value="正班打卡小时&lt; 班次正班小时">正班打卡小时&lt; 班次正班小时</option>
+	<option value="加班打卡小时&lt; 班次加班小时">加班打卡小时&lt; 班次加班小时</option>
+	<option value="正班或加班打卡小时&lt; 班次小时">正班或加班打卡小时&lt; 班次小时</option>
+	<option value="打卡次数=班次卡点次数">打卡次数=班次卡点次数</option>
+	<option value="请假休假时间段内有打卡">请假休假时间段内有打卡</option>
+
+</select>
+                                                    </td>
+                                                    <td style="height: 22px" align="left" width="4%">
+                                                        <select name="txtYGZT" id="txtYGZT" style="width:100%;">
+	<option selected="selected" value="全部">全部</option>
+	<option value="未离职">未离职</option>
+	<option value="离职">离职</option>
+
+</select>
+                                                    </td>
+                                                    <td width="4%" align="center">
+                                                        <input type="image" name="btn_Search" id="btn_Search" src="../../Images/button_search.GIF" onclick="if(JudgePageSize()){showdiv(&#39;系统正在从后台提取数据&lt;br/>请稍候........&lt;br/> &#39;);}else{return false;};" style="border-width:0px;" />&nbsp;
+                                                    </td>
+                                                </tr>
+                                            </table>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td align="left">
+                                            <table cellspacing="0" cellpadding="0" width="100%" border="0" class="tableNoLine">
+                                                <tr>
+                                                    <td width="8%" align="right">打卡时间:</td>
+                                                    <td width="5%" align="right">
+                                                        <select name="txtSBSJ" id="txtSBSJ" style="width:100%;">
+	<option selected="selected" value="DKKSSD1">上班1</option>
+	<option value="DKJZSD1">下班1</option>
+	<option value="DKKSSD2">上班2</option>
+	<option value="DKJZSD2">下班2</option>
+	<option value="DKKSSD3">上班3</option>
+	<option value="DKJZSD3">下班3</option>
+	<option value="DKKSSD4">上班4</option>
+	<option value="DKJZSD4">下班4</option>
+	<option value="DKKSSD5">上班5</option>
+	<option value="DKJZSD5">下班5</option>
+	<option value="DKKSSD6">上班6</option>
+	<option value="DKJZSD6">下班6</option>
+	<option value="DKKSSD7">上班7</option>
+	<option value="DKJZSD7">下班7</option>
+	<option value="DKKSSD8">上班8</option>
+	<option value="DKJZSD8">下班8</option>
+	<option value="DKKSSD9">上班9</option>
+	<option value="DKJZSD9">下班9</option>
+	<option value="DKKSSD10">上班10</option>
+	<option value="DKJZSD10">下班10</option>
+	<option value="DKKSSD11">上班11</option>
+	<option value="DKJZSD11">下班11</option>
+	<option value="DKKSSD12">上班12</option>
+	<option value="DKJZSD12">下班12</option>
+	<option value="DKKSSD13">上班13</option>
+	<option value="DKJZSD13">下班13</option>
+	<option value="DKKSSD14">上班14</option>
+	<option value="DKJZSD14">下班14</option>
+	<option value="DKKSSD15">上班15</option>
+	<option value="DKJZSD15">下班15</option>
+
+</select>
+                                                    </td>
+                                                    <td width="5%" align="left">
+                                                        <input name="txtKSTime" type="text" id="txtKSTime" onfocus="selectTime(this)" size="7" /></td>
+                                                    <td width="5%" align="left">
+                                                        <input name="txtJZTime" type="text" id="txtJZTime" onfocus="selectTime(this)" size="7" /></td>
+                                                    <td height="25px" width="8%" align="right">
+                                                        <span id="Label6">休息小时：</span>
+                                                    </td>
+                                                    <td align="left" width="5%">
+                                                        <input name="txtXXSJ" type="text" id="txtXXSJ" title="休息时间小于等于填写的数值(小时)" style="width:100%;" />
+                                                    </td>
+                                                    <td height="25px" width="8%" align="right">
+                                                        <span id="lblFZTJ">部门分组：</span>
+                                                    </td>
+                                                    <td align="left" width="8%">
+                                                        <select name="txtFZTJ" id="txtFZTJ" align="right" style="width:100%;">
+	<option selected="selected" value="-0-">&lt;--请选择--&gt;</option>
+	<option value="BFD46557-FABB-4845-BCD5-973D6F60B5A2">部门分组</option>
+
+</select>
+                                                    </td>
+                                                    <td height="25px" width="8%" align="right">
+                                                        <span id="lblYGFZ">员工分组：</span>
+                                                    </td>
+                                                    <td align="left" width="8%">
+                                                        <select name="txtYGFZ" id="txtYGFZ" align="right" style="width:100%;">
+	<option selected="selected" value="-0-">&lt;--请选择--&gt;</option>
+
+</select>
+                                                    </td>
+                                                    <td width="15%" align="center">
+                                                        <span title="当选择时：列表显示原始打卡数据，否则【刷卡记录】两列为空"><label for="chkYSDKJL">列表显示原始打卡数据:</label><input id="chkYSDKJL" type="checkbox" name="chkYSDKJL" /></span>
+                                                    </td>
+                                                    <td width="12%" align="center">
+                                                        <span title="打勾后,将计划离职日期不为空的搜索出来"><label for="chkJHLZRQ">计划离职日期:</label><input id="chkJHLZRQ" type="checkbox" name="chkJHLZRQ" /></span>
+                                                    </td>
+                                                    <td width="8%" align="center">
+                                                        <input name="Button1" type="button" id="Button1" width="10px" value="更多" title="更多查询条件" onclick="PopupAreaShow(event, &#39;divOtherQuery&#39;)" class="btn" />
+                                                    </td>
+                                                </tr>
+                                            </table>
+                                        </td>
+                                    </tr>
+                                </table>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td height="25px">
+                                <table cellspacing="0" cellpadding="0" width="100%" border="0" class="tableNoLine">
+                                    <tr>
+                                        <td align="left">○页次：<span id="lblCurrentPage" style="color:#E78A29;">1</span>页/<span id="lblPageCount">1</span>页，每页记录<input name="txtEvenPageDataSize" type="text" value="2000" onchange="javascript:setTimeout(&#39;__doPostBack(\&#39;txtEvenPageDataSize\&#39;,\&#39;\&#39;)&#39;, 0)" onkeypress="if (WebForm_TextBoxKeyHandler(event) == false) return false;" id="txtEvenPageDataSize" style="color:#E78A29;height:20px;width:20px;" />条，共<span id="lblRowsCount" style="color:#E78A29;">5</span>条记录
+                                        </td>
+                                        <!--<td align="left">提示：计算考勤时会自动跳过人工指定考勤时间的数据！
+                                        </td>-->
+                                        <td align="right">
+                                            <a onclick="{return};" id="btnFirst" disabled="disabled" style="color:Gray;">[首 页]</a><a onclick="{return};" id="btnPrev" disabled="disabled" style="color:Gray;">[上一页]</a><a onclick="{return};" id="btnNext" disabled="disabled" style="color:Gray;">[下一页]</a>
+                                            <a onclick="{return};" id="btnLast" disabled="disabled" style="color:Gray;">[尾 页]</a><a onclick="return onExcelClick(&#39;btnExportExcel&#39;);" id="btnExportExcel" href="javascript:__doPostBack(&#39;btnExportExcel&#39;,&#39;&#39;)" style="color:Black;">[导出Excel]</a>
+                                        </td>
+                                    </tr>
+                                </table>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>
+                                <div id="gViewDiv2" style="overflow: auto; width: 1200px; height: 550px" onscroll="SetPanScrollBackCookie(&#39;gViewDiv2&#39;);">
+                                    <div>
+	<table title="双击即可以调出该员工的考勤明细" cellspacing="0" cellpadding="1" rules="all" bordercolor="#4F7FC9" border="1" id="gridView" style="border-width:1px;border-style:solid;width:2905px;border-collapse:collapse;">
+		<tr class="FixedTitleRow" style="background-color:#E3EFFF;height:25px;">
+			<th class="FixedTitleRow" scope="col" style="width:28px;">选择</th><th class="FixedTitleRow" scope="col" style="width:78px;"><a href="javascript:__doPostBack(&#39;gridView&#39;,&#39;Sort$BMMC&#39;)">部门名称</a></th><th class="FixedTitleRow" scope="col" style="width:78px;"><a href="javascript:__doPostBack(&#39;gridView&#39;,&#39;Sort$ZWMC&#39;)">职位名称</a></th><th class="FixedTitleRow" scope="col" style="width:40px;"><a href="javascript:__doPostBack(&#39;gridView&#39;,&#39;Sort$GKH&#39;)">工卡号</a></th><th class="FixedTitleRow" scope="col" style="width:59px;"><a href="javascript:__doPostBack(&#39;gridView&#39;,&#39;Sort$YGXM&#39;)">姓名</a></th><th class="FixedTitleRow" scope="col" style="width:59px;"><a href="javascript:__doPostBack(&#39;gridView&#39;,&#39;Sort$BZMC&#39;)">班次</a></th><th class="FixedTitleRow" scope="col" style="width:24px;"><a href="javascript:__doPostBack(&#39;gridView&#39;,&#39;Sort$Day&#39;)">日</a></th><th class="FixedTitleRow" scope="col" style="width:26px;"><a href="javascript:__doPostBack(&#39;gridView&#39;,&#39;Sort$Week&#39;)">周</a></th><th class="FixedTitleRow" scope="col" style="width:49px;"><a href="javascript:__doPostBack(&#39;gridView&#39;,&#39;Sort$DKKSSD1&#39;)">上班(1)</a></th><th class="FixedTitleRow" scope="col" style="width:51px;"><a href="javascript:__doPostBack(&#39;gridView&#39;,&#39;Sort$DKJZSD1&#39;)">下班(1)</a></th><th class="FixedTitleRow" scope="col" style="width:43px;"><a href="javascript:__doPostBack(&#39;gridView&#39;,&#39;Sort$DKKSSD2&#39;)">上班(2)</a></th><th class="FixedTitleRow" scope="col" style="width:46px;"><a href="javascript:__doPostBack(&#39;gridView&#39;,&#39;Sort$DKJZSD2&#39;)">下班(2)</a></th><th class="FixedTitleRow" scope="col" style="width:44px;"><a href="javascript:__doPostBack(&#39;gridView&#39;,&#39;Sort$DKKSSD3&#39;)">上班(3)</a></th><th class="FixedTitleRow" scope="col" style="width:45px;"><a href="javascript:__doPostBack(&#39;gridView&#39;,&#39;Sort$DKJZSD3&#39;)">下班(3)</a></th><th class="FixedTitleRow" scope="col" style="width:194px;"><a href="javascript:__doPostBack(&#39;gridView&#39;,&#39;Sort$KQYCSM&#39;)">考勤异常说明</a></th><th class="FixedTitleRow" scope="col" style="width:43px;"><a href="javascript:__doPostBack(&#39;gridView&#39;,&#39;Sort$SJCQZB&#39;)">实出勤正班</a></th><th class="FixedTitleRow" scope="col" style="width:38px;"><a href="javascript:__doPostBack(&#39;gridView&#39;,&#39;Sort$SJCQJB&#39;)">实出勤加班</a></th><th class="FixedTitleRow" scope="col" style="width:47px;"><a href="javascript:__doPostBack(&#39;gridView&#39;,&#39;Sort$YCQZB&#39;)">应出勤正班</a></th><th class="FixedTitleRow" scope="col" style="width:47px;"><a href="javascript:__doPostBack(&#39;gridView&#39;,&#39;Sort$YCQJB&#39;)">应出勤加班</a></th><th class="FixedTitleRow" scope="col" style="width:50px;"><a href="javascript:__doPostBack(&#39;gridView&#39;,&#39;Sort$SJCDFZ&#39;)">实际迟到分钟</a></th><th class="FixedTitleRow" scope="col" style="width:31px;"><a href="javascript:__doPostBack(&#39;gridView&#39;,&#39;Sort$CDFZ&#39;)">迟到分钟</a></th><th class="FixedTitleRow" scope="col" style="width:50px;"><a href="javascript:__doPostBack(&#39;gridView&#39;,&#39;Sort$SJZTFZ&#39;)">实际早退分钟</a></th><th class="FixedTitleRow" scope="col" style="width:31px;"><a href="javascript:__doPostBack(&#39;gridView&#39;,&#39;Sort$ZTFZ&#39;)">早退分钟</a></th><th class="FixedTitleRow" scope="col" style="width:31px;"><a href="javascript:__doPostBack(&#39;gridView&#39;,&#39;Sort$KGXS&#39;)">旷工小时</a></th><th class="FixedTitleRow" scope="col" style="width:31px;"><a href="javascript:__doPostBack(&#39;gridView&#39;,&#39;Sort$QJXS&#39;)">请假小时</a></th><th class="FixedTitleRow" scope="col" style="width:31px;"><a href="javascript:__doPostBack(&#39;gridView&#39;,&#39;Sort$XJXS&#39;)">休假小时</a></th><th class="FixedTitleRow" scope="col" style="width:60px;"><a href="javascript:__doPostBack(&#39;gridView&#39;,&#39;Sort$DLXJXS&#39;)">休假(待料)小时</a></th><th class="FixedTitleRow" scope="col" style="width:31px;"><a href="javascript:__doPostBack(&#39;gridView&#39;,&#39;Sort$BXXS&#39;)">补休小时</a></th><th class="FixedTitleRow" scope="col" style="width:80px;"><a href="javascript:__doPostBack(&#39;gridView&#39;,&#39;Sort$RZRQ&#39;)">入职日期</a></th><th class="FixedTitleRow" scope="col" style="width:31px;"><a href="javascript:__doPostBack(&#39;gridView&#39;,&#39;Sort$NJXS&#39;)">年假小时</a></th><th class="FixedTitleRow" scope="col" style="width:31px;"><a href="javascript:__doPostBack(&#39;gridView&#39;,&#39;Sort$FJXS&#39;)">放假小时</a></th><th class="FixedTitleRow" scope="col" style="width:31px;"><a href="javascript:__doPostBack(&#39;gridView&#39;,&#39;Sort$BJXS&#39;)">病假小时</a></th><th class="FixedTitleRow" scope="col" style="width:195px;"><a href="javascript:__doPostBack(&#39;gridView&#39;,&#39;Sort$Remark&#39;)">备注</a></th><th class="FixedTitleRow" scope="col" style="width:80px;"><a href="javascript:__doPostBack(&#39;gridView&#39;,&#39;Sort$SJZTFZPS&#39;)">实际早退分钟(平时)</a></th><th class="FixedTitleRow" scope="col" style="width:80px;"><a href="javascript:__doPostBack(&#39;gridView&#39;,&#39;Sort$SJZTFZPSJB&#39;)">实际早退分钟(平时加班)</a></th><th class="FixedTitleRow" scope="col" style="width:80px;"><a href="javascript:__doPostBack(&#39;gridView&#39;,&#39;Sort$SJZTFZXXRJB&#39;)">实际早退分钟(休息日加班)</a></th><th class="FixedTitleRow" scope="col" style="width:80px;"><a href="javascript:__doPostBack(&#39;gridView&#39;,&#39;Sort$SJZTFZJJRJB&#39;)">实际早退分钟(节假日加班)</a></th><th class="FixedTitleRow" scope="col" style="width:80px;"><a href="javascript:__doPostBack(&#39;gridView&#39;,&#39;Sort$SJCDFZPS&#39;)">实际迟到分钟(平时)</a></th><th class="FixedTitleRow" scope="col" style="width:80px;"><a href="javascript:__doPostBack(&#39;gridView&#39;,&#39;Sort$SJCDFZPSJB&#39;)">实际迟到分钟(平时加班)</a></th><th class="FixedTitleRow" scope="col" style="width:80px;"><a href="javascript:__doPostBack(&#39;gridView&#39;,&#39;Sort$SJCDFZXXRJB&#39;)">实际迟到分钟(休息日加班)</a></th><th class="FixedTitleRow" scope="col" style="width:80px;"><a href="javascript:__doPostBack(&#39;gridView&#39;,&#39;Sort$SJCDFZJJRJB&#39;)">实际迟到分钟(节假日加班)</a></th><th class="FixedTitleRow" scope="col" style="width:236px;"><a href="javascript:__doPostBack(&#39;gridView&#39;,&#39;Sort$SKJLOnThatDay&#39;)">【刷卡记录（当天）】</a></th><th class="FixedTitleRow" scope="col" style="width:276px;"><a href="javascript:__doPostBack(&#39;gridView&#39;,&#39;Sort$YSKQJL&#39;)">【刷卡记录（原始）】</a></th>
+		</tr><tr onmouseover="this.style.cursor=&#39;hand&#39;;" onclick="{if(window.oldtr!=null) {if(window.oldtr.runtimeStyle!=null) {window.oldtr.runtimeStyle.cssText=&#39;&#39;;}  else {window.oldtr.style.backgroundColor=currentcolor;}} if(this.runtimeStyle!=null) {this.runtimeStyle.cssText=&#39;background-color:#4F7FC9&#39;;}  else {currentcolor=this.style.backgroundColor;this.style.backgroundColor=&#39;#4F7FC9&#39;} window.oldtr=this;}" ondblclick="OnDBClickOpenData(&#39;897623E9-496B-491E-A41F-3B16D1E363FF&#39;,&#39;设计组&#39;,&#39;21146&#39;,&#39;张爽&#39;)" style="word-break:break-all;">
+			<td align="center" style="height:22px;width:28px;"><input id="gridView_ctl02_0" type="checkbox" name="gridView$ctl02$0" onclick="checkboxClick(this,&#39;#E3EFFF&#39;,0);" /></td><td align="center" style="height:21px;width:78px;vnd.ms-excel.numberformat:@;">设计组</td><td align="center" style="height:21px;width:78px;">平面设计</td><td align="center" style="height:21px;width:40px;">21146</td><td title="右键即可以选择数据" align="center" onmousedown=" if (event.button == 2) {showPopupMenu(event, &#39;divPopu4&#39;)}" style="font-weight:bold;height:21px;width:59px;">张爽</td><td title="右键即可以修改班次" align="center" onmousedown=" if (event.button == 2) {WindowshowPopupMenu(&#39;897623E9-496B-491E-A41F-3B16D1E363FF&#39;,&#39;34E095F0-685B-4921-864B-DEA781033348&#39;,&#39;张爽&#39;,event, &#39;divPopu2&#39;,0)}" style="font-weight:bold;height:25px;width:59px;">A01H</td><td title="右键即可以修改补卡、请假、外出、休假" align="center" onmousedown=" if (event.button == 2) {WindowshowSelectMenu(&#39;897623E9-496B-491E-A41F-3B16D1E363FF&#39;,&#39;34E095F0-685B-4921-864B-DEA781033348&#39;,&#39;张爽&#39;,3,&#39;e6f8e1be-ace1-43e5-90ed-4f14a36a9b2b&#39;,&#39;2026/11/1 0:00:00&#39;)}" style="font-weight:bold;height:25px;width:24px;">01</td><td title="【休息日】" align="center" onmousedown=" if (event.button == 2) {WindowshowPopupMenu(&#39;897623E9-496B-491E-A41F-3B16D1E363FF&#39;,&#39;34E095F0-685B-4921-864B-DEA781033348&#39;,&#39;张爽&#39;,event, &#39;divPopu1&#39;)}" style="color:Blue;font-weight:bold;height:21px;width:26px;">日</td><td align="center" style="height:21px;width:49px;">&nbsp;</td><td align="center" style="height:21px;width:51px;">&nbsp;</td><td align="center" style="height:21px;width:43px;">&nbsp;</td><td align="center" style="height:21px;width:46px;">&nbsp;</td><td align="center" style="height:21px;width:44px;">&nbsp;</td><td align="center" style="height:21px;width:45px;">&nbsp;</td><td align="left" style="height:21px;width:194px;">&nbsp;</td><td align="center" style="height:21px;width:43px;">0</td><td align="center" style="height:21px;width:38px;">0</td><td align="center" style="height:21px;width:47px;">8</td><td align="center" style="height:21px;width:47px;">0</td><td align="center" style="height:21px;width:50px;">0</td><td align="center" style="height:21px;width:31px;">0</td><td align="center" style="height:21px;width:50px;">0</td><td align="center" style="height:21px;width:31px;">0</td><td align="center" style="height:21px;width:31px;">0</td><td align="center" style="height:21px;width:31px;">0</td><td align="center" style="height:21px;width:31px;">0</td><td align="center" style="height:21px;width:60px;">0</td><td align="center" style="height:21px;width:31px;">0</td><td align="center" style="height:21px;width:80px;">2026-02-02</td><td align="center" style="height:21px;width:31px;">0</td><td align="center" style="height:21px;width:31px;">0</td><td align="center" style="height:21px;width:31px;">0</td><td align="left" style="height:21px;width:195px;">&nbsp;</td><td align="center" style="height:21px;width:80px;">0</td><td align="center" style="height:21px;width:80px;">0</td><td align="center" style="height:21px;width:80px;">0</td><td align="center" style="height:21px;width:80px;">0</td><td align="center" style="height:21px;width:80px;">0</td><td align="center" style="height:21px;width:80px;">0</td><td align="center" style="height:21px;width:80px;">0</td><td align="center" style="height:21px;width:80px;">0</td><td align="center" style="height:21px;width:236px;">&nbsp;</td><td align="center" style="height:21px;width:276px;">&nbsp;</td>
+		</tr><tr onmouseover="this.style.cursor=&#39;hand&#39;;" onclick="{if(window.oldtr!=null) {if(window.oldtr.runtimeStyle!=null) {window.oldtr.runtimeStyle.cssText=&#39;&#39;;}  else {window.oldtr.style.backgroundColor=currentcolor;}} if(this.runtimeStyle!=null) {this.runtimeStyle.cssText=&#39;background-color:#4F7FC9&#39;;}  else {currentcolor=this.style.backgroundColor;this.style.backgroundColor=&#39;#4F7FC9&#39;} window.oldtr=this;}" ondblclick="OnDBClickOpenData(&#39;CD60D10C-66AE-4FDC-9951-713F9D5AF51E&#39;,&#39;设计组&#39;,&#39;21146&#39;,&#39;张爽&#39;)" style="background-color:#E3EFFF;word-break:break-all;">
+			<td align="center" style="height:22px;width:28px;"><input id="gridView_ctl03_1" type="checkbox" name="gridView$ctl03$1" onclick="checkboxClick(this,&#39;#E3EFFF&#39;,0);" /></td><td align="center" style="height:21px;width:78px;vnd.ms-excel.numberformat:@;">设计组</td><td align="center" style="height:21px;width:78px;">平面设计</td><td align="center" style="height:21px;width:40px;">21146</td><td title="右键即可以选择数据" align="center" onmousedown=" if (event.button == 2) {showPopupMenu(event, &#39;divPopu4&#39;)}" style="font-weight:bold;height:21px;width:59px;">张爽</td><td title="右键即可以修改班次" align="center" onmousedown=" if (event.button == 2) {WindowshowPopupMenu(&#39;CD60D10C-66AE-4FDC-9951-713F9D5AF51E&#39;,&#39;34E095F0-685B-4921-864B-DEA781033348&#39;,&#39;张爽&#39;,event, &#39;divPopu2&#39;,0)}" style="font-weight:bold;height:25px;width:59px;">A01H</td><td title="右键即可以修改补卡、请假、外出、休假" align="center" onmousedown=" if (event.button == 2) {WindowshowSelectMenu(&#39;CD60D10C-66AE-4FDC-9951-713F9D5AF51E&#39;,&#39;34E095F0-685B-4921-864B-DEA781033348&#39;,&#39;张爽&#39;,3,&#39;e6f8e1be-ace1-43e5-90ed-4f14a36a9b2b&#39;,&#39;2026/11/2 0:00:00&#39;)}" style="font-weight:bold;height:25px;width:24px;">02</td><td title="右键即可以修改日期类型" align="center" onmousedown=" if (event.button == 2) {WindowshowPopupMenu(&#39;CD60D10C-66AE-4FDC-9951-713F9D5AF51E&#39;,&#39;34E095F0-685B-4921-864B-DEA781033348&#39;,&#39;张爽&#39;,event, &#39;divPopu1&#39;)}" style="font-weight:bold;height:21px;width:26px;">一</td><td align="center" style="height:21px;width:49px;">08:35</td><td align="center" style="height:21px;width:51px;">12:33</td><td align="center" style="height:21px;width:43px;">14:00</td><td align="center" style="height:21px;width:46px;">18:05</td><td align="center" style="height:21px;width:44px;">&nbsp;</td><td align="center" style="height:21px;width:45px;">&nbsp;</td><td align="left" style="height:21px;width:194px;">实际迟到：1次，共5分钟；</td><td align="center" style="height:21px;width:43px;">8</td><td align="center" style="height:21px;width:38px;">0</td><td align="center" style="height:21px;width:47px;">8</td><td align="center" style="height:21px;width:47px;">0</td><td align="center" style="height:21px;width:50px;">5</td><td align="center" style="height:21px;width:31px;">0</td><td align="center" style="height:21px;width:50px;">0</td><td align="center" style="height:21px;width:31px;">0</td><td align="center" style="height:21px;width:31px;">0</td><td align="center" style="height:21px;width:31px;">0</td><td align="center" style="height:21px;width:31px;">0</td><td align="center" style="height:21px;width:60px;">0</td><td align="center" style="height:21px;width:31px;">0</td><td align="center" style="height:21px;width:80px;">2026-02-02</td><td align="center" style="height:21px;width:31px;">0</td><td align="center" style="height:21px;width:31px;">0</td><td align="center" style="height:21px;width:31px;">0</td><td align="left" style="height:21px;width:195px;">&nbsp;</td><td align="center" style="height:21px;width:80px;">0</td><td align="center" style="height:21px;width:80px;">0</td><td align="center" style="height:21px;width:80px;">0</td><td align="center" style="height:21px;width:80px;">0</td><td align="center" style="height:21px;width:80px;">5</td><td align="center" style="height:21px;width:80px;">0</td><td align="center" style="height:21px;width:80px;">0</td><td align="center" style="height:21px;width:80px;">0</td><td align="center" style="height:21px;width:236px;">&nbsp;</td><td align="center" style="height:21px;width:276px;">&nbsp;</td>
+		</tr><tr onmouseover="this.style.cursor=&#39;hand&#39;;" onclick="{if(window.oldtr!=null) {if(window.oldtr.runtimeStyle!=null) {window.oldtr.runtimeStyle.cssText=&#39;&#39;;}  else {window.oldtr.style.backgroundColor=currentcolor;}} if(this.runtimeStyle!=null) {this.runtimeStyle.cssText=&#39;background-color:#4F7FC9&#39;;}  else {currentcolor=this.style.backgroundColor;this.style.backgroundColor=&#39;#4F7FC9&#39;} window.oldtr=this;}" ondblclick="OnDBClickOpenData(&#39;7009B5F9-61DD-4408-A14A-AAE6935A4ECC&#39;,&#39;设计组&#39;,&#39;21146&#39;,&#39;张爽&#39;)" style="word-break:break-all;">
+			<td align="center" style="height:22px;width:28px;"><input id="gridView_ctl04_2" type="checkbox" name="gridView$ctl04$2" onclick="checkboxClick(this,&#39;#E3EFFF&#39;,0);" /></td><td align="center" style="height:21px;width:78px;vnd.ms-excel.numberformat:@;">设计组</td><td align="center" style="height:21px;width:78px;">平面设计</td><td align="center" style="height:21px;width:40px;">21146</td><td title="右键即可以选择数据" align="center" onmousedown=" if (event.button == 2) {showPopupMenu(event, &#39;divPopu4&#39;)}" style="font-weight:bold;height:21px;width:59px;">张爽</td><td title="右键即可以修改班次" align="center" onmousedown=" if (event.button == 2) {WindowshowPopupMenu(&#39;7009B5F9-61DD-4408-A14A-AAE6935A4ECC&#39;,&#39;34E095F0-685B-4921-864B-DEA781033348&#39;,&#39;张爽&#39;,event, &#39;divPopu2&#39;,0)}" style="font-weight:bold;height:25px;width:59px;">A01H</td><td title="右键即可以修改补卡、请假、外出、休假" align="center" onmousedown=" if (event.button == 2) {WindowshowSelectMenu(&#39;7009B5F9-61DD-4408-A14A-AAE6935A4ECC&#39;,&#39;34E095F0-685B-4921-864B-DEA781033348&#39;,&#39;张爽&#39;,3,&#39;e6f8e1be-ace1-43e5-90ed-4f14a36a9b2b&#39;,&#39;2026/11/3 0:00:00&#39;)}" style="font-weight:bold;height:25px;width:24px;">03</td><td title="右键即可以修改日期类型" align="center" onmousedown=" if (event.button == 2) {WindowshowPopupMenu(&#39;7009B5F9-61DD-4408-A14A-AAE6935A4ECC&#39;,&#39;34E095F0-685B-4921-864B-DEA781033348&#39;,&#39;张爽&#39;,event, &#39;divPopu1&#39;)}" style="font-weight:bold;height:21px;width:26px;">二</td><td align="center" style="height:21px;width:49px;">08:34</td><td align="center" style="height:21px;width:51px;">&nbsp;</td><td align="center" style="height:21px;width:43px;">13:48</td><td align="center" style="height:21px;width:46px;">18:05</td><td align="center" style="height:21px;width:44px;">&nbsp;</td><td align="center" style="height:21px;width:45px;">&nbsp;</td><td align="left" style="height:21px;width:194px;">旷工：240分钟，合：4小时；</td><td align="center" style="height:21px;width:43px;">4</td><td align="center" style="height:21px;width:38px;">0</td><td align="center" style="height:21px;width:47px;">8</td><td align="center" style="height:21px;width:47px;">0</td><td align="center" style="height:21px;width:50px;">0</td><td align="center" style="height:21px;width:31px;">0</td><td align="center" style="height:21px;width:50px;">0</td><td align="center" style="height:21px;width:31px;">0</td><td align="center" style="height:21px;width:31px;">4</td><td align="center" style="height:21px;width:31px;">0</td><td align="center" style="height:21px;width:31px;">0</td><td align="center" style="height:21px;width:60px;">0</td><td align="center" style="height:21px;width:31px;">0</td><td align="center" style="height:21px;width:80px;">2026-02-02</td><td align="center" style="height:21px;width:31px;">0</td><td align="center" style="height:21px;width:31px;">0</td><td align="center" style="height:21px;width:31px;">0</td><td align="left" style="height:21px;width:195px;">&nbsp;</td><td align="center" style="height:21px;width:80px;">0</td><td align="center" style="height:21px;width:80px;">0</td><td align="center" style="height:21px;width:80px;">0</td><td align="center" style="height:21px;width:80px;">0</td><td align="center" style="height:21px;width:80px;">0</td><td align="center" style="height:21px;width:80px;">0</td><td align="center" style="height:21px;width:80px;">0</td><td align="center" style="height:21px;width:80px;">0</td><td align="center" style="height:21px;width:236px;">&nbsp;</td><td align="center" style="height:21px;width:276px;">&nbsp;</td>
+		</tr><tr onmouseover="this.style.cursor=&#39;hand&#39;;" onclick="{if(window.oldtr!=null) {if(window.oldtr.runtimeStyle!=null) {window.oldtr.runtimeStyle.cssText=&#39;&#39;;}  else {window.oldtr.style.backgroundColor=currentcolor;}} if(this.runtimeStyle!=null) {this.runtimeStyle.cssText=&#39;background-color:#4F7FC9&#39;;}  else {currentcolor=this.style.backgroundColor;this.style.backgroundColor=&#39;#4F7FC9&#39;} window.oldtr=this;}" ondblclick="OnDBClickOpenData(&#39;66F3CA0B-F099-4283-9FEC-0E3F8335E45B&#39;,&#39;设计组&#39;,&#39;21146&#39;,&#39;张爽&#39;)" style="background-color:#E3EFFF;word-break:break-all;">
+			<td align="center" style="height:22px;width:28px;"><input id="gridView_ctl05_3" type="checkbox" name="gridView$ctl05$3" onclick="checkboxClick(this,&#39;#E3EFFF&#39;,0);" /></td><td align="center" style="height:21px;width:78px;vnd.ms-excel.numberformat:@;">设计组</td><td align="center" style="height:21px;width:78px;">平面设计</td><td align="center" style="height:21px;width:40px;">21146</td><td title="右键即可以选择数据" align="center" onmousedown=" if (event.button == 2) {showPopupMenu(event, &#39;divPopu4&#39;)}" style="font-weight:bold;height:21px;width:59px;">张爽</td><td title="右键即可以修改班次" align="center" onmousedown=" if (event.button == 2) {WindowshowPopupMenu(&#39;66F3CA0B-F099-4283-9FEC-0E3F8335E45B&#39;,&#39;34E095F0-685B-4921-864B-DEA781033348&#39;,&#39;张爽&#39;,event, &#39;divPopu2&#39;,0)}" style="font-weight:bold;height:25px;width:59px;">A01H</td><td title="右键即可以修改补卡、请假、外出、休假" align="center" onmousedown=" if (event.button == 2) {WindowshowSelectMenu(&#39;66F3CA0B-F099-4283-9FEC-0E3F8335E45B&#39;,&#39;34E095F0-685B-4921-864B-DEA781033348&#39;,&#39;张爽&#39;,3,&#39;e6f8e1be-ace1-43e5-90ed-4f14a36a9b2b&#39;,&#39;2026/11/4 0:00:00&#39;)}" style="font-weight:bold;height:25px;width:24px;">04</td><td title="右键即可以修改日期类型" align="center" onmousedown=" if (event.button == 2) {WindowshowPopupMenu(&#39;66F3CA0B-F099-4283-9FEC-0E3F8335E45B&#39;,&#39;34E095F0-685B-4921-864B-DEA781033348&#39;,&#39;张爽&#39;,event, &#39;divPopu1&#39;)}" style="font-weight:bold;height:21px;width:26px;">三</td><td align="center" style="height:21px;width:49px;">08:34</td><td align="center" style="height:21px;width:51px;">12:32</td><td align="center" style="height:21px;width:43px;">14:00</td><td align="center" style="height:21px;width:46px;">18:05</td><td align="center" style="height:21px;width:44px;">&nbsp;</td><td align="center" style="height:21px;width:45px;">&nbsp;</td><td align="left" style="height:21px;width:194px;">实际迟到：1次，共4分钟；</td><td align="center" style="height:21px;width:43px;">8</td><td align="center" style="height:21px;width:38px;">0</td><td align="center" style="height:21px;width:47px;">8</td><td align="center" style="height:21px;width:47px;">0</td><td align="center" style="height:21px;width:50px;">4</td><td align="center" style="height:21px;width:31px;">0</td><td align="center" style="height:21px;width:50px;">0</td><td align="center" style="height:21px;width:31px;">0</td><td align="center" style="height:21px;width:31px;">0</td><td align="center" style="height:21px;width:31px;">0</td><td align="center" style="height:21px;width:31px;">0</td><td align="center" style="height:21px;width:60px;">0</td><td align="center" style="height:21px;width:31px;">0</td><td align="center" style="height:21px;width:80px;">2026-02-02</td><td align="center" style="height:21px;width:31px;">0</td><td align="center" style="height:21px;width:31px;">0</td><td align="center" style="height:21px;width:31px;">0</td><td align="left" style="height:21px;width:195px;">&nbsp;</td><td align="center" style="height:21px;width:80px;">0</td><td align="center" style="height:21px;width:80px;">0</td><td align="center" style="height:21px;width:80px;">0</td><td align="center" style="height:21px;width:80px;">0</td><td align="center" style="height:21px;width:80px;">4</td><td align="center" style="height:21px;width:80px;">0</td><td align="center" style="height:21px;width:80px;">0</td><td align="center" style="height:21px;width:80px;">0</td><td align="center" style="height:21px;width:236px;">&nbsp;</td><td align="center" style="height:21px;width:276px;">&nbsp;</td>
+		</tr><tr onmouseover="this.style.cursor=&#39;hand&#39;;" onclick="{if(window.oldtr!=null) {if(window.oldtr.runtimeStyle!=null) {window.oldtr.runtimeStyle.cssText=&#39;&#39;;}  else {window.oldtr.style.backgroundColor=currentcolor;}} if(this.runtimeStyle!=null) {this.runtimeStyle.cssText=&#39;background-color:#4F7FC9&#39;;}  else {currentcolor=this.style.backgroundColor;this.style.backgroundColor=&#39;#4F7FC9&#39;} window.oldtr=this;}" ondblclick="OnDBClickOpenData(&#39;DF969BB0-19D3-40C2-BB0A-8137A75DBD83&#39;,&#39;设计组&#39;,&#39;21146&#39;,&#39;张爽&#39;)" style="word-break:break-all;">
+			<td align="center" style="height:22px;width:28px;"><input id="gridView_ctl06_4" type="checkbox" name="gridView$ctl06$4" onclick="checkboxClick(this,&#39;#E3EFFF&#39;,0);" /></td><td align="center" style="height:21px;width:78px;vnd.ms-excel.numberformat:@;">设计组</td><td align="center" style="height:21px;width:78px;">平面设计</td><td align="center" style="height:21px;width:40px;">21146</td><td title="右键即可以选择数据" align="center" onmousedown=" if (event.button == 2) {showPopupMenu(event, &#39;divPopu4&#39;)}" style="font-weight:bold;height:21px;width:59px;">张爽</td><td title="右键即可以修改班次" align="center" onmousedown=" if (event.button == 2) {WindowshowPopupMenu(&#39;DF969BB0-19D3-40C2-BB0A-8137A75DBD83&#39;,&#39;34E095F0-685B-4921-864B-DEA781033348&#39;,&#39;张爽&#39;,event, &#39;divPopu2&#39;,0)}" style="font-weight:bold;height:25px;width:59px;">A01H</td><td title="右键即可以修改补卡、请假、外出、休假" align="center" onmousedown=" if (event.button == 2) {WindowshowSelectMenu(&#39;DF969BB0-19D3-40C2-BB0A-8137A75DBD83&#39;,&#39;34E095F0-685B-4921-864B-DEA781033348&#39;,&#39;张爽&#39;,3,&#39;e6f8e1be-ace1-43e5-90ed-4f14a36a9b2b&#39;,&#39;2026/11/5 0:00:00&#39;)}" style="font-weight:bold;height:25px;width:24px;">05</td><td title="右键即可以修改日期类型" align="center" onmousedown=" if (event.button == 2) {WindowshowPopupMenu(&#39;DF969BB0-19D3-40C2-BB0A-8137A75DBD83&#39;,&#39;34E095F0-685B-4921-864B-DEA781033348&#39;,&#39;张爽&#39;,event, &#39;divPopu1&#39;)}" style="font-weight:bold;height:21px;width:26px;">四</td><td align="center" style="height:21px;width:49px;">08:32</td><td align="center" style="height:21px;width:51px;">12:31</td><td align="center" style="height:21px;width:43px;">14:00</td><td align="center" style="height:21px;width:46px;">&nbsp;</td><td align="center" style="height:21px;width:44px;">&nbsp;</td><td align="center" style="height:21px;width:45px;">&nbsp;</td><td align="left" style="height:21px;width:194px;">旷工：240分钟，合：4小时；实际迟到：1次，共2分钟；</td><td align="center" style="height:21px;width:43px;">4</td><td align="center" style="height:21px;width:38px;">0</td><td align="center" style="height:21px;width:47px;">8</td><td align="center" style="height:21px;width:47px;">0</td><td align="center" style="height:21px;width:50px;">2</td><td align="center" style="height:21px;width:31px;">0</td><td align="center" style="height:21px;width:50px;">0</td><td align="center" style="height:21px;width:31px;">0</td><td align="center" style="height:21px;width:31px;">4</td><td align="center" style="height:21px;width:31px;">0</td><td align="center" style="height:21px;width:31px;">0</td><td align="center" style="height:21px;width:60px;">0</td><td align="center" style="height:21px;width:31px;">0</td><td align="center" style="height:21px;width:80px;">2026-02-02</td><td align="center" style="height:21px;width:31px;">0</td><td align="center" style="height:21px;width:31px;">0</td><td align="center" style="height:21px;width:31px;">0</td><td align="left" style="height:21px;width:195px;">&nbsp;</td><td align="center" style="height:21px;width:80px;">0</td><td align="center" style="height:21px;width:80px;">0</td><td align="center" style="height:21px;width:80px;">0</td><td align="center" style="height:21px;width:80px;">0</td><td align="center" style="height:21px;width:80px;">2</td><td align="center" style="height:21px;width:80px;">0</td><td align="center" style="height:21px;width:80px;">0</td><td align="center" style="height:21px;width:80px;">0</td><td align="center" style="height:21px;width:236px;">&nbsp;</td><td align="center" style="height:21px;width:276px;">&nbsp;</td>
+		</tr><tr style="background-color:#E3EFFF;height:25px;">
+			<td style="width:28px;">&nbsp;</td><td style="width:78px;">&nbsp;</td><td style="width:78px;">&nbsp;</td><td style="width:40px;">&nbsp;</td><td style="width:59px;">&nbsp;</td><td style="width:59px;">&nbsp;</td><td style="width:24px;">&nbsp;</td><td style="width:26px;">&nbsp;</td><td style="width:49px;">&nbsp;</td><td style="width:51px;">&nbsp;</td><td style="width:43px;">&nbsp;</td><td style="width:46px;">&nbsp;</td><td style="width:44px;">&nbsp;</td><td align="right" style="width:45px;">合计</td><td align="right" style="width:194px;">5条</td><td align="right" style="width:43px;">24</td><td align="right" style="width:38px;">0</td><td align="right" style="width:47px;">40</td><td align="right" style="width:47px;">0</td><td align="right" style="width:50px;">11</td><td align="right" style="width:31px;">0</td><td align="right" style="width:50px;">0</td><td align="right" style="width:31px;">0</td><td align="right" style="width:31px;">8</td><td align="right" style="width:31px;">0</td><td align="right" style="width:31px;">0</td><td align="right" style="width:60px;">0</td><td align="right" style="width:31px;">0</td><td style="width:80px;">&nbsp;</td><td align="right" style="width:31px;">0</td><td align="right" style="width:31px;">0</td><td align="right" style="width:31px;">0</td><td style="width:195px;">&nbsp;</td><td align="right" style="width:80px;">0</td><td align="right" style="width:80px;">0</td><td align="right" style="width:80px;">0</td><td align="right" style="width:80px;">0</td><td align="right" style="width:80px;">11</td><td align="right" style="width:80px;">0</td><td align="right" style="width:80px;">0</td><td align="right" style="width:80px;">0</td><td style="width:236px;">&nbsp;</td><td style="width:276px;">&nbsp;</td>
+		</tr>
+	</table>
+</div>
+                                </div>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td height="22px">
+                                <table cellspacing="0" cellpadding="0" width="100%" border="0" class="tableNoLine">
+                                    <tr>
+                                        <td align="center">
+                                            <span id="Label1" style="display:inline-block;color:Red;font-weight:bold;width:100%;">红色表示：【有薪休息】</span>
+                                        </td>
+                                        <td align="center">
+                                            <span id="Label2" style="display:inline-block;color:Blue;font-weight:bold;width:100%;">蓝色表示：【休息日】</span>
+                                        </td>
+                                        <td align="center">
+                                            <span id="Label3" style="display:inline-block;color:Green;font-weight:bold;width:100%;">绿色表示：【法定节假日】</span>
+                                        </td>
+                                        <td align="center">
+                                            <span id="Label4" style="display:inline-block;color:Black;font-weight:bold;width:100%;">黑色表示：【工作日】</span>
+                                        </td>
+                                    </tr>
+                                </table>
+                            </td>
+                        </tr>
+                    </table>
+                </div>
+                <table id="TableVisible" cellspacing="0" cellpadding="0" width="100%" border="0" style="display: none">
+	<tr>
+		<td height="25" width="30%" align="right">ID ：
+                        </td>
+		<td height="25" width="*" align="left">
+                            <input name="lblID" type="text" id="lblID" />
+                            <input name="lblPID" type="text" id="lblPID" />
+                            <input name="lblYGID" type="text" id="lblYGID" />
+                            <input name="lblYGXM" type="text" id="lblYGXM" />
+                            <input name="lblNum" type="text" id="lblNum" />
+                            <input name="txtBCID" type="text" id="txtBCID" />
+                            <input name="txtBCMC" type="text" id="txtBCMC" />
+                            <input name="txtZBSJ" type="text" id="txtZBSJ" />
+                            <input name="txtJBSJ" type="text" id="txtJBSJ" />
+                            <input name="txtDataLX" type="text" id="txtDataLX" />
+                            <input name="txtBKLX" type="text" id="txtBKLX" />
+                            <input name="txtQKRQ" type="text" id="txtQKRQ" />
+                            <input name="txtQJRQ" type="text" id="txtQJRQ" />
+                            <input name="txtRowIndex" type="text" id="txtRowIndex" />
+                            <input name="lblSelectDataLX" type="text" id="lblSelectDataLX" />
+                            <input id="chkSHF" type="checkbox" name="chkSHF" /><label for="chkSHF">SHF</label>
+                            <input name="txtSHR" type="text" id="txtSHR" disabled="disabled" style="width:100%;" />
+                            <input type="submit" name="btnSelectBCZL" value="" id="btnSelectBCZL" />
+                            <input type="submit" name="btnOpenKQMX" value="" id="btnOpenKQMX" />
+                            <input type="submit" name="btnRefreshWindow" value="" id="btnRefreshWindow" />
+                            <input type="submit" name="btnAdvanceQuery" value="" onclick="javascript:showdiv(&#39;系统正在从后台提取数据&lt;br/>请稍候........ &lt;br/> &#39;);" id="btnAdvanceQuery" />
+                            <input type="submit" name="btnOK_BK1" value="· 确定 ·" onclick="javascript:showdiv(&#39;系统正在从后台提取数据&lt;br/>请稍候........ &lt;br/> &#39;);" id="btnOK_BK1" style="width:60px;" />
+                            <input type="submit" name="btnUpdateDataAfterCheck" value="" id="btnUpdateDataAfterCheck" />
+                            <input name="lblgVQXBH" type="text" value="2553" id="lblgVQXBH" />
+                            <input name="lblgVID" type="text" id="lblgVID" />
+                            <input name="lblgVSetQXID" type="text" id="lblgVSetQXID" />
+                            <input type="submit" name="btnGetgVList" value="" id="btnGetgVList" />
+                            <input type="submit" name="btnAddInputData" value="" id="btnAddInputData" />
+                            <input name="txtSelectBMMC" type="text" id="txtSelectBMMC" />
+                            <input name="txtSelectGKH" type="text" id="txtSelectGKH" />
+                            <input name="txtSelectYGXM" type="text" id="txtSelectYGXM" />
+                            <input name="lblFIEID" type="text" id="lblFIEID" />
+                            <input name="txtYBCSDataLX" type="text" id="txtYBCSDataLX" />
+                            <input name="txtQXLXID" type="text" id="txtQXLXID" />
+                            <input type="submit" name="btnOpenDivSelectData" value="" id="btnOpenDivSelectData" />
+                            <input type="submit" name="btnOpenDivBK" value="" id="btnOpenDivBK" />
+                        </td>
+	</tr>
+</table>
+
+                <div class="popupWindow" id="divPopu1" style="width: 180px">
+                    <table cellspacing="0" cellpadding="0" width="100%" class="tableLine">
+                        <tr>
+                            <td align="right" style="background-color: Blue;">
+                                <span style="cursor: hand" onclick="jsAreaClose('divPopu1')">
+                                    <img alt="关闭" src="../../../Images/Close.JPG" border="0" /></span>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td align="center" style="height: 30px">
+                                
+                            </td>
+                        </tr>
+                        <tr>
+                            <td align="center" style="height: 30px">
+                                
+                            </td>
+                        </tr>
+                        <tr>
+                            <td align="center" style="height: 30px">
+                                
+                            </td>
+                        </tr>
+                        <tr>
+                            <td align="center" style="height: 30px">
+                                
+                            </td>
+                        </tr>
+                        <tr>
+                            <td align="center" style="height: 30px">
+                                
+                            </td>
+                        </tr>
+                        <tr>
+                            <td align="center" style="height: 30px">
+                                
+                            </td>
+                        </tr>
+                        <tr>
+                            <td align="center" style="height: 30px">
+                                
+                            </td>
+                        </tr>
+                        <tr>
+                            <td align="center" style="height: 30px">
+                                
+                            </td>
+                        </tr>
+                    </table>
+                </div>
+                <div class="popupWindow" id="divPopu2" style="width: 180px">
+                    <table cellspacing="0" cellpadding="0" width="100%" class="tableLine">
+                        <tr>
+                            <td align="right" style="background-color: Blue;">
+                                <span style="cursor: hand" onclick="jsAreaClose('divPopu2')">
+                                    <img alt="关闭" src="../../../Images/Close.JPG" border="0" /></span>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td align="center" style="height: 30px">
+                                
+                            </td>
+                        </tr>
+                        <tr>
+                            <td align="center" style="height: 30px">
+                                
+                            </td>
+                        </tr>
+                        <tr>
+                            <td align="center" style="height: 30px">
+                                
+                            </td>
+                        </tr>
+                        <tr>
+                            <td align="center" style="height: 30px">
+                                
+                            </td>
+                        </tr>
+                    </table>
+                </div>
+                <div class="popupWindow" id="divPopu3" style="width: 180px">
+                    <table cellspacing="0" cellpadding="0" width="100%" class="tableLine">
+                        <tr>
+                            <td align="right" style="background-color: Blue;">
+                                <span style="cursor: hand" onclick="jsAreaClose('divPopu3')">
+                                    <img alt="关闭" src="../../../Images/Close.JPG" border="0" /></span>
+                            </td>
+                        </tr>
+                        
+                        
+                        <tr>
+                            <td align="center" style="height: 30px">
+                                
+                            </td>
+                        </tr>
+                        <tr>
+                            <td align="center" style="height: 30px">
+                                
+                            </td>
+                        </tr>
+                        
+                        <tr>
+                            <td align="center" style="height: 30px">
+                                
+                            </td>
+                        </tr>
+                        <tr>
+                            <td align="center" style="height: 30px">
+                                
+                            </td>
+                        </tr>
+                        
+                        <tr>
+                            <td align="center" style="height: 30px">
+                                
+                            </td>
+                        </tr>
+                        <tr>
+                            <td align="center" style="height: 30px">
+                                
+                            </td>
+                        </tr>
+                        
+                        <tr>
+                            <td align="center" style="height: 30px">
+                                
+                            </td>
+                        </tr>
+                        <tr>
+                            <td align="center" style="height: 30px">
+                                
+                            </td>
+                        </tr>
+                    </table>
+                </div>
+                <div class="popupWindow" id="divPopu4" style="width: 120px">
+                    <table cellspacing="0" cellpadding="0" width="100%" class="tableLine">
+                        <tr>
+                            <td align="right" style="background-color: Blue;">
+                                <span style="cursor: hand" onclick="jsAreaClose('divPopu4')">
+                                    <img alt="关闭" src="../../../Images/Close.JPG" border="0" /></span>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td align="center" style="height: 30px">
+                                <a onclick="DataWaiting();" id="btn_SelectALL" href="javascript:__doPostBack(&#39;btn_SelectALL&#39;,&#39;&#39;)" style="display:inline-block;width:100%;">【选择全部】</a>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td align="center" style="height: 30px">
+                                <a onclick="DataWaiting();" id="btn_CancelALL" href="javascript:__doPostBack(&#39;btn_CancelALL&#39;,&#39;&#39;)" style="display:inline-block;width:100%;">【取消选择】</a>
+                            </td>
+                        </tr>
+                    </table>
+                </div>
+                <div class="popupWindow" id="divPopuRemark" style="width: 320px">
+                    <table cellspacing="0" cellpadding="0" width="100%" class="tableLine">
+                        <tr>
+                            <td align="right" style="background-color: Blue;">
+                                <span style="cursor: hand" onclick="jsAreaClose('divPopuRemark')">
+                                    <img alt="关闭" src="../../../Images/Close.JPG" border="0" /></span>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td align="center" style="height: 30px">备注：<input name="txtRemark" type="text" id="txtRemark" style="width:80%;" />
+                            </td>
+                        </tr>
+                        <tr>
+                            <td align="center" style="height: 30px">
+                                <input type="submit" name="btn_Remark" value="确定" onclick=" showdiv(&#39;系统正在保存【备注】数据&lt;br/>请稍候........ &lt;br/> &#39;);" id="btn_Remark" />
+                            </td>
+                        </tr>
+                    </table>
+                </div>
+                <div class="popupWindow" id="DivSelectData" style="width: 120px">
+                    <table cellspacing="0" cellpadding="0" width="100%" class="tableLine">
+                        <tr>
+                            <td align="right" style="background-color: Blue;">
+                                <span style="cursor: hand" onclick="jsAreaClose('DivSelectData')">
+                                    <img alt="关闭" src="../../../Images/Close.JPG" border="0" /></span>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td align="center" style="height: 30px">
+                                <span id="lblCurrent_BK" onclick="showBKWindow(&#39;0&#39;)" style="cursor:pointer;">【当前数据】</span>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td align="center" style="height: 30px">
+                                <span id="lblCurrent_All_ZBDBK" onclick="showBKWindow(&#39;2&#39;)" style="cursor:pointer;">【当前正班段】</span>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td align="center" style="height: 30px">
+                                <span id="lblCurrent_All_ZJBDBK" onclick="showBKWindow(&#39;3&#39;)" style="cursor:pointer;">【当前正加班段】</span>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td align="center" style="height: 30px">
+                                <span id="lblSelect_BK" onclick="showBKWindow(&#39;1&#39;)" style="cursor:pointer;">【选择数据】</span>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td align="center" style="height: 30px">
+                                <span id="lblSelect_All_ZBDBK" onclick="showBKWindow(&#39;4&#39;)" style="cursor:pointer;">【选择正班段】</span>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td align="center" style="height: 30px">
+                                <span id="lblSelect_All_ZJBDBK" onclick="showBKWindow(&#39;5&#39;)" style="cursor:pointer;">【选择正加班段】</span>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td align="center" style="height: 30px">
+                                <span id="lblSelect_ZDYSD" onclick="PopupCenter(event, &#39;DivBK_ZDY&#39;)" style="cursor:pointer;">【自定义时间】</span>
+                            </td>
+                        </tr>
+                    </table>
+                </div>
+                <div class="popupWindow" id="DivSelectData1" style="width: 120px">
+                    <table cellspacing="0" cellpadding="0" width="100%" class="tableLine">
+                        <tr>
+                            <td align="right" style="background-color: Blue;">
+                                <span style="cursor: hand" onclick="jsAreaClose('DivSelectData1')">
+                                    <img alt="关闭" src="../../../Images/Close.JPG" border="0" /></span>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td align="center" style="height: 30px">
+                                <span id="lblCurrent_BK1">【当前数据1】</span>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td align="center" style="height: 30px">
+                                <span id="lblCurrent_All_ZBDBK1">【当前正班段1】</span>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td align="center" style="height: 30px">
+                                <span id="lblCurrent_All_ZJBDBK1">【当前正加班段1】</span>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td align="center" style="height: 30px">
+                                <span id="lblSelect_BK1">【选择数据1】</span>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td align="center" style="height: 30px">
+                                <span id="lblSelect_All_ZBDBK1">【选择正班段1】</span>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td align="center" style="height: 30px">
+                                <span id="lblSelect_All_ZJBDBK1">【选择正加班段1】</span>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td align="center" style="height: 30px">
+                                <span id="lblSelect_ZDYSD1">【当前自定义时间1】</span>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td align="center" style="height: 30px">
+                                <span id="lblSelect_XZ_ZDYSD1">【选择自定义时间1】</span>
+                            </td>
+                        </tr>
+                    </table>
+                </div>
+                <div class="popupWindow" id="DivBK" style="width: 350px">
+                    <table cellspacing="0" cellpadding="0" width="100%" class="tableLine">
+                        <tr>
+                            <td align="right" style="background-color: Blue;">
+                                <span style="cursor: hand" onclick="jsAreaClose('DivBK')">
+                                    <img alt="关闭" src="../../../Images/Close.JPG" border="0" /></span>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td align="center" style="height: 30px;">
+                                <span id="Label14" style="color:Red;">选择出勤日期，系统记为签卡，不选记为补卡</span>
+                            </td>
+                        </tr>
+                        <tr id="tr_CKRQ">
+	<td align="center" style="height: 30px;">
+                                <span id="Label13">出勤日期</span>:
+                                <select name="txtCQRQ" id="txtCQRQ" style="height:20px;width:240px;">
+
+	</select>
+                            </td>
+</tr>
+
+                        <tr>
+                            <td align="center" style="height: 30px;">
+                                <span id="lblQKYY" style="color:Red;">签卡原因</span>:
+                                <select name="txtQKYY" id="txtQKYY" style="height:20px;width:240px;">
+	<option selected="selected" value="-0-">&lt;--请选择--&gt;</option>
+	<option value="超出正点时间15分钟无效打卡">超出正点时间15分钟无效打卡</option>
+	<option value="忘记打卡">忘记打卡</option>
+	<option value="卡坏">卡坏</option>
+	<option value="忘记带卡">忘记带卡</option>
+	<option value="外出办事">外出办事</option>
+	<option value="外出送货">外出送货</option>
+	<option value="外出培训">外出培训</option>
+	<option value="未录指纹">未录指纹</option>
+	<option value="指纹破损">指纹破损</option>
+	<option value="更换考勤卡">更换考勤卡</option>
+	<option value="指纹磨损">指纹磨损</option>
+
+</select>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td align="center" style="height: 30px; text-align: left">
+                                <span id="Label8">考勤档案标记补卡(因私超出签补卡次数后，工资计算时用)</span>:
+                                <span style="display:inline-block;width:30px;"><input id="chkSFBK" type="checkbox" name="chkSFBK" /></span>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td align="center" style="height: 30px">
+                                <input type="submit" name="btnOK_BK" value="· 确定 ·" onclick="javascript:showdiv(&#39;系统正在从后台提取数据&lt;br/>请稍候........ &lt;br/> &#39;);" id="btnOK_BK" style="width:60px;" />
+                            </td>
+                        </tr>
+                    </table>
+                </div>
+                <div class="popupWindow" id="DivBK_ZDY" style="width: 300px">
+                    <table cellspacing="0" cellpadding="0" width="100%" class="tableLine">
+                        <tr>
+                            <td align="right" style="background-color: Blue;">
+                                <span style="cursor: hand" onclick="jsAreaClose('DivBK_ZDY')">
+                                    <img alt="关闭" src="../../../Images/Close.JPG" border="0" /></span>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td align="center" style="height: 30px;">
+                                <span id="Label15" style="color:Red;">选择出勤日期，系统记为签卡，不选记为补卡</span>
+                            </td>
+                        </tr>
+                        <tr id="tr1">
+	<td align="center" style="height: 30px;">
+                                <span id="Label16">出勤日期</span>:
+                                <select name="txtCQRQ_1" id="txtCQRQ_1" style="height:20px;width:240px;">
+
+	</select>
+                            </td>
+</tr>
+
+                        <tr>
+                            <td align="center" style="height: 30px; text-align: left">
+                                <span id="lblQKRQ_1">签卡时间:</span>
+                                <input name="txtQKSJ" type="text" id="txtQKSJ" onfocus="selectTime(this)" size="8" />
+                            </td>
+                        </tr>
+                        <tr>
+                            <td align="center" style="height: 30px;">
+                                <span id="lblQKYY_1" style="color:Red;">签卡原因:</span>
+                                <select name="txtQKYY_1" id="txtQKYY_1" style="height:20px;width:240px;">
+	<option selected="selected" value="-0-">&lt;--请选择--&gt;</option>
+	<option value="超出正点时间15分钟无效打卡">超出正点时间15分钟无效打卡</option>
+	<option value="忘记打卡">忘记打卡</option>
+	<option value="卡坏">卡坏</option>
+	<option value="忘记带卡">忘记带卡</option>
+	<option value="外出办事">外出办事</option>
+	<option value="外出送货">外出送货</option>
+	<option value="外出培训">外出培训</option>
+	<option value="未录指纹">未录指纹</option>
+	<option value="指纹破损">指纹破损</option>
+	<option value="更换考勤卡">更换考勤卡</option>
+	<option value="指纹磨损">指纹磨损</option>
+
+</select>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td align="center" style="height: 30px; text-align: left">
+                                 <span id="Label9">考勤档案标记补卡(因私超出签补卡次数后，工资计算时用)</span>:
+                                 <span style="display:inline-block;width:240px;"><input id="chkSFBK1" type="checkbox" name="chkSFBK1" /></span>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td align="center" style="height: 30px">
+                                <input type="submit" name="btnOK_BK_ZDY" value="· 确定 ·" onclick="javascript:showdiv(&#39;系统正在从后台提取数据&lt;br/>请稍候........ &lt;br/> &#39;);" id="btnOK_BK_ZDY" style="width:60px;" />
+                            </td>
+                        </tr>
+                    </table>
+                </div>
+
+                <div class="popupWindow" id="DivBK_ZDY1" style="width: 300px">
+                    <table cellspacing="0" cellpadding="0" width="100%" class="tableLine">
+                        <tr>
+                            <td align="right" style="background-color: Blue;">
+                                <span style="cursor: hand" onclick="jsAreaClose('DivBK_ZDY1')">
+                                    <img alt="关闭" src="../../../Images/Close.JPG" border="0" /></span>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td align="center" style="height: 30px; float: left;">
+                                <span id="lblQKRQ_2" style="display:inline-block;width:80px;">签卡时间:</span>
+                                <input value="btn_PreTimer" name="radioTime" type="radio" id="btn_PreTimer" title="自定义签卡时间提前" style="width: 20px;" />
+                                <input value="btn_NextTimer" name="radioTime" type="radio" id="btn_NextTimer" title="自定义签卡时间延后" style="width: 20px;" />
+                                <input name="txtQKSJ1" type="text" id="txtQKSJ1" onfocus="selectTime(this)" size="8" style="width: 160px;" />
+                            </td>
+                        </tr>
+                        
+                        <tr>
+                            <td align="center" style="height: 30px">
+                                <input type="submit" name="btnOK_BK_ZDY1" value="· 确定 ·" onclick="javascript:showdiv(&#39;系统正在从后台提取数据&lt;br/>请稍候........ &lt;br/> &#39;);" id="btnOK_BK_ZDY1" style="width:60px;" />
+                            </td>
+                        </tr>
+                    </table>
+                </div>
+                <div class="popupWindow" id="divSelectData_QJ" style="width: 120px">
+                    <table cellspacing="0" cellpadding="0" width="100%" class="tableLine">
+                        <tr>
+                            <td align="right" style="background-color: Blue;">
+                                <span style="cursor: hand" onclick="jsAreaClose('divSelectData_QJ')">
+                                    <img alt="关闭" src="../../../Images/Close.JPG" border="0" /></span>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td align="center" style="height: 30px">
+                                <a onclick="fun_SelectData('0')" style="cursor: pointer;">【当前数据】</a>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td align="center" style="height: 30px">
+                                <a onclick="fun_SelectData('1')" style="cursor: pointer;">【选择数据】</a>
+                            </td>
+                        </tr>
+                    </table>
+                </div>
+                <div class="popupWindow" id="DivQJQT" style="width: 300px">
+                    <table cellspacing="0" cellpadding="0" width="100%" class="tableLine">
+                        <tr>
+                            <td align="right" style="background-color: Blue;">
+                                <span style="cursor: hand" onclick="jsAreaClose('DivQJQT')">
+                                    <img alt="关闭" src="../../../Images/Close.JPG" border="0" /></span>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td align="center" style="height: 30px; float: left;">
+                                <span id="lblQJYY">请假原因</span>:
+                        <select name="txtQJYY" id="txtQJYY" style="width:200px;">
+
+</select>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td align="center" style="height: 30px; float: left;">
+                                <span id="Label5">请假小时</span>:
+                        <input name="txtQJXS" type="text" id="txtQJXS" style="width:200px;" />
+                            </td>
+                        </tr>
+                        <tr>
+                            <td align="center" style="height: 30px; float: left;">住宿：
+                        <input id="chkSFZS" type="checkbox" name="chkSFZS" checked="checked" />
+                                &nbsp;&nbsp;
+                        用餐：
+                        <input id="chkSFYC" type="checkbox" name="chkSFYC" checked="checked" />
+                            </td>
+                        </tr>
+                        <tr>
+                            <td align="center" style="height: 30px">
+                                <input type="submit" name="btnOK_QTQJ" value="· 确定 ·" onclick="javascript:showdiv(&#39;系统正在从后台提取数据&lt;br/>请稍候........ &lt;br/> &#39;);" id="btnOK_QTQJ" style="width:60px;" />
+                            </td>
+                        </tr>
+                    </table>
+                </div>
+                <div class="popupWindow" id="divOtherQuery" style="width: 150px">
+                    <table cellspacing="0" cellpadding="0" width="100%" class="tableLine">
+                        <tr>
+                            <td align="right" style="background-color: Blue;">
+                                <span style="cursor: hand" onclick="jsAreaClose('divOtherQuery')">
+                                    <img alt="关闭" src="../../../Images/Close.JPG" border="0" /></span>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>
+                                <table cellspacing="0" cellpadding="1" width="100%" border="0" class="tableNoLine">
+                                    <tr>
+                                        <td height="22px" width="50%" align="right">夜班：
+                                        </td>
+                                        <td align="left" width="50%">
+                                            <select name="Drop_SFYB" id="Drop_SFYB" style="width:100%;">
+	<option selected="selected" value="0">全部</option>
+	<option value="1">夜班</option>
+	<option value="2">白班</option>
+
+</select>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td height="22px" width="50%" align="right">迟到：
+                                        </td>
+                                        <td align="left" width="50%">
+                                            <select name="Drop_CD" id="Drop_CD" style="width:100%;">
+	<option selected="selected" value="0">全部</option>
+	<option value="1">有考勤迟到</option>
+	<option value="2">无考勤迟到</option>
+	<option value="3">有实际迟到</option>
+
+</select>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td height="22px" width="50%" align="right">早退：
+                                        </td>
+                                        <td align="left" width="50%">
+                                            <select name="Drop_ZT" id="Drop_ZT" style="width:100%;">
+	<option selected="selected" value="0">全部</option>
+	<option value="1">有考勤早退</option>
+	<option value="2">无考勤早退</option>
+	<option value="1">有实际早退</option>
+
+</select>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td height="22px" width="50%" align="right">外出：
+                                        </td>
+                                        <td align="left" width="50%">
+                                            <select name="Drop_WC" id="Drop_WC" style="width:100%;">
+	<option selected="selected" value="0">全部</option>
+	<option value="1">有外出</option>
+	<option value="2">无外出</option>
+
+</select>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td height="22px" width="50%" align="right">请假：
+                                        </td>
+                                        <td align="left" width="50%">
+                                            <select name="Drop_QJ" id="Drop_QJ" style="width:100%;">
+	<option selected="selected" value="0">全部</option>
+	<option value="1">有请假</option>
+	<option value="2">无请假</option>
+
+</select>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td height="22px" width="50%" align="right">休假：
+                                        </td>
+                                        <td align="left" width="50%">
+                                            <select name="Drop_XJ" id="Drop_XJ" style="width:100%;">
+	<option selected="selected" value="0">全部</option>
+	<option value="1">有休假</option>
+	<option value="2">无休假</option>
+
+</select>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td height="22px" width="50%" align="right">旷工：
+                                        </td>
+                                        <td align="left" width="50%">
+                                            <select name="Drop_KG" id="Drop_KG" style="width:100%;">
+	<option selected="selected" value="0">全部</option>
+	<option value="1">有旷工</option>
+	<option value="2">无旷工</option>
+
+</select>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td style="" align="right" width="50%">班次：
+                                        </td>
+                                        <td align="left" width="50%">
+                                            <select name="txtBCLB" id="txtBCLB" style="width:100%;">
+	<option selected="selected" value="0">全部</option>
+	<option value="1">普通班次</option>
+	<option value="2">转班班次</option>
+	<option value="3">白班</option>
+	<option value="4">晚班</option>
+
+</select>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td style="" align="right" width="55%">日期类型：
+                                        </td>
+                                        <td align="left" width="50%">
+                                            <select name="dropRQLX" id="dropRQLX" style="width:100%;">
+	<option selected="selected" value="0">全部</option>
+	<option value="1">工作日</option>
+	<option value="2">休息日</option>
+	<option value="3">法定节假日</option>
+	<option value="4">有薪休息</option>
+
+</select>
+                                        </td>
+                                    </tr>
+                                </table>
+                            </td>
+                        </tr>
+
+                    </table>
+                </div>
+                <div class="popupWindow" id="divAutoKQPC" style="width: 160px">
+                    <table cellspacing="0" cellpadding="0" width="100%" class="tableLine">
+                        <tr>
+                            <td align="right" style="background-color: Blue;">
+                                <span style="cursor: hand" onclick="jsAreaClose('divAutoKQPC')">
+                                    <img alt="关闭" src="../../../Images/Close.JPG" border="0" /></span>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td align="center" style="height: 30px; float: left;">
+                                <span id="Label7" style="display:inline-block;width:80px;">匹配班次日期:</span>
+                                <input name="txtHQKQBCRQ" type="text" id="txtHQKQBCRQ" onfocus="setday(this)" size="8" />
+                            </td>
+                        </tr>
+                        <tr>
+                            <td align="center" style="height: 30px">
+                                <input name="btnAutoKQPC" type="button" id="btnAutoKQPC" width="10px" value="确定" onclick="AutoKQPC()" class="btn" />
+                            </td>
+                        </tr>
+                    </table>
+                </div>
+                <div class="popupWindow" id="divSJCQJB" style="width: 200px">
+                    <table cellspacing="0" cellpadding="0" width="100%" class="tableLine">
+                        <tr>
+                            <td align="right" style="background-color: Blue;">
+                                <span style="cursor: hand" onclick="jsAreaClose('divSJCQJB')">
+                                    <img alt="关闭" src="../../../Images/Close.JPG" border="0" /></span>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td align="center" style="height: 30px; text-align: left">
+                                <span id="Label11">人工指定出勤时间</span>:
+                                <input name="chkRGZDCQSJ" type="checkbox" id="chkRGZDCQSJ" onchange="chkRGZDCQSJChanged()" />
+                            </td>
+                        </tr>
+                        <tr>
+                            <td align="center" style="height: 30px;">
+                                <span id="Label10">实出勤正班</span>:
+                                <input name="txtSJCQZB" type="text" id="txtSJCQZB" style="width:120px;" />
+                            </td>
+                        </tr>
+                        <tr>
+                            <td align="center" style="height: 30px;">
+                                <span id="Label12">实出勤加班</span>:
+                                <input name="txtSJCQJB" type="text" id="txtSJCQJB" style="width:120px;" />
+                            </td>
+                        </tr>
+                        <tr>
+                            <td align="center" style="height: 30px">
+                                <input type="submit" name="btnSaveSJCQ" value="· 确定 ·" onclick="javascript:showdiv(&#39;系统正在从后台提取数据&lt;br/>请稍候........ &lt;br/> &#39;);" id="btnSaveSJCQ" style="width:60px;" />
+                            </td>
+                        </tr>
+                    </table>
+                </div>
+                <div class="popupWindow" id="divPopRemark" style="width: 120px">
+                    <table cellspacing="0" cellpadding="0" width="100%" class="tableLine">
+                        <tr>
+                            <td align="right" style="background-color: Blue;">
+                                <span style="cursor: hand" onclick="jsAreaClose('divPopRemark')">
+                                    <img alt="关闭" src="../../../Images/Close.JPG" border="0" /></span>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td align="center" style="height: 30px">
+                                <input name="Button12" type="button" id="Button12" value="【全选】" style="background-color: White; width: 100%; border: 0; cursor: pointer" onclick="SelectALL()" />
+                            </td>
+                        </tr>
+                        <tr>
+                            <td align="center" style="height: 30px">
+                                <input name="Button11" type="button" id="Button11" value="【修改选择数据】" style="background-color: White; width: 100%; border: 0; cursor: pointer" onclick="OpenPopRemark(&#39;2&#39;);" />
+                            </td>
+                        </tr>
+                    </table>
+                </div>
+
+                <div class="popupWindow" id="DivSelectYBCS" style="width: 120px">
+                    <table cellspacing="0" cellpadding="0" width="100%" class="tableLine">
+                        <tr>
+                            <td align="right" style="background-color: Blue;">
+                                <span style="cursor: hand" onclick="jsAreaClose('DivSelectYBCS')">
+                                    <img alt="关闭" src="../../../Images/Close.JPG" border="0" /></span>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td align="center" style="height: 30px">
+                                <span id="lblCurrent_YBCS" onclick="showYBCSWindow(&#39;0&#39;)" style="cursor:pointer;">【当前数据】</span>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td align="center" style="height: 30px">
+                                <span id="lblSelect_YBCS" onclick="showYBCSWindow(&#39;1&#39;)" style="cursor:pointer;">【选择数据】</span>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td align="center" style="height: 30px">
+                                <a id="btnSelectAllYBCS" href="javascript:__doPostBack(&#39;btnSelectAllYBCS&#39;,&#39;&#39;)" style="display:inline-block;width:100%;">【全选】</a>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td align="center" style="height: 30px">
+                                <a id="btnCancelAllYBCS" href="javascript:__doPostBack(&#39;btnCancelAllYBCS&#39;,&#39;&#39;)" style="display:inline-block;width:100%;">【取消全选】</a>
+                            </td>
+                        </tr>
+                    </table>
+                </div>
+                <div class="popupWindow" id="DivSelectQTCQXS" style="width: 120px">
+                    <table cellspacing="0" cellpadding="0" width="100%" class="tableLine">
+                        <tr>
+                            <td align="right" style="background-color: Blue;">
+                                <span style="cursor: hand" onclick="jsAreaClose('DivSelectQTCQXS')">
+                                    <img alt="关闭" src="../../../Images/Close.JPG" border="0" /></span>
+                            </td>
+                        </tr>
+                        <tr style="display: none;">
+                            <td align="center" style="height: 30px">
+                                <span id="lblCurrent_QTCQXS" onclick="showtQTCQXSWindow(&#39;0&#39;)" style="cursor:pointer;">【当前数据】</span>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td align="center" style="height: 30px">
+                                <span id="lblSelect_QTCQXS" onclick="showtQTCQXSWindow(&#39;1&#39;)" style="cursor:pointer;">【选择数据】</span>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td align="center" style="height: 30px">
+                                <a id="LinkButton1" href="javascript:__doPostBack(&#39;LinkButton1&#39;,&#39;&#39;)" style="display:inline-block;width:100%;">【全选】</a>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td align="center" style="height: 30px">
+                                <a id="LinkButton2" href="javascript:__doPostBack(&#39;LinkButton2&#39;,&#39;&#39;)" style="display:inline-block;width:100%;">【取消全选】</a>
+                            </td>
+                        </tr>
+                    </table>
+                </div>
+                <div class="popupWindow" id="DivYBCS" style="width: 300px">
+                    <table cellspacing="0" cellpadding="0" width="100%" class="tableLine">
+                        <tr>
+                            <td align="right" style="background-color: Blue;" colspan="2">
+                                <span style="cursor: hand" onclick="jsAreaClose('DivYBCS')">
+                                    <img alt="关闭" src="../../../Images/Close.JPG" border="0" /></span>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td align="center" style="height: 30px; text-align: left" colspan="2">
+                                <span id="lblRGZDYBCS">人工指定夜班次数</span>:
+                                <input name="chkRGZDYBCS" type="checkbox" id="chkRGZDYBCS" onchange="chkRGZDYBCSChanged()" />
+                            </td>
+                        </tr>
+                        <tr>
+                            <td align="right" style="width: 30px; height: 25px">
+                                <span id="lblYBCS">夜班次数</span>:
+                            </td>
+                            <td align="left" style="width: 100px; height: 25px">
+                                <input name="txtYBCS" type="text" id="txtYBCS" style="width:100%;" />
+                            </td>
+                        </tr>
+                        <tr>
+                            <td align="center" style="height: 30px" colspan="2">
+                                <input type="submit" name="btnOK_YBCS" value="· 确定 ·" onclick="javascript:showdiv(&#39;系统正在从后台提取数据&lt;br/>请稍候........ &lt;br/> &#39;);" id="btnOK_YBCS" style="width:60px;" />
+                            </td>
+                        </tr>
+                    </table>
+                </div>
+                <div class="popupWindow" id="DivQTCQXS" style="width: 200px">
+                    <table cellspacing="0" cellpadding="0" width="100%" class="tableLine">
+                        <tr>
+                            <td align="right" style="background-color: Blue;" colspan="2">
+                                <span style="cursor: hand" onclick="jsAreaClose('DivQTCQXS')">
+                                    <img alt="关闭" src="../../../Images/Close.JPG" border="0" /></span>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td align="right" style="width: 100px; height: 25px">
+                                <span id="lblQTCQXS">其它出勤小时</span>:
+                            </td>
+                            <td align="left" style="width: 100px; height: 25px">
+                                <input name="txtQTCQXS" type="text" id="txtQTCQXS" style="width:100%;" />
+                            </td>
+                        </tr>
+                        <tr>
+                            <td align="center" style="height: 30px" colspan="2">
+                                <input type="submit" name="btnOK_QTCQXS" value="· 确定 ·" onclick="javascript:showdiv(&#39;系统正在从后台提取数据&lt;br/>请稍候........ &lt;br/> &#39;);" id="btnOK_QTCQXS" style="width:60px;" />
+                            </td>
+                        </tr>
+                    </table>
+                </div>
+                
+                
+<script type="text/javascript">
+    function openWebsite() {
+        // 使用 window.open 打开新窗口
+        window.open("http://www.hbcxsoft.com", "_blank");
+    }
+</script>
+<table style="width: 100%; text-align: center" border="0" cellpadding="0" cellspacing="0">
+    <tr>
+        <td valign="middle" style="height: 18px">
+            <div style="text-align: center;">
+                <a onclick="openWebsite(); return false;" id="Copyright1_lblCopyright" href="javascript:__doPostBack(&#39;Copyright1$lblCopyright&#39;,&#39;&#39;)" style="color:Gray;">版权所有© 2015-2026 深圳市华博创新科技有限公司</a>
+            </div>
+        </td>
+    </tr>
+</table>
+
+            |0|hiddenField|__EVENTTARGET||0|hiddenField|__EVENTARGUMENT||0|hiddenField|__LASTFOCUS||59904|hiddenField|__VIEWSTATE|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|8|hiddenField|__VIEWSTATEGENERATOR|D001816D|1|hiddenField|__SCROLLPOSITIONX|0|1|hiddenField|__SCROLLPOSITIONY|0|0|hiddenField|__VIEWSTATEENCRYPTED||0|asyncPostBackControlIDs|||0|postBackControlIDs|||14|updatePanelIDs||tUpdatePanel1,|0|childUpdatePanelIDs|||13|panelsToRefreshIDs||UpdatePanel1,|4|asyncPostBackTimeout||3600|48|formAction||./Add.aspx?QXID=2553&MenuTree=1&LoginUserID=2474|360|scriptBlock|ScriptContentWithTags|{"text":"\n//\u003c![CDATA[\nwindow.ComponentArt_Atlas=1;if(document.forms[0]){window.ComponentArt_OldSubmitHandler=document.forms[0].onsubmit;if(document.forms[0].addEventListener){document.forms[0].addEventListener(\u0027submit\u0027,new Function(\u0027e\u0027,\u0027ComponentArt_FormSubmitHandler(e)\u0027),false);}}\n//]]\u003e\n","type":"text/javascript"}|213|scriptBlock|ScriptPath|/ScriptResource.axd?d=5vXFugfviKtFp7bcC-KirJlstsQ9NmtxMyOifXtUG19dqQRREhVsC4C-1cGk72hlQBO5rFEZjvqNzyqyYdlsn8Dr-c3qoKylRerw6NZN5axEI12Kv_w072NigDCWGx9wL2t2yvosOYeDUK2wBDz7WssSUIPezfjSQ-lYaWLPUas1&t=ffffffffd1a9a7f4|213|scriptBlock|ScriptPath|/ScriptResource.axd?d=sZyfnlSJP-Sl7WyZYLIQ-4ty6mFOAkThoAK4NHVqOo3ZZ3O5MJgg9-jlavj0gNnqYkj_0HU4pnnaY1ftD9pVbjhkTmkUHsZ_WZ5lFbRK79q7RVHNbvLHQC1JHUMdYvVVGUopqpGKBGuRL_dU67dN6yucNIGb-wehlEU1mB3tn6k1&t=ffffffffd1a9a7f4|213|scriptBlock|ScriptPath|/ScriptResource.axd?d=4sC0t_BbPkUK8y-4qCgdw6C3pcgTmxc7n9ZpHOQJnUejXDGaSfqWOg7nO_xOrTZ9JnNhAgxRi2ADyafwavHfXQtOTegSS0EKDgBS8X9ipyoDXAaUblknY3Lzt8qBaRPA83D4AsbsszKDLg6A407iYLvc_-uWOTQ_DQSbTpk7nSw1&t=ffffffffd1a9a7f4|213|scriptBlock|ScriptPath|/ScriptResource.axd?d=5vXFugfviKtFp7bcC-KirJlstsQ9NmtxMyOifXtUG19dqQRREhVsC4C-1cGk72hlQBO5rFEZjvqNzyqyYdlsn8Dr-c3qoKylRerw6NZN5axEI12Kv_w072NigDCWGx9wL2t2yvosOYeDUK2wBDz7WssSUIPezfjSQ-lYaWLPUas1&t=ffffffffd1a9a7f4|213|scriptBlock|ScriptPath|/ScriptResource.axd?d=rlcV4eSSVyC44zrAvcbA2jdDNcK2k50fFEOP1WemSy6QYsLBLWDq0KTGJfQRE_R7ClUTXaSJZ0qmIP5_ZKJ9-NsM57S9Pr0cNPtr0lX8VDj2d19AQ_IstPfsUbjAVyC1zFfrX7iqqyy818y7n226BQeNskzWNpNmGNcugCpLTyk1&t=ffffffffd1a9a7f4|213|scriptBlock|ScriptPath|/ScriptResource.axd?d=1NLB7B-SIzQ-bvwNm_t7NIqnd26zLMXnREhYbB_CXrJ4p-BiscLyue-DVd5XpZakV8PYsQWZsKY7Ih1xofMlLjzL3XVPMzLCx8cVFrMpgCntGfdFf08J0ru77P00zOmO530gPRfbAxz3QiNFOYPB3h0-WwXWWTVWzeuER79y8Gs1&t=ffffffffd1a9a7f4|213|scriptBlock|ScriptPath|/ScriptResource.axd?d=QI_BwYe0wj3zgH44-wuWHPPI0jMHqr1QZsCG0REaw0i9PFc5zGHtUY0SYHPHnsZRSWcfKZpDhMRSytrrFDUjgb4w71E0zDNAdDhDw-NjQJrPspO5DZUEdbqbU1p7UYkTokDWiUOUsRDSdadCofXwYDdoZcjM9KHlx5fcjxjA5vM1&t=ffffffffd1a9a7f4|213|scriptBlock|ScriptPath|/ScriptResource.axd?d=ZvznrR_NofYTsHZK65p40aklRMMZIGMLrdCSwnF7UKaskHXWBsxDjeqp98nfg2p0mC6dtSodiiseWe2G0NnKqDv7oRHCwvgbqVgLO6D6TiL-qMLAd6ke0gHTxEE4ttX00BHk1D79Oo4CbcJe6GFMrS7KfMuzesPW1gUpje4JakE1&t=ffffffffd1a9a7f4|213|scriptBlock|ScriptPath|/ScriptResource.axd?d=hbla_usHJbQy1ZSmSQsldOcI6NZEk_mRq53Bs7LJYmMqNvPu4nBOL_vXDhaQGgvtXvRGxfxxlajNpry4QnKukvlge0ywtgNY0vD7jqYVZ_da3B-KmX9doj2hDApuQX5f2XrvSlO4mSxX5SC0z0BN8fiYHYD95dTTk5hfkPIkP1s1&t=ffffffffd1a9a7f4|198|scriptStartupBlock|ScriptContentWithTags|{"text":" ExecFunction(\u0027closediv\u0027); ExecFunction(\u0027ReSet\u0027); ExecFunction(\u0027Reset\u0027); ExecFunction(\u0027TextAutoHeight\u0027);","type":"text/javascript","charset":"UTF-8"}|198|scriptStartupBlock|ScriptContentWithTags|{"text":" ExecFunction(\u0027closediv\u0027); ExecFunction(\u0027ReSet\u0027); ExecFunction(\u0027Reset\u0027); ExecFunction(\u0027TextAutoHeight\u0027);","type":"text/javascript","charset":"UTF-8"}|198|scriptStartupBlock|ScriptContentWithTags|{"text":" ExecFunction(\u0027closediv\u0027); ExecFunction(\u0027ReSet\u0027); ExecFunction(\u0027Reset\u0027); ExecFunction(\u0027TextAutoHeight\u0027);","type":"text/javascript","charset":"UTF-8"}|198|scriptStartupBlock|ScriptContentWithTags|{"text":" ExecFunction(\u0027closediv\u0027); ExecFunction(\u0027ReSet\u0027); ExecFunction(\u0027Reset\u0027); ExecFunction(\u0027TextAutoHeight\u0027);","type":"text/javascript","charset":"UTF-8"}|198|scriptStartupBlock|ScriptContentWithTags|{"text":" ExecFunction(\u0027closediv\u0027); ExecFunction(\u0027ReSet\u0027); ExecFunction(\u0027Reset\u0027); ExecFunction(\u0027TextAutoHeight\u0027);","type":"text/javascript","charset":"UTF-8"}|

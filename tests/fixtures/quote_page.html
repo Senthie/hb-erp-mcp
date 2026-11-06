@@ -1,0 +1,973 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//Dtd html 4.0 Transitional//EN" >
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <title>【客户报价需求】新建</title>
+    <link href="../../../Style.css" type="text/css" rel="stylesheet" />
+    <link href="../../../treeStyle.css" type="text/css" rel="stylesheet" />
+    <link href="../../../CSS/PopuWindow.css" type="text/css" rel="stylesheet" />
+    <link href="../../../CSS/AjaxStyle.css" type="text/css" rel="stylesheet" />
+    <link href="../../../js1/ligerUI/skins/Aqua/css/ligerui-all.css" type="text/css" rel="stylesheet" />
+</head>
+<script src="../../../js1/jquery/jquery-1.8.3.js" type="text/javascript"></script>
+<script src="../../../js1/ligerUI/js/ligerui.all.js" type="text/javascript"></script>
+<script src="../../../js1/jquery.cookie.js" type="text/javascript"></script>
+<script src="../../../js/Calendar2.js" type="text/javascript"></script>
+<script src="../../../js/jsPopup.js" type="text/javascript"></script>
+<script src="../../../js/System_Open_Base.js" type="text/javascript"></script>
+<script type="text/javascript">
+    $(document).ready(function () {
+        TextAutoHeight();
+        AsyncScriptAddErrMsg();//获取在ScriptManager控件异步的情况下错误不能够显示的问题
+    });
+    function AutoCPZLlistVisible(IsShow) {
+        var $targetTd = $("#tdCPZLLIst");
+        var $tables = $targetTd.find("table");
+        var $elements = $tables.find("tr.HCBX_Brow,td.HCBX_Brow,span.HCBX_Brow");
+        if ($elements != null) {
+            if (IsShow == "1") {
+                $elements.show();
+            }
+            else {
+                $elements.hide();
+            }
+        }
+    }
+    function RefeshCPZLlistRecords() {
+        $HB("btnRefeshCPZLlistRecords").click();
+    }
+    function RefeshgvGrid() {
+        $HB("btnRefeshgvGrid").click();
+    }
+    function RefeshAllData() {
+        $HB("btnRefeshAllData").click();
+    }
+    function SetCPMS(CPID) {
+        $HB("lblSelectCPZLPID").value = CPID;
+        onConfirmClickByID("系统将删除目前数据，重新生成数据，是否继续?", "btnModifyCPMS", "");
+    }
+    function OpenCPMXForm() {
+        $HB("btnSelectCPMXForm").click();
+    }
+    function OpenSelectExpor(CPID, CPMC) {
+        DataWaiting();
+        $HB("txtExportCPID").value = CPID;
+        $HB("lblSelectCPZLPID").value = CPMC;
+        $HB("btnSelectExport").click();
+    }
+    //刷新界面
+    function RefreshWindow(IsShowMsg) {
+        InputData("lblShowMsg", IsShowMsg);
+        if (IsShowMsg == "1")
+            DataWaiting();
+        $HB("btnRefreshWindow").click();
+    }
+    // 调用部件资料
+    function OpenInputBJZLData(ID, PID) {
+        DataWaiting();
+        InputData("lblSelectBJZLID", ID);
+        InputData("lblSelectBJZLPID", PID);
+        if ($HB("btnSelectBJZL") != null)
+            $HB("btnSelectBJZL").click();
+    }
+    //新建部件资料
+    function OpenNewBJZLData(PID) {
+        DataWaiting();
+        InputData("lblSelectBJZLPID", PID);
+        if ($HB("btnNewBJGXZL") != null)
+            $HB("btnNewBJGXZL").click();
+    }
+    //调用部件工序
+    function OpenInputBJGXZLData(PID, BJID, GXLB, TYSC) {
+        DataWaiting();
+        InputData("lblSelectCPZLPID", PID);
+        InputData("lblSelectBJZLID", BJID);
+        InputData("lblSelectBJGXLB", GXLB);
+        InputData("txtTYSC", TYSC);
+        if ($HB("btnSelectBJGXZL") != null)
+            $HB("btnSelectBJGXZL").click();
+    }
+    //调用生产机台
+    function OpenInputBJJTZLData(PID, BJID) {
+        DataWaiting();
+        InputData("lblSelectCPZLPID", PID);
+        InputData("lblSelectBJZLID", BJID);
+        if ($HB("btnSelectBJJTZL") != null)
+            $HB("btnSelectBJJTZL").click();
+    }
+    //调用部件辅料
+    function OpenInputBJFLData(PID, BJID) {
+        DataWaiting();
+        InputData("lblSelectCPZLPID", PID);
+        InputData("lblSelectBJZLID", BJID);
+        if ($HB("btnSelectBJFL") != null)
+            $HB("btnSelectBJFL").click();
+
+    }
+    //调用产品工序
+    function OpenInputCPGXZLData(CPID, PID) {
+        DataWaiting();
+        InputData("lblSelectCPZLID", CPID);
+        InputData("lblSelectCPZLPID", PID);
+        if ($HB("btnSelectCPGXZL") != null)
+            $HB("btnSelectCPGXZL").click();
+    }
+    //调用产品辅料
+    function OpenInputCPFLData(CPID, PID) {
+        DataWaiting();
+        InputData("lblSelectCPZLID", CPID);
+        InputData("lblSelectCPZLPID", PID);
+        if ($HB("btnSelectCPFL") != null)
+            $HB("btnSelectCPFL").click();
+    }
+    //调出套装产品数量资料
+    function OpenInputTZCPZL(ID) {
+        DataWaiting();
+        $HB("lblSelectTZCPZLID").value = ID;
+        $HB("Btn_AddTZSL").click();
+    }
+    //调出产品数量资料
+    function OpenInputCPSLZLData(ID, PID, CPID) {
+        DataWaiting();
+        $HB("lblSelectCPSLZL").value = ID;
+        $HB("lblSelectCPZLPID").value = PID;
+        $HB("lblSelectCPZLID").value = CPID;
+        $HB("btnSelectCPSLZL").click();
+    }
+    //调用产品送货信息
+    function OpenInputCPSHZLData(ID, CPID, PID) {
+        DataWaiting();
+        $HB("lblSelectCPSLZL").value = ID;
+        $HB("lblSelectCPZLID").value = CPID;
+        $HB("lblSelectCPZLPID").value = PID;
+        $HB("btnSelectCPSHZL").click();
+    }
+    function OnDBClickOpenData(ID, PID, CPID) {
+        DataWaiting();
+        $HB("lblSelectBJZLID").value = ID;
+        $HB("lblSelectCPZLID").value = CPID;
+        $HB("lblSelectCPZLPID").value = PID;
+        $HB("btnSelectTLGL").click();
+    }
+    //产品做货指引
+    function OpenInputCPZLBGData(CPID, CPMC) {
+        DataWaiting();
+        $HB("txtExportCPID").value = CPID;
+        $HB("lblSelectCPZLPID").value = CPMC;
+
+        $HB("btnSelectCPZLBG").click();
+    }
+    //调出产品资料
+    function OpenInputCPZLData(ID, PID, OptionStr) {
+        if (($HB("lblSelectCPZLID") != null) && ($HB("lblSelectCPZLPID") != null)) {
+            $HB("lblSelectCPZLID").value = ID;
+            $HB("lblSelectCPZLPID").value = PID;
+            switch (OptionStr) {
+                case "0": //修改
+                    if ($HB("btnSelectCPZL") != null) {
+                        DataWaiting();
+                        $HB("btnSelectCPZL").click();
+                    }
+                    break;
+                case "1": //删除
+                    $.ligerDialog.confirm(ChineseStrToEnglish("是否删除当前产品数据?"),
+                         function (yes) {
+                             if (yes) {
+                                 if ($HB("btnDeleteCPZL") != null) {
+                                     DataWaiting();
+                                     $HB("btnDeleteCPZL").click();
+                                 }
+                             }
+                         });
+                    break;
+            }
+        }
+    }
+
+    function OpenInputMBCPZLData(ID, PID, CPMBID) {
+        DataWaiting();
+        if (($HB("lblSelectCPZLID") != null) && ($HB("lblSelectCPZLPID") != null)) {
+            $HB("lblSelectCPZLID").value = ID;
+            $HB("lblSelectCPZLPID").value = PID;
+            $HB("lblSelectCPMBID").value = CPMBID;
+            if ($HB("btnSelectMBCPZL") != null)
+                $HB("btnSelectMBCPZL").click();
+        }
+    }
+    //客供样板管理
+    function OpenInputKHYBData(ID, PID, OptionStr) {
+        DataWaiting();
+        $HB("lblSelectCPZLID").value = ID;
+        $HB("lblSelectCPZLPID").value = PID;
+        $HB("btnSelectKHYB").click();
+    }
+    //集装箱信息
+    function OpenbtnJZXXS() {
+        DataWaiting();
+        $HB("btnSelectJZXXS").click();
+    }
+    //修改某字段的值
+    function ModifyFieldValue(CPID, FieldName, FormCaption) {
+        DataWaiting();
+        $HB("lblSelectCPZLID").value = CPID;
+        $HB("txtFieldName").value = FieldName;
+        $HB("txtFormCaption").value = FormCaption;
+        $HB("btnSelectFieldValue").click();
+    }
+    function AddInputData() {
+        DataWaiting();
+        $HB("btnAddInputData").click();
+    }
+    //打开材料图片
+    function OpenSelectCLTP(ID) {
+        DataWaiting();
+        InputData("lblSelectCPZLID", ID);
+        if ($HB("btn_Display_CLTP") != null)
+            $HB("btn_Display_CLTP").click();
+    }
+    ////供应商材料价格反馈
+    //function Display_GYSCLFK(PID) {
+    //    DataWaiting();
+    //    InputData("lblSelectCPZLID", PID);
+    //    if ($HB("Btn_SelectGYSCLFK") != null)
+    //        $HB("Btn_SelectGYSCLFK").click();
+    //}
+    function OnCheckRefreshWindow() {
+        DataWaiting();
+        $HB("btnCheckRefreshWindow").click();
+    }
+    function ReSet() {
+        var winWidth = GetwinWidth();
+        var winHeight = GetwinHeight();
+        SetControlWidth("divbody", winWidth);
+        SetControlHeight("divbody", winHeight);
+        if ($HB("Pan_gridView7") != null) {
+            SetControlWidth("Pan_gridView7", winWidth - 5);
+            SetControlHeight("Pan_gridView7", winHeight - 30);
+            GetPanScrollBackCookie("Pan_gridView7");
+        }
+        MainHeight = GetControlHeight("divMain");
+        gVFixTitle("gViewDiv", "gridView", winWidth - 25, 150, $HB("lblgVQXBH").value + "_20");
+        gVFixTitle("gView1Div", "gridView1", winWidth - 25, winHeight - MainHeight - 130, $HB("lblgVQXBH").value + "_101");
+        gVFixTitle("gView2Div", "gridView2", winWidth - 25, winHeight - MainHeight - 130, $HB("lblgVQXBH").value + "_104");
+        gVFixTitle("gView3Div", "gridView3", winWidth - 25, winHeight - MainHeight - 130, $HB("lblgVQXBH").value + "_105");
+    }
+</script>
+
+<body id="body" onresize="ReSet()" onload="ReSet()" oninit="ReSet()" oncontextmenu="return false">
+    <form name="form1" method="post" action="./Add.aspx?id=33e3099b-f9bc-4c36-925d-4b10fff7284a&amp;Option=3&amp;QXID=873&amp;MenuTree=1&amp;LoginUserID=2474" id="form1">
+<div>
+<input type="hidden" name="__EVENTTARGET" id="__EVENTTARGET" value="" />
+<input type="hidden" name="__EVENTARGUMENT" id="__EVENTARGUMENT" value="" />
+<input type="hidden" name="__VIEWSTATE" id="__VIEWSTATE" value="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" />
+</div>
+
+<script type="text/javascript">
+//<![CDATA[
+var theForm = document.forms['form1'];
+if (!theForm) {
+    theForm = document.form1;
+}
+function __doPostBack(eventTarget, eventArgument) {
+    if (!theForm.onsubmit || (theForm.onsubmit() != false)) {
+        theForm.__EVENTTARGET.value = eventTarget;
+        theForm.__EVENTARGUMENT.value = eventArgument;
+        theForm.submit();
+    }
+}
+//]]>
+</script>
+
+
+<script src="/WebResource.axd?d=pynGkmcFUV13He1Qd6_TZDsrbRfRgZ0uznzxsX4yBCaFm_GcTjTAsAleHIz5E7GgKUSm9glYj4afLHZ-27QtXA2&amp;t=637109960440000000" type="text/javascript"></script>
+
+
+<script src="/ScriptResource.axd?d=KDcvk8zP61z0MxvzzDZlk4i4iBSitBJbWM4sfa9ajHO_XtP46F1OFm_SvWrPaM17-DoboQVLtAvM46uOTPSRCxf6Cf04axO9Y2_556m87Fnj6P8PEtb8yct7HgT2fmZYCNAwc1XhVST9lv1FbYPI5yrW1TU4tdhc8Qg6UWiGbnY1&amp;t=ffffffffe6d5a9ac" type="text/javascript"></script>
+<script src="/ScriptResource.axd?d=N6fscxOt4BWGsMuWESKnfVSbFLkLmvF5Qa4rfr8m7xas2w_A7MfxqtTtvfbX3xV7d1ElJfwYD2ACCESZxRjqNADu9A280YjyGHgySEG8LHLDh-TEyr3q70e0F7aIi1T5Awa0-57EROvnZGcBldFo-Lml6mArG0NqPg2XiwMfwaSYbmlug7jFxImeYwakkNHS0&amp;t=ffffffffe6d5a9ac" type="text/javascript"></script>
+<div>
+
+	<input type="hidden" name="__VIEWSTATEGENERATOR" id="__VIEWSTATEGENERATOR" value="D455C639" />
+	<input type="hidden" name="__SCROLLPOSITIONX" id="__SCROLLPOSITIONX" value="0" />
+	<input type="hidden" name="__SCROLLPOSITIONY" id="__SCROLLPOSITIONY" value="0" />
+	<input type="hidden" name="__VIEWSTATEENCRYPTED" id="__VIEWSTATEENCRYPTED" value="" />
+	<input type="hidden" name="__EVENTVALIDATION" id="__EVENTVALIDATION" value="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" />
+</div>
+        <script type="text/javascript">
+//<![CDATA[
+Sys.WebForms.PageRequestManager._initialize('ScriptManager1', 'form1', ['tUpdatePanel1',''], [], [], 3600, '');
+//]]>
+</script>
+
+        <div id="UpdatePanel1" style="overflow-x: hidden; overflow-y: hidden; height: 100%; width: 100%">
+	
+                <div id="divbody" style="text-align: center; margin: 0 auto; overflow: auto;">
+                    <table cellspacing="0" cellpadding="0" width="100%" class="tableLine">
+                        <tr bgcolor="#e4e4e4">
+                            <td bgcolor='#E3EFFF'
+                                height="25px" align="right">
+                                <table cellspacing="0" cellpadding="0" width="100%" class="tableNoLine">
+                                    <tr>
+                                        <td width="20%" height="25px" align="left">
+                                            <span id="lblTitle" ondblclick="AddInputData()" style="color:Blue;font-size:Larger;font-weight:bold;">  【客户报价需求】</span>
+                                        </td>
+                                        <td width="80%" height="25px" align="right">
+                                            <a onclick="ShowDivBut(&#39;btnNew&#39;,&#39;正在处理[新增]数据&lt;br/>请稍候........&lt;br/> &#39;);" id="btnNew" href="javascript:__doPostBack(&#39;btnNew&#39;,&#39;&#39;)" style="color:Black;font-weight:bold;">[新增]</a>
+                                            <a onclick="{return};" id="btnDelete" disabled="disabled" style="color:Gray;font-weight:bold;">[删除]</a>
+                                            <a onclick="{return};" id="btnModify" disabled="disabled" style="color:Gray;font-weight:bold;">[修改]</a>
+                                            <a onclick="{return};" id="btnCancel" disabled="disabled" style="color:Gray;font-weight:bold;">[取消]</a>
+                                            <a onclick="{return};" id="btnSave" disabled="disabled" style="color:Gray;font-weight:bold;">[保存]</a>
+                                            <span id="lblExport" disabled="disabled" style="color:Gray;font-weight:bold;cursor: hand">[导入]</span>
+                                            <span id="lblCalZKCC" disabled="disabled" style="color:Gray;font-weight:bold;cursor: hand">[计算尺寸]</span>
+                                            <a onclick="ShowDivBut(&#39;btnCopy&#39;,&#39;正在处理[复制]数据&lt;br/>请稍候........&lt;br/> &#39;);" id="btnCopy" href="javascript:__doPostBack(&#39;btnCopy&#39;,&#39;&#39;)" style="color:Black;font-weight:bold;">[复制]</a>
+                                            <span id="lblMessage" onclick="PopupAreaShow(event, &#39;divMessage&#39;)" style="font-weight:bold;cursor: hand">[信息]</span>
+                                            <span id="lblSJCL" onclick="PopupAreaShow(event, &#39;divSJCL&#39;)" style="font-weight:bold;cursor: hand">[数据处理]</span>
+                                            <a id="btnFJ" href="javascript:__doPostBack(&#39;btnFJ&#39;,&#39;&#39;)" style="font-weight:bold;">[附件(无)]</a>
+                                            
+                                            
+                                            <a onclick="return JudgeShowDivBut(&#39;btnRefesh&#39;,&#39;[刷新]&#39;,&#39;正在处理[刷新]数据&lt;br/>请稍候........&lt;br/> &#39;,&#39;您是否要[刷新]当前记录吗？&#39;);" id="btnRefesh" href="javascript:__doPostBack(&#39;btnRefesh&#39;,&#39;&#39;)" style="color:Black;font-weight:bold;">[刷新]</a>
+                                            
+                                            <a onclick="showdiv(&#39;正在关闭当前页面&lt;br/>请稍候........&lt;br/> &#39;, false);" id="btnBack" href="javascript:__doPostBack(&#39;btnBack&#39;,&#39;&#39;)" style="font-weight:bold;">[退出] </a>
+                                        </td>
+                                    </tr>
+                                </table>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>
+                                <div id="Pan_gridView7" style="overflow: auto; width: 1000px; height: 600px; text-align: center"
+                                    onscroll="SetPanScrollBackCookie('Pan_gridView7');">
+                                    <table cellspacing="0" cellpadding="0" width="100%" class="tableLine">
+                                        <tr>
+                                            <td height="22px">
+                                                <div id="divMain" style="overflow: hidden; width: 100%; text-align: left">
+                                                    <table id="Main_Top" cellspacing="1" cellpadding="0" width="100%" border="0" class="tableNoLine">
+		<tr>
+			<td align="Right" width="8%"><font color="Black" style="font-size:10pt">表单编号：</font> </td>
+			<td width="10%" align="left"><input name="txtBDBH" type="text" value="BJXQ260204009-02" readonly="readonly" id="txtBDBH" disabled="disabled" readonly="true" style="color:Black;font-size:10pt;width:100%;word-break:break-all;word-wrap:break-word" /></td>
+			<td align="Right" width="8%"><label ID=lblYMBTtxtYGXM></label> <font color="red" style="font-size:10pt">业务员：</font> </td>
+			<td width="10%" align="left"><select name="txtYGXM" id="txtYGXM" disabled="disabled" style="color:Black;font-size:10pt;width:100%;">
+				<option value="-0-">&lt;--请选择--&gt;</option>
+				<option value="4d2f289f-2715-410c-a96a-4ed2718ecfd7">陈纯</option>
+				<option value="6BD698B0-A8DC-4DA9-A9EA-CA46BAB84118">黄秋芬</option>
+				<option value="356F7598-63C6-4EFC-B4A5-8F7884DC0C7D">赖国泉</option>
+				<option selected="selected" value="5B9A83ED-8C98-4F39-BBBC-B0469E5BC9AD">李东员</option>
+				<option value="4cf65388-1934-449a-bd86-f5b79f353517">梁英伟</option>
+				<option value="3B5464A3-EC20-4F6B-8FB5-BB88ED43B08D">林燕芬</option>
+				<option value="282b4b61-9826-48ed-aa47-7faaa383296e">林珍海</option>
+				<option value="b244a4b1-0236-4bef-94c4-be4c13ec08ec">刘汉邦</option>
+				<option value="43bfd11e-3d70-4d9b-abd0-c5ec3b8a67f2">刘汉辉</option>
+				<option value="f5d1cf16-a1c5-4680-ae10-63e9da1b1d15">任高贤</option>
+				<option value="1ac7c6f3-3bd7-43c2-b626-fd56083ce0a4">阮春亮</option>
+				<option value="543DF505-478B-4451-B725-77C3A5701E95">孙春燕</option>
+				<option value="21854DB2-5CCF-4CF0-9469-EDFDC224BCFA">王城洋</option>
+				<option value="6366d5d8-fc6e-4c23-a691-417293d52d3f">吴奎</option>
+				<option value="5B53197E-CC08-4BF0-A2D1-11730CC3B36E">吴丽如</option>
+				<option value="38d53654-4038-42db-8671-343d1d526353">吴晓茹</option>
+				<option value="7E3ECDD9-C283-49E3-8517-11F6A8C6FA6D">伍英芝</option>
+				<option value="eabbcc50-b5ae-4a94-8c71-d3abe8c43674">肖也</option>
+				<option value="da2bd172-7652-4849-b082-8bffeffb7dd0">许月霞</option>
+				<option value="33A82056-8E8F-4EF7-9551-EB94FC7DC753">颜娟</option>
+				<option value="D7B4DBE5-F8AF-4A0B-BBAF-6240E845735D">余旭东</option>
+				<option value="57DD877A-B6E3-42CB-8331-7AB937141D29">袁郑金</option>
+				<option value="118d93a5-6650-4c5b-a5f9-7cf81acba422">钟宇婷</option>
+				<option value="EC9DEA1D-084E-47B2-B29C-14F67447BB00">朱冬雨</option>
+
+			</select></td>
+			<td align="Right" width="8%"><label ID=lblYMBTtxtKHMC></label> <font color="red" style="font-size:10pt">客户资料：</font> </td>
+			<td width="30%" align="left"><input name="txtKHMC" type="text" value="ADG24" id="txtKHMC" readonly="true" style="color:Black;font-size:10pt;width:80%;word-break:break-all;word-wrap:break-word" /><input name="KHMC_Select" type="button" id="KHMC_Select" value="..." onclick="OpenKHMCWindow()" Width="8%" disabled="disabled" /></td>
+		</tr>
+		<tr>
+			<td align="Right" width="10%"><font color="Black" style="font-size:10pt">跟单员：</font> </td>
+			<td width="15%" align="left"><select name="txtGDYXM" id="txtGDYXM" disabled="disabled" style="color:Black;font-size:10pt;width:100%;">
+				<option value="-0-">&lt;--请选择--&gt;</option>
+				<option value="356F7598-63C6-4EFC-B4A5-8F7884DC0C7D">赖国泉</option>
+				<option value="5B9A83ED-8C98-4F39-BBBC-B0469E5BC9AD">李东员</option>
+				<option value="282b4b61-9826-48ed-aa47-7faaa383296e">林珍海</option>
+				<option value="1ac7c6f3-3bd7-43c2-b626-fd56083ce0a4">阮春亮</option>
+				<option value="6366d5d8-fc6e-4c23-a691-417293d52d3f">吴奎</option>
+				<option value="5B53197E-CC08-4BF0-A2D1-11730CC3B36E">吴丽如</option>
+				<option selected="selected" value="eabbcc50-b5ae-4a94-8c71-d3abe8c43674">肖也</option>
+				<option value="57DD877A-B6E3-42CB-8331-7AB937141D29">袁郑金</option>
+
+			</select></td>
+			<td align="Right" width="10%"><font color="Black" style="font-size:10pt">备注：</font> </td>
+			<td width="15%" align="left" colspan="4"><textarea name="txtRemark" rows="2" cols="20" id="txtRemark" disabled="disabled" autoHeight="true" style="color:Black;font-size:10pt;height:23px;width:100%;overflow-y: visible; overflow: visible; resize: none">
+</textarea></td>
+		</tr>
+		<tr>
+			<td width="10%" align="Right"><span id="lblCPMX" onclick="OpenCPMXForm()" style="display:inline-block;color:Blue;font-size:10pt;font-weight:bold;width:100%;cursor: hand">产品明细：</span></td>
+			<td width="15%" align="left" colspan="5"><textarea name="txtCPMX" rows="2" cols="20" id="txtCPMX" disabled="disabled" autoHeight="true" style="color:Black;font-size:10pt;height:23px;width:100%;overflow-y: visible; overflow: visible; resize: none">
+</textarea></td>
+		</tr>
+	</table>
+	
+                                                </div>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td id="tdTZCPSLlist"></td>
+	
+                                        </tr>
+                                        <tr>
+                                            <td>
+                                                <table cellspacing="0" cellpadding="0" width="100%" border="0" class="tableNoLine">
+                                                    <tr>
+                                                        <td width="10%" height="22px" bgcolor='#E3EFFF'
+                                                            align="left">
+                                                            
+                                                        </td>
+                                                        <td width="90%" height="22px" bgcolor='#E3EFFF'
+                                                            align="right">
+                                                            <table id="Main_XXK" cellspacing="1" cellpadding="0" width="100%" border="0" class="tableNoLine">
+	</table>
+	
+                                                        </td>
+                                                    </tr>
+                                                </table>
+                                            </td>
+                                        </tr>
+                                        
+                                                <tr>
+                                                    <td id="tdCPZLLIst"><table cellspacing='0' cellpadding='0' width='100%' class='tableLine'><tr><td colspan='10'><table cellspacing='0' cellpadding='0' width='100%' class='tableNoLine'><tr><td height='25px' width='8%' align='right'>产品名称：</td><td height='25px' colspan='1' width='14%' align='left'><span style='font-weight:bold;cursor:hand;color:blue' title='单击即可以调出【产品】明细信息！' onclick="OpenInputCPZLData('98AD05F8-7002-4ED2-8694-FD9E17C3B98C','33e3099b-f9bc-4c36-925d-4b10fff7284a','0')">Silke / 方脊锁线精装书 cooking book Cote d zur (FSC Mix)</span></td><td height='25px' width='6%' align='right'>是否有配件：</td><td height='25px' colspan='1' width='14%' align='left'><INPUT style = 'resize:none;border-color:#4F7FC9 #4F7FC9 #4F7FC9 #4F7FC9;border-width:0pt;border-right-width:0pt;border-bottom-width:1pt; border-left-width:0pt;word-wrap:break-word;word-break:keep-all;width:100%;overflow-y: visible  ' readonly=true VALUE='否'><td height='25px' width='6%' align='right'>规格：</td><td height='25px' colspan='1' width='14%' align='left'><INPUT style = 'resize:none;border-color:#4F7FC9 #4F7FC9 #4F7FC9 #4F7FC9;border-width:0pt;border-right-width:0pt;border-bottom-width:1pt; border-left-width:0pt;word-wrap:break-word;word-break:keep-all;width:100%;overflow-y: visible  ' readonly=true VALUE='230*297*0'><td height='25px' width='8%' align='right'>装订方式：</td><td height='25px' colspan='1' width='14%' align='left'><INPUT style = 'resize:none;border-color:#4F7FC9 #4F7FC9 #4F7FC9 #4F7FC9;border-width:0pt;border-right-width:0pt;border-bottom-width:1pt; border-left-width:0pt;word-wrap:break-word;word-break:keep-all;width:100%;overflow-y: visible  ' readonly=true VALUE='精装书'><td height='25px' width='8%' align='right'>送货方式：</td><td height='25px' colspan='1' width='14%' align='left'><INPUT style = 'resize:none;border-color:#4F7FC9 #4F7FC9 #4F7FC9 #4F7FC9;border-width:0pt;border-right-width:0pt;border-bottom-width:1pt; border-left-width:0pt;word-wrap:break-word;word-break:keep-all;width:100%;overflow-y: visible  ' readonly=true VALUE='FOB 盐田'></td></tr><tr><td height='25px' width='8%' align='right'>客户单号：</td><td height='25px' colspan='1' width='14%' align='left'><INPUT style = 'resize:none;border-color:#4F7FC9 #4F7FC9 #4F7FC9 #4F7FC9;border-width:0pt;border-right-width:0pt;border-bottom-width:1pt; border-left-width:0pt;word-wrap:break-word;word-break:keep-all;width:100%;overflow-y: visible  ' readonly=true VALUE=''></td><td height='25px' width='8%' align='right'>香港单号：</td><td height='25px' colspan='1' width='14%' align='left'><INPUT style = 'resize:none;border-color:#4F7FC9 #4F7FC9 #4F7FC9 #4F7FC9;border-width:0pt;border-right-width:0pt;border-bottom-width:1pt; border-left-width:0pt;word-wrap:break-word;word-break:keep-all;width:100%;overflow-y: visible  ' readonly=true VALUE='DY26020406-02'><td height='25px' width='6%' align='right'>数量：</td><td height='25px' colspan='1' width='14%' align='left'><INPUT style = 'resize:none;border-color:#4F7FC9 #4F7FC9 #4F7FC9 #4F7FC9;border-width:0pt;border-right-width:0pt;border-bottom-width:1pt; border-left-width:0pt;word-wrap:break-word;word-break:keep-all;width:100%;overflow-y: visible  ' readonly=true VALUE='4500本'style='font-weight:bold;cursor:hand;color:blue' title='单击即可以调出【产品数量】明细信息！' onclick="OpenInputCPSLZLData('-1','33e3099b-f9bc-4c36-925d-4b10fff7284a','98AD05F8-7002-4ED2-8694-FD9E17C3B98C')"><td height='25px' width='8%' align='right'>包装方式：</td><td height='25px' colspan='1' width='14%' align='left'><INPUT style = 'resize:none;border-color:#4F7FC9 #4F7FC9 #4F7FC9 #4F7FC9;border-width:0pt;border-right-width:0pt;border-bottom-width:1pt; border-left-width:0pt;word-wrap:break-word;word-break:keep-all;width:100%;overflow-y: visible  ' readonly=true VALUE='纸箱包装'><td height='25px' width='8%' align='right'>台板类型：</td><td height='25px' colspan='1' width='14%' align='left'><INPUT style = 'resize:none;border-color:#4F7FC9 #4F7FC9 #4F7FC9 #4F7FC9;border-width:0pt;border-right-width:0pt;border-bottom-width:1pt; border-left-width:0pt;word-wrap:break-word;word-break:keep-all;width:100%;overflow-y: visible  ' readonly=true VALUE='1.2m*0.8m(欧标)松木消毒卡板'></td></tr><tr><td height='25px' width='8%' align='right'>产品类别：</td><td height='25px' colspan='1' width='14%' align='left'><INPUT style = 'resize:none;border-color:#4F7FC9 #4F7FC9 #4F7FC9 #4F7FC9;border-width:0pt;border-right-width:0pt;border-bottom-width:1pt; border-left-width:0pt;word-wrap:break-word;word-break:keep-all;width:100%;overflow-y: visible  ' readonly=true VALUE='方脊精装书'></td></table></td></tr><tr><td colspan='10'><table cellspacing='0' cellpadding='0' width='100%' class='tableNoLine'><tr><td align='right' width='100px'>产品数量：</td><td align='center'><INPUT style = 'resize:none; font-weight:bold;cursor:hand;color:blue;word-wrap:break-word;word-break:keep-all;width:100%;overflow-y: visible;overflow-x: visible;' readonly=true VALUE='4000'style='font-weight:bold;cursor:hand;color:blue' title='单击即可以调出【产品数量】明细信息！' onclick="OpenInputCPSLZLData('0A7633F3-9907-4CBC-81B2-4AEAADEE14FF','33e3099b-f9bc-4c36-925d-4b10fff7284a','98AD05F8-7002-4ED2-8694-FD9E17C3B98C')"></td><td align='center'><INPUT style = 'resize:none; font-weight:bold;cursor:hand;color:blue;word-wrap:break-word;word-break:keep-all;width:100%;overflow-y: visible;overflow-x: visible;' readonly=true VALUE='4500'style='font-weight:bold;cursor:hand;color:blue' title='单击即可以调出【产品数量】明细信息！' onclick="OpenInputCPSLZLData('DADFC91A-1314-4FB1-80CB-BA6D6BD6E44F','33e3099b-f9bc-4c36-925d-4b10fff7284a','98AD05F8-7002-4ED2-8694-FD9E17C3B98C')"></td><td align='center'><INPUT style = 'resize:none; font-weight:bold;cursor:hand;color:blue;word-wrap:break-word;word-break:keep-all;width:100%;overflow-y: visible;overflow-x: visible;' readonly=true VALUE='5000'style='font-weight:bold;cursor:hand;color:blue' title='单击即可以调出【产品数量】明细信息！' onclick="OpenInputCPSLZLData('079CB1C9-34B6-4E84-BDEC-6D6ADC394088','33e3099b-f9bc-4c36-925d-4b10fff7284a','98AD05F8-7002-4ED2-8694-FD9E17C3B98C')"></td><td align='center'><INPUT style = 'resize:none; font-weight:bold;cursor:hand;color:blue;word-wrap:break-word;word-break:keep-all;width:100%;overflow-y: visible;overflow-x: visible;' readonly=true VALUE='.'></td><td align='center'><INPUT style = 'resize:none; font-weight:bold;cursor:hand;color:blue;word-wrap:break-word;word-break:keep-all;width:100%;overflow-y: visible;overflow-x: visible;' readonly=true VALUE='.'></td><td align='center'><INPUT style = 'resize:none; font-weight:bold;cursor:hand;color:blue;word-wrap:break-word;word-break:keep-all;width:100%;overflow-y: visible;overflow-x: visible;' readonly=true VALUE='.'></td><td align='center'><INPUT style = 'resize:none; font-weight:bold;cursor:hand;color:blue;word-wrap:break-word;word-break:keep-all;width:100%;overflow-y: visible;overflow-x: visible;' readonly=true VALUE='.'></td><td align='center'><INPUT style = 'resize:none; font-weight:bold;cursor:hand;color:blue;word-wrap:break-word;word-break:keep-all;width:100%;overflow-y: visible;overflow-x: visible;' readonly=true VALUE='.'></td><td align='center'><INPUT style = 'resize:none; font-weight:bold;cursor:hand;color:blue;word-wrap:break-word;word-break:keep-all;width:100%;overflow-y: visible;overflow-x: visible;' readonly=true VALUE='.'></td></td></tr></table></td></tr><tr><td height='25px' width='8%' align='right'>产品描述：</td><td height='25px' colspan='9' align='left'> <textarea rows='28' style = 'overflow-y: visible; overflow: visible; resize: none;line-height:1.5;border-color:#4F7FC9 #4F7FC9 #4F7FC9 #4F7FC9;border-width:0pt;border-right-width:0pt;border-bottom-width:0pt; border-left-width:0pt;word-wrap:break-word;word-break:keep-all;width:100%;' readonly=true >书籍方向：【长书脊】产品规格：【230*297*0】===============================
+【李东员   102616】产品补充描述
+请在DY26020406-01报价基础上，更新改内文和衬纸用纸，其余不变，请报底价，谢谢！
+1，更新衬纸用纸为：140gsm金太阳书纸FSC，1/1c潘通色,
+2，内文：272pp，140gsm金太阳书纸FSC，4/4c
+3，仅提供装订方式为书口三边封面连内文一起切的单价即可：方脊锁线精装书带书头布，封面连内文三边一起切整，书头布型号和颜色待定，书口三边喷1专色
+4，书纸品牌为客人指定品牌！
+===============================
+【李东员   102606】产品补充描述
+请在DY26020406报价基础上更新客户指定品牌的纸张，请报底价，谢谢
+1，更新衬纸用纸为：160gsm金太阳书纸FSC，1/1c潘通色,
+2，内文：272pp，140gsm阿伯特(ABT)书纸FSC，4/4c
+3，仅提供装订方式为书口三边封面连内文一起切的价格即可：方脊锁线精装书带书头布，封面连内文三边一起切整，书头布型号和颜色待定，书口三边喷1专色
+===============================
+【李东员   022604】
+***请报底价，谢谢
+
+封面：140gsm光粉FSC+1800gsm灰板FSC，4c+哑胶+50%局部UV/0c
+衬纸：140gsm书纸FSC，1/1c潘通色
+内文：272pp，157gsm哑粉FSC，4/4c
+装订：方脊锁线精装书带书头布，书头布型号和颜色待定，书口三边喷1专色
+包装：每本单独收缩包装
+装箱：请建议，每箱重量不超过10kg即可，外箱上下各放1张B3B坑纸板，请留意外箱尺寸不可预大。
+
+请拆分常规方脊锁线精装书带书头布合书做法 的 价格
+请选配改常规精装书的做法为：硬壳封面,衬纸,内文都切相同尺寸 的 价格(具体请参考客供图片，图片中精装封面同内文一起切三边一起喷专色)</textarea></td></tr><tr class='HCBX_Brow'><td height='25px' width='8%' align='right'><span style='font-weight:bold;cursor:hand;color:blue' onclick="ModifyFieldValue('98AD05F8-7002-4ED2-8694-FD9E17C3B98C','Remark','备注：') ">备注： </span></td><td height='25px' colspan='9' align='left'> <textarea rows='2' style = 'overflow-y: visible; overflow: visible; resize: none;line-height:1.5;border-color:#4F7FC9 #4F7FC9 #4F7FC9 #4F7FC9;border-width:0pt;border-right-width:0pt;border-bottom-width:0pt; border-left-width:0pt;word-wrap:break-word;word-break:keep-all;width:100%;' readonly=true ></textarea></td></tr><tr><td height='25px' width='8%' align='right'><span style='font-weight:bold;cursor:hand;color:blue' onclick="ModifyFieldValue('98AD05F8-7002-4ED2-8694-FD9E17C3B98C','Remark1','配件描述：') ">配件描述： </span></td><td height='25px' colspan='9' align='left'> <textarea  rows='2' style = 'overflow-y: visible; overflow: visible; resize: none;line-height:1.5;border-color:#4F7FC9 #4F7FC9 #4F7FC9 #4F7FC9;border-width:0pt;border-right-width:0pt;border-bottom-width:0pt; border-left-width:0pt;word-wrap:break-word;word-break:keep-all;width:100%;' readonly=true >否</textarea></td></tr><tr><td height='25px' width='8%' align='right'><span style='font-weight:bold;cursor:hand;color:blue' onclick="ModifyFieldValue('98AD05F8-7002-4ED2-8694-FD9E17C3B98C','Remark3','修改记录：') ">修改记录： </span></td><td height='25px' colspan='9' align='left'> <textarea  rows='2' style = 'overflow-y: visible; overflow: visible; resize: none;line-height:1.5;border-color:#4F7FC9 #4F7FC9 #4F7FC9 #4F7FC9;border-width:0pt;border-right-width:0pt;border-bottom-width:0pt; border-left-width:0pt;word-wrap:break-word;word-break:keep-all;width:100%;' readonly=true >更改材质</textarea></td></tr><tr><td height='25px' width='8%' align='right'><span style='font-weight:bold;cursor:hand;color:blue' onclick="ModifyFieldValue('98AD05F8-7002-4ED2-8694-FD9E17C3B98C','Remark4','检测项目：') ">检测项目： </span></td><td height='25px' colspan='9' align='left'> <textarea  rows='3' style = 'overflow-y: visible; overflow: visible; resize: none;line-height:1.5;border-color:#4F7FC9 #4F7FC9 #4F7FC9 #4F7FC9;border-width:0pt;border-right-width:0pt;border-bottom-width:0pt; border-left-width:0pt;word-wrap:break-word;word-break:keep-all;width:100%;' readonly=true >1、氯丙醇化合物1,3-dichloro-2-propanol (DCP) 和 monochloroo-1,2-propanediol (MCPD).Colour Fastness to Perspiration & Saliva 2、EN71:part1,part2,part3 , part9。REACH:Cadmium ,Lead, Phthalates, PAHs,Nickel Release,Organotin compounds,甲醛 ,AZO dyes,REACH SVHC，RoHS，EN62115，EU - TCEP, TCPP & TDCP of 2014/79/EU,DIN 53160 (grade 5),Aniline,Reach Formamide + flame retardants 2014/79/EU for
+foam</textarea></td></tr><tr bgcolor='#E3EFFF' class='HCBX_Brow'><td colspan='1' height='25px'><span style='cursor:hand;font-weight:bold' title='单击即可以新增【部件】明细信息！' onclick="OpenNewBJZLData('98AD05F8-7002-4ED2-8694-FD9E17C3B98C') "><font color='blue'>【新增部件】</font></span></td><td colspan='9' height='25px'></td></tr><tr class='HCBX_Brow'><td height='25px' width='8%' align='right'><span style='font-weight:bold;cursor:hand;color:Red' title='单击即可以调出部件【产品工序】明细信息！' onclick="OpenInputCPGXZLData('98AD05F8-7002-4ED2-8694-FD9E17C3B98C','33e3099b-f9bc-4c36-925d-4b10fff7284a','1') ">成品工序： </span></td><td height='25px' colspan='9' align='left'> .</td></tr><tr class='HCBX_Brow'><td height='25px' width='8%' align='right'><span style='font-weight:bold;cursor:hand;color:Red' title='单击即可以调出【产品辅料】明细信息！' onclick="OpenInputCPFLData('98AD05F8-7002-4ED2-8694-FD9E17C3B98C','33e3099b-f9bc-4c36-925d-4b10fff7284a','02') ">成品辅料：</span></td><td height='25px' colspan='9' align='left'> <textarea rows='' style = 'overflow-y: visible; overflow: visible; resize: none;line-height:1.5;border-color:#4F7FC9 #4F7FC9 #4F7FC9 #4F7FC9;border-width:0pt;border-right-width:0pt;border-bottom-width:0pt; border-left-width:0pt;word-wrap:break-word;word-break:keep-all;width:100%;' readonly=true ></textarea></td></tr><tr><td colspan='10'><table cellspacing='0' cellpadding='0' width='100%' class='tableNoLine'><tr  bgcolor='#E3EFFF'><td height='25px' width='8%' align='center' colspan='2'><span style='font-weight:bold;cursor:hand;color:blue'title='单击即可以添加【产品做货指引】记录！' onclick="OpenInputKHYBData('98AD05F8-7002-4ED2-8694-FD9E17C3B98C','33e3099b-f9bc-4c36-925d-4b10fff7284a')">【客户样板（无图）】</span></td><td height='25px' width='8%' align='center'  colspan='2'><span style='font-weight:bold;cursor:hand;color:blue' title='单击即可以添加【客供邮件内容】记录！' onclick="ModifyFieldValue('98AD05F8-7002-4ED2-8694-FD9E17C3B98C','KHEmail','【客供邮件内容】') ">【客供邮件内容（无）】</span></td></tr></table></td></tr><tr><td align='center' colspan='10'><table cellspacing='0' cellpadding='0' border='0' width='100%' class='tableNoLine'><tr><td height='25px' width='10%' align='center'><INPUT style = 'resize:none;border-color:#4F7FC9 #4F7FC9 #4F7FC9 #4F7FC9;border-width:0pt;border-right-width:0pt;border-bottom-width:1pt; border-left-width:0pt;word-wrap:break-word;word-break:keep-all;width:100%;overflow-y: visible  ' readonly=true VALUE='【产品报价结果】 'style='font-weight:bold;'></td><td width='50%'  style='font-weight:bold;'>报价已审批-------报价人：【陈亚蕊】，报价产品规格：【236×303×26】 </font></td><td width='50%'  style='font-weight:bold;'><font color=red>报价有效期：【 2026-10-26】</font></td></tr><tr><td height='25px' width='10%' align='center'><font color=red>*重点报价单*</font></td></tr><tr><td height='25px' width='10%' align='right'><font color=red>需求报价反馈：</td></td><td height='25px' width='90%' align='left' colspan='10'> <textarea rows='2' style = 'overflow-y: visible; overflow: visible; resize: none;line-height:1.5;color:Red;border-color:#4F7FC9 #4F7FC9 #4F7FC9 #4F7FC9;border-width:0pt;border-right-width:0pt;border-bottom-width:0pt; border-left-width:0pt;word-wrap:break-word;word-break:keep-all;width:100%;' readonly=true >1.因本书不适合自厂，故印后加大了报价 【【纸箱数量:5 PCS,纸箱长:322.1,纸箱宽:255.1,纸箱高:156.3】(此单采用了底价报价,请留意)</textarea></td></table> <tr><td align='right'>产品辅料：</td><td height='25px' colspan='9' align='left'> <textarea rows='1、0.015mm厚POF空白收缩膜（报价专用）
+2、SYL-408-2局部UV光油(5kg/桶)50%
+3、方脊精装书成品尺寸:230*297mm，1款1语言 长书脊，详见其他，自厂提供纸料，WF内文印刷 折排锁上书、装箱,,4000:26,4500:25.6,5000:25.1扣除税点:7(广东彩丰印刷技术有限公司)
+4、方脊精装书成品尺寸236*303*26mm，直角，长书脊，WF三边喷印1个专色,,4000:2.6,4500:2.6,5000:2.6扣除税点:7(东莞鑫昇纸品包装有限公司)
+5、书口三边喷色打样费,样品费：500元   
+6、专色油墨费（报价专用）,双面' style = 'overflow-y: visible; overflow: visible; resize: none;line-height:1.5;border-color:#4F7FC9 #4F7FC9 #4F7FC9 #4F7FC9;border-width:0pt;border-right-width:0pt;border-bottom-width:0pt; border-left-width:0pt;word-wrap:break-word;word-break:keep-all;width:100%;' readonly=true >1、0.015mm厚POF空白收缩膜（报价专用）
+2、SYL-408-2局部UV光油(5kg/桶)50%
+3、方脊精装书成品尺寸:230*297mm，1款1语言 长书脊，详见其他，自厂提供纸料，WF内文印刷 折排锁上书、装箱,,4000:26,4500:25.6,5000:25.1扣除税点:7(广东彩丰印刷技术有限公司)
+4、方脊精装书成品尺寸236*303*26mm，直角，长书脊，WF三边喷印1个专色,,4000:2.6,4500:2.6,5000:2.6扣除税点:7(东莞鑫昇纸品包装有限公司)
+5、书口三边喷色打样费,样品费：500元   
+6、专色油墨费（报价专用）,双面</textarea></td></tr><tr bgcolor='#E3EFFF'><td height='25px' colspan='14' align='center'  style='font-weight:bold;' width='100%' >拆 分 价 格 列 表</td></tr><tr><td align='center' colspan='14' height='25px'><table cellspacing='0' cellpadding='0' border='1' width='100%' class='tableLine'><tr bgcolor='#E3EFFF'><td align='center' height='25px'> 产品数量</td ><td align='center' height='25px'> 1.书本</td ><td align='center' height='25px'> 2.书本喷三边</td ><td align='center' height='25px'> 3.书本喷三边打样费</td ><td align='center' height='25px'> 5.常规书本上封面</td ></tr><tr><td align='center' height='25px'> 4000</td ><td align='center'> 3.0937</td ><td align='center'> 0.6172</td ><td align='center'> 0.0187</td ><td align='center'> 0.4666</td ></tr><tr><td align='center' height='25px'> 4500</td ><td align='center'> 2.9872</td ><td align='center'> 0.5347</td ><td align='center'> 0.0167</td ><td align='center'> 0.4657</td ></tr><tr><td align='center' height='25px'> 5000</td ><td align='center'> 2.9546</td ><td align='center'> 0.5213</td ><td align='center'> 0.015</td ><td align='center'> 0.4648</td ></tr></table> </td></tr><tr><td align='center' colspan='10'><table cellspacing='0' cellpadding='0' border='1' width='100%' class='tableLine'><tr><td colspan='13'  height='25px' align='center'  style='font-weight:bold;'>费  项  明  细</td></tr><tr><td height='25px' width='7%' align='center' bgcolor='#E3EFFF'>产品数量</td><td height='25px' width='7%' align='center'bgcolor='#E3EFFF'>成本价</td><td height='25px' width='7%' align='center'bgcolor='#E3EFFF'>币种</td><td height='25px' width='7%' align='center'bgcolor='#E3EFFF'>建议汇率</td><td height='25px' width='7%' align='center'bgcolor='#E3EFFF'>建议利润</td><td height='25px' width='7%' align='center'bgcolor='#E3EFFF'>报出单价</td><td height='25px' width='7%' align='center'bgcolor='#E3EFFF'>税率(%)</td><td height='25px' width='7%' align='center'bgcolor='#E3EFFF'>含税单价</td><td height='25px' width='7%' align='center'bgcolor='#E3EFFF'>审批单价</td><td height='25px' width='7%' align='center'bgcolor='#E3EFFF'>单款菲林费用</td><td height='25px' width='7%' align='center'bgcolor='#E3EFFF'>纸张成本</td><td height='25px' width='10%' align='center'bgcolor='#E3EFFF'>印刷及后加工成本</td><td height='25px' width='7%' align='center'bgcolor='#E3EFFF'>运输成本</td><tr><td height='25px' width='7%'align='center' >4000</td><td height='25px' width='7%' align='center'>29.71</td><td height='25px' width='7%' align='center'>美元</td><td height='25px' width='7%' align='center'>6.6693</td><td height='25px' width='7%' align='center'>0</td><td height='25px' width='7%' align='center'>4.4549</td><td height='25px' width='7%' align='center'>29.7111</td><td height='25px' width='7%' align='center'>0</td><td height='25px' width='7%' align='center'>0</td><td height='25px' width='7%' align='center'>253.86</td><td height='25px' width='7%' align='center'>7381.93</td><td height='25px' width='7%' align='center'>6671.49</td><td height='25px' width='7%' align='center'>1902.03</td><tr><td height='25px' width='7%'align='center' >4500</td><td height='25px' width='7%' align='center'>28.39</td><td height='25px' width='7%' align='center'>美元</td><td height='25px' width='7%' align='center'>6.6693</td><td height='25px' width='7%' align='center'>0</td><td height='25px' width='7%' align='center'>4.2568</td><td height='25px' width='7%' align='center'>28.3897</td><td height='25px' width='7%' align='center'>0</td><td height='25px' width='7%' align='center'>0</td><td height='25px' width='7%' align='center'>285.6</td><td height='25px' width='7%' align='center'>8288.48</td><td height='25px' width='7%' align='center'>7080.82</td><td height='25px' width='7%' align='center'>1388.11</td><tr><td height='25px' width='7%'align='center' >5000</td><td height='25px' width='7%' align='center'>28.04</td><td height='25px' width='7%' align='center'>美元</td><td height='25px' width='7%' align='center'>6.6693</td><td height='25px' width='7%' align='center'>0</td><td height='25px' width='7%' align='center'>4.2043</td><td height='25px' width='7%' align='center'>28.0399</td><td height='25px' width='7%' align='center'>0</td><td height='25px' width='7%' align='center'>0</td><td height='25px' width='7%' align='center'>317.33</td><td height='25px' width='7%' align='center'>9025.91</td><td height='25px' width='7%' align='center'>7559.88</td><td height='25px' width='7%' align='center'>1405.78</td><tr><td height='25px' width='7%' align='center' bgcolor='#E3EFFF'>CBM(m<sup>3</sup>)</td><td height='25px' width='7%' align='center'>0.002569</td><td height='25px' width='7%' align='center'bgcolor='#E3EFFF'>产品单重(kg)</td><td height='25px' width='7%' align='center'bgcolor='#E3EFFF'>1.661</td><td height='25px' width='7%' align='center'bgcolor='#E3EFFF'>送货方式【报价】</td><td height='25px' width='7%' align='center'bgcolor='#E3EFFF'>FOB盐田(普通)</td></tr></table> </td></tr><tr><tr  bgcolor='#E3EFFF'><td height='25px' colspan='14' align='center'  style='font-weight:bold;' width='100%' >选 配 项 目 列 表</td></tr><tr><td colspan='14'><table cellspacing='0' cellpadding='0' border='1' width='100%' class='tableLine'><tr  bgcolor='#E3EFFF'><td align='center' width='15%' height='22px' style='font-weight:bold;'>选配项目</td><td align='center' width='6%' height='22px' style='font-weight:bold;'>数量</td><td align='center' width='6%' height='22px' style='font-weight:bold;'>单价</td><td align='center' width='6%' height='22px' style='font-weight:bold;'>金额</td><td align='center' width='15%' height='22px' style='font-weight:bold;'>选配项目</td><td align='center' width='6%' height='22px' style='font-weight:bold;'>数量</td><td align='center' width='6%' height='22px' style='font-weight:bold;'>单价</td><td align='center' width='6%' height='22px' style='font-weight:bold;'>金额</td><td align='center' width='15%' height='22px' style='font-weight:bold;'>选配项目</td><td align='center' width='6%' height='22px' style='font-weight:bold;'>数量</td><td align='center' width='6%' height='22px' style='font-weight:bold;'>单价</td><td align='center' width='6%' height='22px' style='font-weight:bold;'>金额</td></tr><tr><td width='15%' align='left'>【产品】方脊精装书成品尺寸:230*297mm，1款1语言 长书脊，详见其他，自厂提供纸料，WF内文印刷 折排锁上书、装箱</td><td width='6%' align='right'>4000</td><td width='6%' align='right'>0</td><td width='6%' align='right'>0</td><td width='15%' align='left'>【产品】方脊精装书成品尺寸:230*297mm，1款1语言 长书脊，详见其他，自厂提供纸料，WF内文印刷 折排锁上书、装箱</td><td width='6%' align='right'>4500</td><td width='6%' align='right'>0</td><td width='6%' align='right'>0</td><td width='15%' align='left'>【产品】方脊精装书成品尺寸:230*297mm，1款1语言 长书脊，详见其他，自厂提供纸料，WF内文印刷 折排锁上书、装箱</td><td width='6%' align='right'>5000</td><td width='6%' align='right'>0</td><td width='6%' align='right'>0</td></tr></table> </td></tr><tr><td height='25px' width='8%' align='center' colspan='10'><INPUT style = 'resize:none;border-color:#4F7FC9 #4F7FC9 #4F7FC9 #4F7FC9;border-width:0pt;border-right-width:0pt;border-bottom-width:1pt; border-left-width:0pt;word-wrap:break-word;word-break:keep-all;width:100%;overflow-y: visible  ' readonly=true VALUE='【显示集装箱信息】 'style='font-weight:bold;cursor:hand;color:blue'  onclick="OpenbtnJZXXS()"></td></tr></table> </td>
+	
+                                                </tr>
+                                                <tr>
+                                                    <td>
+                                                        <table cellspacing="1" cellpadding="0" width="100%" border="0" class="tableNoLine">
+                                                            <tr>
+                                                                <td bgcolor='#E3EFFF'
+                                                                    height="25" width="8%" align="left">&nbsp;
+                                                                </td>
+                                                                <td bgcolor='#E3EFFF'
+                                                                    height="25" width="*" align="left">
+                                                                    
+                                                                </td>
+                                                                <td bgcolor='#E3EFFF'
+                                                                    height="25" width="30%" align="right">
+                                                                    <a onclick="return onExcelClick(&#39;btnExportExcel&#39;);" id="btnExportExcel" href="javascript:__doPostBack(&#39;btnExportExcel&#39;,&#39;&#39;)">[导出Excel]</a>
+                                                                </td>
+                                                            </tr>
+                                                        </table>
+                                                    </td>
+                                                </tr>
+                                                <tr>
+                                                    <td>
+                                                        
+                                                    </td>
+                                                </tr>
+                                            
+                                        <tr>
+                                            <td height="22px">
+                                                <table id="Main_Foot" cellspacing="0" cellpadding="0" width="100%" border="0" class="tableNoLine">
+		<tr>
+			<td align="Right" width="5%"><font color="Black" style="font-size:10pt">制单人：</font> </td>
+			<td width="4%" align="left"><input name="txtZDR" type="text" value="李东员" id="txtZDR" disabled="disabled" style="color:Black;font-size:10pt;width:100%;word-break:break-all;word-wrap:break-word" /></td>
+			<td align="Right" width="6%"><font color="Black" style="font-size:10pt">制单日期：</font> </td>
+			<td width="6%" align="left"><input name="txtZDRQ" type="text" value="2026/10/16 14:35:32" id="txtZDRQ" disabled="disabled" style="color:Black;font-size:10pt;width:100%;word-break:break-all;word-wrap:break-word" /></td>
+			<td align="Right" width="5%"><font color="Black" style="font-size:10pt">审核人：</font> </td>
+			<td width="4%" align="left"><input name="txtSHR" type="text" value="李东员" id="txtSHR" disabled="disabled" style="color:Black;font-size:10pt;width:100%;word-break:break-all;word-wrap:break-word" /></td>
+			<td align="Right" width="6%"><font color="Black" style="font-size:10pt">审核日期：</font> </td>
+			<td width="6%" align="left"><input name="txtSHRQ" type="text" value="2026/10/16 14:41:13" id="txtSHRQ" disabled="disabled" style="color:Black;font-size:10pt;width:100%;word-break:break-all;word-wrap:break-word" /></td>
+			<td align="Right" width="5%"><font color="Black" style="font-size:10pt">报废人：</font> </td>
+			<td width="4%" align="left"><input name="txtHXR" type="text" id="txtHXR" disabled="disabled" style="color:Black;font-size:10pt;width:100%;word-break:break-all;word-wrap:break-word" /></td>
+			<td align="Right" width="6%"><font color="Black" style="font-size:10pt">报废日期：</font> </td>
+			<td width="6%" align="left"><input name="txtHXRQ" type="text" id="txtHXRQ" disabled="disabled" style="color:Black;font-size:10pt;width:100%;word-break:break-all;word-wrap:break-word" /></td>
+		</tr>
+	</table>
+	
+                                            </td>
+                                        </tr>
+                                    </table>
+                                </div>
+                            </td>
+                        </tr>
+                    </table>
+                    <table id="TableVisible" cellspacing="1" cellpadding="0" width="100%" border="0" style="display: none">
+		<tr>
+			<td height="22px" width="8%" align="right">制单人：
+                            </td>
+			<td height="22px" width="8%" align="left">
+                                
+                            </td>
+			<td height="22px" width="8%" align="right">制单日期：
+                            </td>
+			<td height="22px" width="8%" align="left">
+                                
+                            </td>
+			<td height="22px" width="8%" align="right">审核人：
+                            </td>
+			<td height="22px" width="8%" align="left">
+                                
+                            </td>
+			<td height="22px" width="8%" align="right">审核日期：
+                            </td>
+			<td height="22px" width="8%" align="left">
+                                
+                            </td>
+			<td height="22px" width="8%" align="right">报废人 ：
+                            </td>
+			<td height="22px" width="8%" align="left">
+                                
+                            </td>
+			<td height="22px" width="8%" align="right">报废日期 ：
+                            </td>
+			<td height="22px" width="8%" align="left">
+                                
+                            </td>
+		</tr>
+		<tr>
+			<td height="22px" width="8%" align="right">表单编号：
+                            </td>
+			<td height="22px" width="10%" align="left">
+                                
+                                <input type="submit" name="btnShowJSGSMS" value="..." id="btnShowJSGSMS" title="显示展开尺寸的计算值的过程" class="btn" style="width:20px;" />
+                            </td>
+			<td height="22px" width="8%" align="right">
+                                <span id="lblYGXM">业务人员：</span>
+                            </td>
+			<td height="22px" width="10%" align="left">
+                                
+                            </td>
+			<td height="22px" width="8%" align="right">
+                                <span id="lblGDY">跟单员：</span>
+                            </td>
+			<td height="22px" width="10%" align="left">
+                                
+                            </td>
+			<td height="22px" width="8%" align="right">客户资料：
+                            </td>
+			<td height="22px" align="left" width="30%">
+                                
+                                
+                            </td>
+			<td height="25px" width="15%" align="left">
+                                <select name="txtDJTX" id="txtDJTX" disabled="disabled" style="width:100%;">
+				<option value="-0-">&lt;--请选择--&gt;</option>
+				<option selected="selected" value="02">IV级(NGV)</option>
+				<option value="01">II级(标准)</option>
+				<option value="05">I级(DT)</option>
+
+			</select>
+                            </td>
+		</tr>
+		<tr>
+			<td height="22px" width="8%" align="right">联系人：
+                            </td>
+			<td height="22px" width="10%" align="left">
+                                <input name="txtLXR" type="text" value="Silke Andraschak" id="txtLXR" disabled="disabled" style="width:100%;" />
+                            </td>
+			<td height="22px" width="8%" align="right">联系电话：
+                            </td>
+			<td height="22px" width="10%" align="left">
+                                <input name="txtLXDH" type="text" id="txtLXDH" disabled="disabled" style="width:100%;" />
+                            </td>
+			<td height="22px" width="8%" align="right">套装产品否：
+                            </td>
+			<td height="22px" width="10%" align="left" colspan="3">
+                                <span disabled="disabled" style="display:inline-block;width:8%;"><input id="chkSFTZCP" type="checkbox" name="chkSFTZCP" disabled="disabled" onclick="javascript:setTimeout(&#39;__doPostBack(\&#39;chkSFTZCP\&#39;,\&#39;\&#39;)&#39;, 0)" /></span>
+                                
+                                
+                            </td>
+		</tr>
+		<tr>
+			<td height="22px" width="8%" align="right">手机：
+                            </td>
+			<td height="22px" width="10%" align="left">
+                                <input name="txtSJ" type="text" id="txtSJ" style="width:100%;" />
+                            </td>
+			<td height="22px" width="10%" align="right">传真：
+                            </td>
+			<td height="22px" width="10%" align="left">
+                                <input name="txtCZ" type="text" id="txtCZ" style="width:100%;" />
+                            </td>
+		</tr>
+		<tr>
+			<td height="22px" width="8%" align="right">备注：
+                            </td>
+			<td height="22px" align="left" colspan="5">
+                                
+                            </td>
+		</tr>
+		<tr>
+			<td height="22px" width="30%" align="right">BMID
+                            </td>
+			<td height="22px" width="*" align="left">
+                                <input name="txtBMID" type="text" value="4ca8e4a6-92c2-4cd3-bb11-6760b6499a0c" id="txtBMID" style="width:100%;" />
+                            </td>
+			<td height="22px" width="*" align="left">
+                                <input name="lblQXBH" type="text" value="873" id="lblQXBH" />
+                            </td>
+		</tr>
+		<tr>
+			<td height="22px" width="30%" align="right">BMBM
+                            </td>
+			<td height="22px" width="*" align="left">
+                                <input name="txtBMBM" type="text" value="01.03.02.01" id="txtBMBM" style="width:100%;" />
+                            </td>
+		</tr>
+		<tr>
+			<td height="22px" width="30%" align="right">YGID
+                            </td>
+			<td height="22px" width="*" align="left">
+                                <input name="txtYGID" type="text" id="txtYGID" style="width:100%;" />
+                                <input name="txtZKL" type="text" value="10" id="txtZKL" style="width:100%;" />
+                                
+                            </td>
+		</tr>
+		<tr>
+			<td height="22px" width="30%" align="right">ZDRID
+                            </td>
+			<td height="22px" width="*" align="left">
+                                <input name="txtZDRID" type="text" value="5B9A83ED-8C98-4F39-BBBC-B0469E5BC9AD" id="txtZDRID" style="width:100%;" />
+                            </td>
+		</tr>
+		<tr>
+			<td height="22px" width="30%" align="right">SHRID
+                            </td>
+			<td height="22px" width="*" align="left">
+                                <input name="txtSHRID" type="text" id="txtSHRID" style="width:100%;" />
+                            </td>
+		</tr>
+		<tr>
+			<td height="22px" width="30%" align="right">SHF
+                            </td>
+			<td height="22px" width="*" align="left">
+                                <input id="chkSHF" type="checkbox" name="chkSHF" checked="checked" /><label for="chkSHF">SHF</label>
+                            </td>
+		</tr>
+		<tr>
+			<td height="22px" width="30%" align="right">QSF
+                            </td>
+			<td height="22px" width="*" align="left">
+                                <input id="chkQSF" type="checkbox" name="chkQSF" checked="checked" /><label for="chkQSF">QSF</label>
+                            </td>
+		</tr>
+		<tr>
+			<td height="25" width="30%" align="right">JGSHRID：
+                            </td>
+			<td height="25" width="*" align="left">
+                                <input name="txtJGSHRID" type="text" id="txtJGSHRID" style="width:100%;" />
+                            </td>
+		</tr>
+		<tr>
+			<td height="25" width="30%" align="right">价格审核人 ：
+                            </td>
+			<td height="25" width="*" align="left">
+                                <input name="txtJGSHR" type="text" id="txtJGSHR" style="width:100%;" />
+                            </td>
+		</tr>
+		<tr>
+			<td height="25" width="30%" align="right">价格审核日期 ：
+                            </td>
+			<td height="25" width="*" align="left">
+                                <input name="txtJGSHRQ" type="text" id="txtJGSHRQ" style="width:100%;" />
+                            </td>
+		</tr>
+		<tr>
+			<td height="22px" width="30%" align="right">KHID
+                            </td>
+			<td height="22px" width="*" align="left">
+                                <input name="txtKHID" type="text" value="1a5dcaa3-1f7e-42df-becb-eea8250b3353" id="txtKHID" style="width:100%;" />
+                            </td>
+		</tr>
+		<tr>
+			<td height="22px" width="30%" align="right">KHBM
+                            </td>
+			<td height="22px" width="*" align="left">
+                                <input name="txtKHBM" type="text" value="01.0588" id="txtKHBM" style="width:100%;" />
+                            </td>
+		</tr>
+		<tr>
+			<td height="22px" width="30%" align="right">SFCK
+                            </td>
+			<td height="22px" width="*" align="left">
+                                <input name="txtSFCK" type="text" id="txtSFCK" style="width:100%;" />
+                            </td>
+		</tr>
+		<tr>
+			<td height="22px" width="30%" align="right">SFBF
+                            </td>
+			<td height="22px" width="*" align="left">
+                                <span style="display:inline-block;width:100%;"><input id="txtSFBF" type="checkbox" name="txtSFBF" /></span>
+                            </td>
+		</tr>
+		<tr>
+			<td height="22px" width="30%" align="right">ID
+                            </td>
+			<td height="22px" width="*" align="left">
+                                <input name="lblID" type="text" value="33e3099b-f9bc-4c36-925d-4b10fff7284a" id="lblID" />
+                            </td>
+		</tr>
+		<tr>
+			<td>
+                                
+                            </td>
+			<td>
+                                
+                            </td>
+		</tr>
+		<tr>
+			<td height="25" width="*" align="left">
+                                <input name="lblSelectTZCPZLID" type="text" id="lblSelectTZCPZLID" style="width:100%;" />
+                            </td>
+			<td height="25" width="*" align="left">
+                                <input name="txtLBID" type="text" id="txtLBID" style="width:100%;" />
+                            </td>
+			<td height="25" width="*" align="left">
+                                <input name="txtLBBM" type="text" id="txtLBBM" style="width:100%;" />
+                            </td>
+			<td height="25" width="*" align="left">
+                                <input name="txtCPID" type="text" id="txtCPID" style="width:100%;" />
+                            </td>
+			<td height="25" width="*" align="left">
+                                <input name="lblID1" type="text" id="lblID1" />
+                            </td>
+			<td height="25" width="*" align="left">
+                                <input name="lblPID" type="text" id="lblPID" />
+                                <input id="chkJSF" type="checkbox" name="chkJSF" />
+                            </td>
+			<td height="22px" width="*" align="left">
+                                <input name="lblSelectCPZLID" type="text" id="lblSelectCPZLID" />
+                                <input name="lblSelectCPMBID" type="text" id="lblSelectCPMBID" />
+                            </td>
+			<td height="22px" width="*" align="left">
+                                <input name="lblSelectCPZLPID" type="text" id="lblSelectCPZLPID" />
+                            </td>
+			<td height="22px" width="*" align="left">
+                                <input name="lblFSSL" type="text" id="lblFSSL" />
+                                <td height="22px" width="*" align="left">
+                                    <input name="lblShowMsg" type="text" id="lblShowMsg" />
+                                </td>
+                            </td>
+			<td height="22px" width="*" align="left">
+                                <input name="lblSelectBJZLID" type="text" id="lblSelectBJZLID" />
+                            </td>
+			<td height="22px" width="*" align="left">
+                                <input name="lblSelectBJZLPID" type="text" id="lblSelectBJZLPID" />
+                                <input name="txtSJFX" type="text" value="1" id="txtSJFX" />
+                                <input name="lblSelectBJGXLB" type="text" id="lblSelectBJGXLB" />
+                            </td>
+			<td height="22px" width="*" align="left">
+                                <input name="lblSelectCPSLZL" type="text" id="lblSelectCPSLZL" />
+                                <input id="chkJZXXS" type="checkbox" name="chkJZXXS" />
+                                <input name="lblDefaultCPDL" type="text" value="4" id="lblDefaultCPDL" />
+                            </td>
+			<td height="22px" width="*" align="left">
+                                <input type="submit" name="btnDeleteCPZL" value="" id="btnDeleteCPZL" />
+                                <input type="submit" name="btnSelectCPZL" value="" id="btnSelectCPZL" />
+                                <input type="submit" name="btnSelectMBCPZL" value="" id="btnSelectMBCPZL" />
+                                <input type="submit" name="btnSelectCPGXZL" value="" id="btnSelectCPGXZL" />
+                                <input type="submit" name="btnSelectCPFL" value="" id="btnSelectCPFL" />
+                                <input type="submit" name="btnSelectCPSLZL" value="" id="btnSelectCPSLZL" />
+                                <input type="submit" name="btnSelectCPZLBG" value="" id="btnSelectCPZLBG" />
+                                <input type="submit" name="btnSelectExport" value="" id="btnSelectExport" />
+                                <input type="submit" name="btnSelectKHYB" value="" id="btnSelectKHYB" />
+                                <input type="submit" name="btnSelectJZXXS" value="" id="btnSelectJZXXS" />
+                                <input type="submit" name="btnSelectCPSHZL" value="" id="btnSelectCPSHZL" />
+                                <input name="txtExportCPID" type="text" id="txtExportCPID" style="width:100%;" />
+                                <input type="submit" name="btnSelectFieldValue" value="" id="btnSelectFieldValue" />
+                                <input name="txtFieldName" type="text" id="txtFieldName" style="width:100%;" />
+                                <input name="txtFieldValue" type="text" id="txtFieldValue" style="width:100%;" />
+                                <input name="txtFormCaption" type="text" id="txtFormCaption" style="width:100%;" />
+                                <input type="submit" name="btnAddInputData" value="" id="btnAddInputData" />
+                                <input type="submit" name="btnSelectBJZL" value="" id="btnSelectBJZL" />
+                                <input type="submit" name="btnSelectBJGXZL" value="" id="btnSelectBJGXZL" />
+                                <input type="submit" name="btnSelectBJJTZL" value="" id="btnSelectBJJTZL" />
+                                <input type="submit" name="btnNewBJGXZL" value="" id="btnNewBJGXZL" />
+                                <input type="submit" name="btnSelectBJFL" value="" id="btnSelectBJFL" />
+                                <input type="submit" name="btnSelectCPMXForm" value="" id="btnSelectCPMXForm" />
+                                <input type="submit" name="btnRefreshWindow" value="" id="btnRefreshWindow" />
+                                <input id="ChkBCaleKYKC" type="checkbox" name="ChkBCaleKYKC" />
+                                <input type="submit" name="btn_Display_CLTP" value="" id="btn_Display_CLTP" />
+                                <input type="submit" name="btnSelectTLGL" value="" id="btnSelectTLGL" />
+                                <a onclick="{javascript:showdiv(&quot;系统正在读取数据&lt;br/>请稍候........ &lt;br/> &quot;)};" id="Lbtn_CPZL" href="javascript:__doPostBack(&#39;Lbtn_CPZL&#39;,&#39;&#39;)" style="font-weight:bold;"><font color="blue">【产品描述】</font></a>
+                                <a onclick="{javascript:showdiv(&quot;系统正在读取数据&lt;br/>请稍候........ &lt;br/> &quot;)};" id="Lbtn_CLQD" href="javascript:__doPostBack(&#39;Lbtn_CLQD&#39;,&#39;&#39;)" style="font-weight:normal;"><font color="blue">【材料清单】</font></a>
+                                <a id="Lbtn_TLGL" href="javascript:__doPostBack(&#39;Lbtn_TLGL&#39;,&#39;&#39;)" style="color:Blue;font-weight:normal;">【修改日志】</a>
+                                <a id="Lbtn_TLGL_DD" href="javascript:__doPostBack(&#39;Lbtn_TLGL_DD&#39;,&#39;&#39;)" style="color:Blue;font-weight:normal;">【申请单修改日志】</a>
+                                <input type="submit" name="btnCheckRefreshWindow" value="" id="btnCheckRefreshWindow" />
+                                <input type="submit" name="btnModifyCPMS" value="" id="btnModifyCPMS" />
+                                <input name="lblgVQXBH" type="text" id="lblgVQXBH" />
+                                <input name="lblgVSetQXID" type="text" id="lblgVSetQXID" />
+                                <input name="lblgVID" type="text" id="lblgVID" />
+                                <input type="submit" name="btnGetgVList" value="" id="btnGetgVList" />
+                                
+                                <input type="submit" name="btnJudgeFSDBSW" value="..." id="btnJudgeFSDBSW" title="按钮显示时,审批报价需求单自动发送待办事务给跟单员" class="btn" style="width:20px;" />
+                                <input type="submit" name="btnRefeshCPZLlistRecords" value="" id="btnRefeshCPZLlistRecords" />
+                                <input type="submit" name="btnRefeshgvGrid" value="" id="btnRefeshgvGrid" />
+                                <input type="submit" name="btnRefeshAllData" value="" id="btnRefeshAllData" />
+                                <input type="submit" name="btnTCSFDCFXPG" value="..." id="btnTCSFDCFXPG" title="按钮显示后,审批成功时,弹出是否需要导出产品风险评估单的提醒" style="width:20px;" />
+                            </td>
+		</tr>
+		<tr>
+			<td align="center" style="height: 25px">
+                                <a id="Btn_CPGJMessage" href="javascript:__doPostBack(&#39;Btn_CPGJMessage&#39;,&#39;&#39;)" style="display:inline-block;width:100%;">【产品跟进信息】</a>
+                            </td>
+		</tr>
+	</table>
+	
+                </div>
+                <div class="popupWindow" id="divExport" style="width: 150px">
+                    <table cellspacing="0" cellpadding="0" width="100%" class="tableLine">
+                        <tr>
+                            <td align="right" style="background-color: Blue;">
+                                <span style="cursor: hand" onclick="jsAreaClose('divExport')">
+                                    <img alt="关闭" src="../../../Images/Close.JPG" border="0" /></span>
+                            </td>
+                        </tr>
+                        
+                        
+                        
+                        
+                        
+                        <tr id="trCPDAExport">
+		<td align="left" style="height: 25px">
+                                <a onclick="showdiv(&#39;系统正在处理数据&lt;br/>请稍候........ &lt;br/> &#39;);" id="btn_CPDAExport" href="javascript:__doPostBack(&#39;btn_CPDAExport&#39;,&#39;&#39;)" style="display:inline-block;width:100%;">【产品档案数据】</a>
+                            </td>
+	</tr>
+	
+                        <tr id="trCPMBExport">
+		<td align="left" style="height: 25px">
+                                <a onclick="showdiv(&#39;系统正在处理数据&lt;br/>请稍候........ &lt;br/> &#39;);" id="btn_CPMBExport" href="javascript:__doPostBack(&#39;btn_CPMBExport&#39;,&#39;&#39;)" style="display:inline-block;width:100%;">【产品(精确)模板数据】</a>
+                            </td>
+	</tr>
+	
+                        <tr id="trCPMBExport_MF">
+		<td align="left" style="height: 25px">
+                                <a onclick="showdiv(&#39;系统正在处理数据&lt;br/>请稍候........ &lt;br/> &#39;);" id="btn_CPMBExport_MF" href="javascript:__doPostBack(&#39;btn_CPMBExport_MF&#39;,&#39;&#39;)" style="display:inline-block;width:100%;">【产品(模糊)模板数据】</a>
+                            </td>
+	</tr>
+	
+                        <tr id="trKHBJExport">
+		<td align="left" style="height: 25px">
+                                <a onclick="showdiv(&#39;系统正在处理数据&lt;br/>请稍候........ &lt;br/> &#39;);" id="btn_KHBJExport" href="javascript:__doPostBack(&#39;btn_KHBJExport&#39;,&#39;&#39;)" style="display:inline-block;width:100%;">【客户报价数据】</a>
+                            </td>
+	</tr>
+	
+                        <tr id="trCPHJExport">
+		<td align="left" style="height: 25px">
+                                <a onclick="showdiv(&#39;系统正在处理数据&lt;br/>请稍候........ &lt;br/> &#39;);" id="btn_CPHJExport" href="javascript:__doPostBack(&#39;btn_CPHJExport&#39;,&#39;&#39;)" style="display:inline-block;width:100%;">【产品核价数据】</a>
+                            </td>
+	</tr>
+	
+                    </table>
+                </div>
+                <div class="popupWindow" id="divMessage" style="width: 120px">
+                    <table cellspacing="0" cellpadding="0" width="100%" class="tableLine">
+                        <tr>
+                            <td align="right" style="background-color: Blue;" colspan>
+                                <span style="cursor: hand" onclick="jsAreaClose('divMessage')">
+                                    <img alt="关闭" src="../../../Images/Close.JPG" border="0" /></span>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td align="center" style="height: 25px">
+                                <a id="Btn_CheckMessage" href="javascript:__doPostBack(&#39;Btn_CheckMessage&#39;,&#39;&#39;)" style="display:inline-block;width:100%;">【审批信息】</a>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td align="center" style="height: 25px">
+                                <a id="Btn_OtherMessage" href="javascript:__doPostBack(&#39;Btn_OtherMessage&#39;,&#39;&#39;)" style="display:inline-block;width:100%;">【其他信息】</a>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td align="center" style="height: 25px">
+                                <a id="Btn_RCMessage" href="javascript:__doPostBack(&#39;Btn_RCMessage&#39;,&#39;&#39;)" style="display:inline-block;width:100%;">【日程安排】</a>
+                            </td>
+                        </tr>
+                    </table>
+                </div>
+                <div class="popupWindow" id="divCalZKCC" style="width: 160px">
+                    <table cellspacing="0" cellpadding="0" width="100%" class="tableLine">
+                        <tr>
+                            <td align="right" style="background-color: Blue;" colspan>
+                                <span style="cursor: hand" onclick="jsAreaClose('divCalZKCC')">
+                                    <img alt="关闭" src="../../../Images/Close.JPG" border="0" /></span>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td align="center" style="height: 25px">
+                                <a onclick="showdiv(&#39;系统正在计算【部件尺寸】&lt;br/>请稍候........ &lt;br/> &#39;);" id="btn_CalBJCC" href="javascript:__doPostBack(&#39;btn_CalBJCC&#39;,&#39;&#39;)" style="display:inline-block;width:100%;">【部件尺寸】</a>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td align="center" style="height: 25px">
+                                <a onclick="showdiv(&#39;系统正在计算【开版尺寸】&lt;br/>请稍候........ &lt;br/> &#39;);" id="btn_CalKBCC" href="javascript:__doPostBack(&#39;btn_CalKBCC&#39;,&#39;&#39;)" style="display:inline-block;width:100%;">【开版尺寸】</a>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td align="center" style="height: 25px">
+                                <a onclick="showdiv(&#39;系统正在计算【部件尺寸与开版尺寸】&lt;br/>请稍候........ &lt;br/> &#39;);" id="btn_CalBJCC_KBCC" href="javascript:__doPostBack(&#39;btn_CalBJCC_KBCC&#39;,&#39;&#39;)" style="display:inline-block;width:100%;">【部件尺寸与开版尺寸】</a>
+                            </td>
+                        </tr>
+                    </table>
+                </div>
+                <div class="popupWindow" id="divSJCL" style="width: 150px">
+                    <table cellspacing="0" cellpadding="0" width="100%" class="tableLine">
+                        <tr>
+                            <td align="right" style="background-color: Blue;">
+                                <span style="cursor: hand" onclick="jsAreaClose('divSJCL')">
+                                    <img alt="关闭" src="../../../Images/Close.JPG" border="0" /></span>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td align="left" style="height: 30px">
+                                <a onclick="showdiv(&#39;系统正在处理数据&lt;br/>请稍候........ &lt;br/> &#39;);" id="btnCPJGS" href="javascript:__doPostBack(&#39;btnCPJGS&#39;,&#39;&#39;)" style="display:inline-block;width:100%;">【产品结构树】</a>
+                            </td>
+                        </tr>
+                        
+                    </table>
+                </div>
+                
+            
+</div>
+    
+<script type='text/javascript' charset='UTF-8'> ExecFunction('closediv'); ExecFunction('ReSet'); ExecFunction('Reset'); ExecFunction('TextAutoHeight');</script><script type='text/javascript' charset='UTF-8'> ExecFunction('closediv'); ExecFunction('ReSet'); ExecFunction('Reset'); ExecFunction('TextAutoHeight');</script><script type='text/javascript' charset='UTF-8'> ExecFunction('closediv'); ExecFunction('ReSet'); ExecFunction('Reset'); ExecFunction('TextAutoHeight');</script><script type='text/javascript' charset='UTF-8'> ExecFunction('closediv'); ExecFunction('ReSet'); ExecFunction('Reset'); ExecFunction('TextAutoHeight');</script><script type='text/javascript' charset='UTF-8'> ExecFunction('closediv'); ExecFunction('ReSet'); ExecFunction('Reset'); ExecFunction('TextAutoHeight');</script><script type='text/javascript' charset='UTF-8'>javascript:AutoCPZLlistVisible('0')</script>
+<script type="text/javascript">
+//<![CDATA[
+
+theForm.oldSubmit = theForm.submit;
+theForm.submit = WebForm_SaveScrollPositionSubmit;
+
+theForm.oldOnSubmit = theForm.onsubmit;
+theForm.onsubmit = WebForm_SaveScrollPositionOnSubmit;
+//]]>
+</script>
+</form>
+</body>
+</html>
