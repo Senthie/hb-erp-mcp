@@ -6,9 +6,10 @@
 #   bash scripts/gen-cert.sh                    # 不给 --host 时自动收集本机 IPv4 + localhost
 #
 # 三个后端按可用性自动挑（都不需要往项目里装东西）：
-#   1) docker：复用 nginx:alpine 自带的 openssl（服务器部署 docker 时首选）
-#   2) python3 + cryptography：交给 scripts/make-cert.py
-#   3) 系统 openssl：最后兜底
+#   1) 系统 openssl（>= 1.1.1）：绝大多数 Linux 服务器自带，最省事
+#   2) docker：用 alpine 镜像 apk 装 openssl 现场签（主机没 openssl 时）
+#      —— 注意 nginx 镜像里**没有** openssl 命令，所以不用它
+#   3) python3 + cryptography：交给 scripts/make-cert.py
 #
 # 输出：$ERP_CERT_DIR/erp-tools.crt + erp-tools.key（PEM，无口令，自签 CA:TRUE）
 set -euo pipefail
@@ -21,7 +22,7 @@ DAYS="${CERT_DAYS:-825}"
 # 与 docker-compose.yml 的 ERP_CERT_DIR 保持同一个变量，避免两处打架
 OUT_DIR="${ERP_CERT_DIR:-./certs}"
 PYTHON_BIN="${PYTHON:-python3}"
-NGINX_IMAGE="${CERT_NGINX_IMAGE:-nginx:1.27-alpine}"
+ALPINE_IMAGE="${CERT_ALPINE_IMAGE:-alpine:3.20}"
 HOSTS=()
 
 log() { printf '[gen-cert] %s\n' "$*" >&2; }
@@ -36,7 +37,7 @@ usage() {
   --days       有效期天数（默认 825，Apple 客户端上限）
   -h, --help   显示本帮助
 
-环境变量: ERP_CERT_DIR / CERT_CN / CERT_DAYS / PYTHON / CERT_NGINX_IMAGE
+环境变量: ERP_CERT_DIR / CERT_CN / CERT_DAYS / PYTHON / CERT_ALPINE_IMAGE
 USAGE
 }
 
@@ -87,27 +88,28 @@ log "SAN：$SAN"
 
 chmod_key() { chmod 600 "$OUT_ABS/$CN.key" 2>/dev/null || true; }
 
-if command -v docker >/dev/null 2>&1 && docker info >/dev/null 2>&1; then
-  log "后端：docker（$NGINX_IMAGE 自带的 openssl）"
-  docker run --rm --user "$(id -u):$(id -g)" -v "$OUT_ABS:/certs" "$NGINX_IMAGE" \
-    openssl req -x509 -newkey rsa:2048 -nodes \
-      -days "$DAYS" \
-      -subj "/O=erp-tools/CN=$CN" \
-      -addext "subjectAltName=$SAN" \
-      -addext "basicConstraints=critical,CA:TRUE,pathlen:0" \
-      -addext "keyUsage=critical,digitalSignature,keyEncipherment,keyCertSign" \
-      -addext "extendedKeyUsage=serverAuth" \
-      -keyout "/certs/$CN.key" -out "/certs/$CN.crt"
-  chmod_key
-elif "$PYTHON_BIN" -c 'import cryptography' >/dev/null 2>&1; then
-  log "后端：$PYTHON_BIN + cryptography（scripts/make-cert.py）"
-  args=(--cn "$CN" --days "$DAYS" --out-dir "$OUT_ABS")
-  for h in "${HOSTS[@]}"; do args+=(--host "$h"); done
-  "$PYTHON_BIN" scripts/make-cert.py "${args[@]}"
-  chmod_key
-elif command -v openssl >/dev/null 2>&1; then
-  log "后端：系统 openssl"
-  openssl req -x509 -newkey rsa:2048 -nodes \
+# 静默 openssl 的 RSA 进度点，但保留真实报错
+run_quiet() {
+  local err
+  err="$(mktemp)"
+  if "$@" >/dev/null 2>"$err"; then
+    rm -f "$err"
+    return 0
+  fi
+  cat "$err" >&2
+  rm -f "$err"
+  return 1
+}
+
+# `-addext` 只有 OpenSSL 1.1.1+ 才有；老版本（如 CentOS 7 的 1.0.2）走别的分支
+openssl_recent() {
+  command -v openssl >/dev/null 2>&1 || return 1
+  openssl version 2>/dev/null | grep -Eq 'OpenSSL (1\.1\.1|3\.|[4-9]\.)'
+}
+
+if openssl_recent; then
+  log "后端：系统 openssl（$(openssl version | cut -d' ' -f1-2)）"
+  run_quiet openssl req -x509 -newkey rsa:2048 -nodes \
     -days "$DAYS" \
     -subj "/O=erp-tools/CN=$CN" \
     -addext "subjectAltName=$SAN" \
@@ -116,10 +118,34 @@ elif command -v openssl >/dev/null 2>&1; then
     -addext "extendedKeyUsage=serverAuth" \
     -keyout "$OUT_ABS/$CN.key" -out "$OUT_ABS/$CN.crt"
   chmod_key
+elif command -v docker >/dev/null 2>&1 && docker info >/dev/null 2>&1; then
+  # 注意：nginx 镜像里**没有** openssl 命令（只有 libssl），所以用 alpine 现场装一个
+  log "后端：docker（$ALPINE_IMAGE + apk add openssl）"
+  run_quiet docker run --rm -v "$OUT_ABS:/certs" "$ALPINE_IMAGE" sh -c "
+    set -e
+    apk add --no-cache -q openssl >/dev/null
+    openssl req -x509 -newkey rsa:2048 -nodes -days $DAYS \
+      -subj '/O=erp-tools/CN=$CN' \
+      -addext 'subjectAltName=$SAN' \
+      -addext 'basicConstraints=critical,CA:TRUE,pathlen:0' \
+      -addext 'keyUsage=critical,digitalSignature,keyEncipherment,keyCertSign' \
+      -addext 'extendedKeyUsage=serverAuth' \
+      -keyout /certs/$CN.key -out /certs/$CN.crt
+    chown $(id -u):$(id -g) /certs/$CN.key /certs/$CN.crt 2>/dev/null || true
+  "
+  chmod_key
+elif "$PYTHON_BIN" -c 'import cryptography' >/dev/null 2>&1; then
+  log "后端：$PYTHON_BIN + cryptography（scripts/make-cert.py）"
+  args=(--cn "$CN" --days "$DAYS" --out-dir "$OUT_ABS")
+  for h in "${HOSTS[@]}"; do args+=(--host "$h"); done
+  "$PYTHON_BIN" scripts/make-cert.py "${args[@]}"
+  chmod_key
 else
-  log "找不到可用后端：需要 docker，或 python3+cryptography，或 openssl"
-  log "  有 docker：docker compose pull nginx && bash scripts/gen-cert.sh --host <地址>"
-  log "  有 python：python3 -m pip install --user cryptography && bash scripts/gen-cert.sh --host <地址>"
+  log "找不到可用后端，任选一种装好后重跑："
+  log "  Ubuntu/Debian : sudo apt-get install -y openssl"
+  log "  CentOS/RHEL   : sudo dnf install -y openssl   # 需 >= 1.1.1"
+  log "  有 docker      : 保持 docker 可用即可（脚本会用 alpine 现场装 openssl）"
+  log "  有 python      : python3 -m pip install --user cryptography"
   exit 2
 fi
 

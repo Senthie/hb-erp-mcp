@@ -141,13 +141,17 @@ bash scripts/gen-cert.sh --host 192.168.1.10 --host erp-tools.lan
 # 输出目录默认取 $ERP_CERT_DIR，再默认 ./certs；也可 -o /srv/erp-tools/certs
 ```
 
-脚本按可用性自动挑后端，**不需要往项目里装 Python 依赖**：
+脚本按可用性自动挑后端，**不需要往项目里装 Python 依赖、也不会在仓库里留 venv**：
 
 | 顺序 | 后端 | 说明 |
 | --- | --- | --- |
-| 1 | `docker` | 复用已拉取的 `nginx:1.27-alpine` 自带的 openssl（服务器部署 docker 时首选） |
-| 2 | `python3` + `cryptography` | 交给 `scripts/make-cert.py` |
-| 3 | 系统 `openssl` | 最后兜底 |
+| 1 | 系统 `openssl`（≥ 1.1.1） | 绝大多数 Linux 服务器自带，最省事，不联网 |
+| 2 | `docker` | 拉 `alpine:3.20` 现场 `apk add openssl` 再签（主机没 openssl 时） |
+| 3 | `python3` + `cryptography` | 交给 `scripts/make-cert.py` |
+
+> ⚠️ **不要用 nginx 镜像签证书**：`nginx:*-alpine` 只带 `libssl`，**没有 `openssl` 命令**，
+> 直接 `docker run nginx ... openssl` 会报 `exec: line 47: openssl: not found`。
+> 脚本已改用 alpine 后端。
 
 不给 `--host` 时会自动收集本机 IPv4 并补上 `localhost`。产出
 `erp-tools.crt` + `erp-tools.key`（PEM，无口令，自签且 `CA:TRUE`，可直接当受信任根分发）。
