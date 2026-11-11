@@ -81,6 +81,8 @@ else
 fi
 
 log "构建镜像（--pull 顺带更新基础镜像）..."
+# 证书缺失会导致 nginx 起不来；--ensure 是幂等的，已有有效证书直接跳过
+bash scripts/gen-cert.sh --ensure
 docker compose build --pull
 
 log "重建并启动（只替换有变化的容器）..."

@@ -136,10 +136,19 @@ erp_quote_prepare            预览校验
 ### 5.1 生成证书
 
 ```bash
-# 服务器上一条命令搞定：给什么地址就签什么 SAN
+# 最省事：什么都不用给，SAN 自动取自 .env 的 ERP_PUBLIC_HOST
+bash scripts/gen-cert.sh
+
+# 也可以显式指定（优先级最高）
 bash scripts/gen-cert.sh --host 192.168.1.10 --host erp-tools.lan
-# 输出目录默认取 $ERP_CERT_DIR，再默认 ./certs；也可 -o /srv/erp-tools/certs
+
+# 幂等模式：证书已存在且 7 天内不过期就跳过（up.sh / deploy.sh 内部就是这么调的）
+bash scripts/gen-cert.sh --ensure
 ```
+
+来源优先级：`--host` 参数 > 同目录 `.env` 的 `ERP_PUBLIC_HOST`（逗号分隔，自动去掉 `:端口`）
+> 自动探测本机 IPv4。无论哪种都会补上 `localhost` / `127.0.0.1`，保证宿主机自检能过。
+输出目录取 `$ERP_CERT_DIR`（也会从 `.env` 读），再默认 `./certs`。
 
 脚本按可用性自动挑后端，**不需要往项目里装 Python 依赖、也不会在仓库里留 venv**：
 
@@ -153,11 +162,10 @@ bash scripts/gen-cert.sh --host 192.168.1.10 --host erp-tools.lan
 > 直接 `docker run nginx ... openssl` 会报 `exec: line 47: openssl: not found`。
 > 脚本已改用 alpine 后端。
 
-不给 `--host` 时会自动收集本机 IPv4 并补上 `localhost`。产出
-`erp-tools.crt` + `erp-tools.key`（PEM，无口令，自签且 `CA:TRUE`，可直接当受信任根分发）。
+产出 `erp-tools.crt` + `erp-tools.key`（PEM，无口令，自签且 `CA:TRUE`，可直接当受信任根分发）。
 
 **SAN 必须写全客户端实际使用的地址**：用 IP 访问就写 IP，用域名就写域名，否则 Node 客户端报
-`ERR_TLS_CERT_ALTNAME_INVALID`。`ERP_PUBLIC_HOST` 里列了几个，这里就要签几个。
+`ERR_TLS_CERT_ALTNAME_INVALID`。`--ensure` 模式会检查现有证书的 SAN，缺了会打 WARN 但不会动你的证书。
 
 > 想自己控制细节也可以直接调 `python scripts/make-cert.py --host ... --out-dir ...`
 > （需要本机有 `cryptography`），它和脚本的 python 分支是同一份实现。
@@ -261,21 +269,36 @@ flowchart LR
     A -->|HTTP| E["ERP<br/>192.168.1.199:8889"]
 ```
 
+**一条命令起栈**
+
 ```bash
-# 1) .env 只写连接信息（ERP_PASSWORD 请不要写）
+# 1) 只写 .env（ERP_PASSWORD 请不要写），证书 SAN 直接从这里取
 cp .env.example .env
 #    ERP_HOST=http://192.168.1.199:8889
-#    ERP_PUBLIC_HOST=erp-tools.lan:8443
-#    ERP_CERT_DIR=./certs            # 服务器上建议放仓库外，见 6.1
+#    ERP_PUBLIC_HOST=erp-tools.lan:8443      # 客户端实际访问的 host:port
+#    ERP_CERT_DIR=./certs                    # 服务器上建议放仓库外，见 6.1
 
-# 2) 证书 + 起容器（gen-cert.sh 自动挑 docker/python/openssl 后端）
-bash scripts/gen-cert.sh --host erp-tools.lan --host 192.168.1.226
+# 2) 起栈：缺证书就自签 → 构建 → 启动 → 健康检查
+bash scripts/up.sh
+```
+
+`up.sh` 做的事：
+
+| 步骤 | 说明 |
+| --- | --- |
+| 前置 | `docker info` 通；`.env` 存在且 `ERP_HOST` 非空（否则直接报错退出） |
+| 证书 | `gen-cert.sh --ensure`：**已有证书且 7 天内不过期就跳过**，缺失才签；SAN 取自 `ERP_PUBLIC_HOST` |
+| 启动 | `docker compose up -d --build --remove-orphans` |
+| 自检 | 用 `docker compose port nginx 443` 拿真实端口，`curl --cacert` 打 `/healthz`，最多等 40s |
+
+可选参数：`--no-cert`（证书由外部提供）、`--no-health`（跳过自检）。
+
+**等价的手动步骤**（想逐步看输出时用）：
+
+```bash
+bash scripts/gen-cert.sh --ensure        # 幂等；也可以显式 --host 覆盖 SAN
 docker compose up -d --build
-
-# 3) 每个人 / 每台 AI 各自的 key
-erp key --server https://erp-tools.lan:8443 --user 21146
-
-# 4) 验证
+erp key --server https://erp-tools.lan:8443 --user 21146   # 在客户端机器上执行
 curl --cacert certs/erp-tools.crt https://localhost:8443/healthz
 ```
 
@@ -356,6 +379,7 @@ bash scripts/deploy.sh --check   # 只检查：退出码 0=最新，1=有更新�
 | 本地有未推送提交 / 已分叉 → **退出 4** | 不自作主张往回退 |
 | `docker compose build --pull` + `up -d --remove-orphans` | **必须带 `--build`**：只用 `up -d` 不会重新构建镜像，代码改了也不会生效 |
 | `docker image prune -f` | 只清悬空镜像，不动数据卷 |
+| `bash scripts/gen-cert.sh --ensure` | 构建前补签缺失的证书（已有有效证书则跳过），避免 nginx 因缺证书起不来 |
 | 成功后写 `.deployed-sha` | 记录当前部署的提交（已 gitignore） |
 
 **cron（每 10 分钟检查一次）**
@@ -509,9 +533,9 @@ scp certs\erp-tools.crt certs\erp-tools.key user@server:/srv/erp-tools/certs/
 ```
 
 ```bash
-# B) 直接在服务器上签（推荐）：自动挑 docker / python+cryptography / openssl，无需装包
+# B) 直接在服务器上签（推荐）：SAN 自动取自 .env 的 ERP_PUBLIC_HOST，无需装包
 cd /srv/hb-erp-mcp
-bash scripts/gen-cert.sh --host erp-tools.lan --host 192.168.1.226
+bash scripts/gen-cert.sh
 #    输出目录跟 $ERP_CERT_DIR 走（即 /srv/erp-tools/certs）
 ```
 
@@ -530,9 +554,12 @@ docker compose config | grep -E 'ERP_HOST|ERPSRV_ALLOW_HOST|ERP_CERT_DIR|source:
 ### 4. 首次构建与启动
 
 ```bash
+bash scripts/up.sh                # 缺证书就自签 → build → up → 健康检查（推荐）
+
+# 或者手动三步：
+bash scripts/gen-cert.sh --ensure
 docker compose up -d --build
 docker compose ps                 # app 应为 healthy，nginx 应为 running/healthy
-docker compose logs --tail=50 app
 ```
 
 自检（不经过客户端证书信任也能验）：

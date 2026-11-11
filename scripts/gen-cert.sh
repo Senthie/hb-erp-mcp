@@ -3,7 +3,8 @@
 #
 #   bash scripts/gen-cert.sh --host 192.168.1.10 --host erp-tools.lan
 #   ERP_CERT_DIR=/srv/erp-tools/certs bash scripts/gen-cert.sh --host 192.168.1.10
-#   bash scripts/gen-cert.sh                    # 不给 --host 时自动收集本机 IPv4 + localhost
+#   bash scripts/gen-cert.sh                    # 不给 --host 时：先读 .env 的 ERP_PUBLIC_HOST，再自动探测本机 IPv4
+#   bash scripts/gen-cert.sh --ensure           # 证书已存在且 7 天内不过期就跳过（给 up.sh / deploy.sh 用）
 #
 # 三个后端按可用性自动挑（都不需要往项目里装东西）：
 #   1) 系统 openssl（>= 1.1.1）：绝大多数 Linux 服务器自带，最省事
@@ -17,6 +18,34 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT"
 
+log() { printf '[gen-cert] %s\n' "$*" >&2; }
+
+# 从同目录 .env 读几个非敏感项（真实环境变量优先，绝不覆盖）
+load_dotenv() {
+  local file=".env" line key value
+  [ -f "$file" ] || return 0
+  while IFS= read -r line || [ -n "$line" ]; do
+    case "$line" in ''|'#'*) continue ;; esac
+    key="${line%%=*}"
+    value="${line#*=}"
+    key="$(printf '%s' "$key" | tr -d '[:space:]')"
+    case "$key" in
+      ERP_PUBLIC_HOST|ERP_CERT_DIR|CERT_CN|CERT_DAYS|ERP_HOST) ;;
+      *) continue ;;
+    esac
+    if [ -z "$(printenv "$key" 2>/dev/null || true)" ]; then
+      value="${value%$'\r'}"
+      value="${value%"${value##*[![:space:]]}"}"
+      value="${value#\"}"; value="${value%\"}"
+      value="${value#\'}"; value="${value%\'}"
+      printf -v "$key" '%s' "$value"
+      export "$key"
+    fi
+  done < "$file"
+}
+
+load_dotenv
+
 CN="${CERT_CN:-erp-tools}"
 DAYS="${CERT_DAYS:-825}"
 # 与 docker-compose.yml 的 ERP_CERT_DIR 保持同一个变量，避免两处打架
@@ -24,69 +53,9 @@ OUT_DIR="${ERP_CERT_DIR:-./certs}"
 PYTHON_BIN="${PYTHON:-python3}"
 ALPINE_IMAGE="${CERT_ALPINE_IMAGE:-alpine:3.20}"
 HOSTS=()
+ENSURE=0
 
-log() { printf '[gen-cert] %s\n' "$*" >&2; }
-
-usage() {
-  cat <<'USAGE'
-用法: bash scripts/gen-cert.sh [--host IP或域名]... [-o 输出目录]
-
-  --host, -H   写进 SAN 的地址，可重复；用 IP 访问就写 IP，用域名访问就写域名
-  -o, --out    输出目录（默认 $ERP_CERT_DIR，再默认 ./certs）
-  --cn         证书 CN（默认 erp-tools，也是文件名）
-  --days       有效期天数（默认 825，Apple 客户端上限）
-  -h, --help   显示本帮助
-
-环境变量: ERP_CERT_DIR / CERT_CN / CERT_DAYS / PYTHON / CERT_ALPINE_IMAGE
-USAGE
-}
-
-while [ $# -gt 0 ]; do
-  case "$1" in
-    --host|-H) HOSTS+=("${2:?--host 需要一个参数}"); shift 2 ;;
-    -o|--out)  OUT_DIR="${2:?--out 需要一个参数}"; shift 2 ;;
-    --cn)      CN="${2:?--cn 需要一个参数}"; shift 2 ;;
-    --days)    DAYS="${2:?--days 需要一个参数}"; shift 2 ;;
-    -h|--help) usage; exit 0 ;;
-    *) log "未知参数：$1（--help 看用法）"; exit 2 ;;
-  esac
-done
-
-if [ ${#HOSTS[@]} -eq 0 ]; then
-  # 自动收集本机 IPv4（排除回环/链路本地），再补上 localhost
-  while IFS= read -r ip; do
-    [ -n "$ip" ] || continue
-    case "$ip" in 127.*|169.254.*) continue ;; esac
-    HOSTS+=("$ip")
-  done < <(
-    { ip -4 -o addr show scope global 2>/dev/null | awk '{print $4}' | cut -d/ -f1; } ||
-    { hostname -I 2>/dev/null | tr ' ' '\n'; } || true
-  )
-  HOSTS+=("localhost" "127.0.0.1")
-fi
-
-# 去重并拼 SAN：纯数字点分的当 IP，其余当 DNS
-SAN=""
-SEEN=" "
-for h in "${HOSTS[@]}"; do
-  [ -n "$h" ] || continue
-  case "$SEEN" in *" $h "*) continue ;; esac
-  SEEN="$SEEN$h "
-  if printf '%s' "$h" | grep -Eq '^[0-9]+(\.[0-9]+){3}$'; then
-    SAN="${SAN:+$SAN,}IP:$h"
-  else
-    SAN="${SAN:+$SAN,}DNS:$h"
-  fi
-done
-[ -n "$SAN" ] || { log "没有可用的 --host"; exit 2; }
-
-mkdir -p "$OUT_DIR"
-OUT_ABS="$(cd "$OUT_DIR" && pwd)"
-
-log "输出目录：$OUT_ABS"
-log "SAN：$SAN"
-
-chmod_key() { chmod 600 "$OUT_ABS/$CN.key" 2>/dev/null || true; }
+chmod_key() { chmod 600 "$KEY" 2>/dev/null || true; }
 
 # 静默 openssl 的 RSA 进度点，但保留真实报错
 run_quiet() {
@@ -106,6 +75,115 @@ openssl_recent() {
   command -v openssl >/dev/null 2>&1 || return 1
   openssl version 2>/dev/null | grep -Eq 'OpenSSL (1\.1\.1|3\.|[4-9]\.)'
 }
+
+# 已有证书但 SAN 漏了客户端地址 —— 这是最常见的事故，提前提醒
+warn_san_mismatch() {
+  openssl_recent || return 0
+  local text h
+  # openssl 打印的是 `IP Address:1.2.3.4` / `DNS:name`，按裸主机名匹配即可
+  text="$(openssl x509 -in "$CRT" -noout -text 2>/dev/null | awk '/Subject Alternative Name/{getline; print}')"
+  [ -n "$text" ] || return 0
+  for h in "${HOSTS[@]}"; do
+    case "$text" in
+      *"$h"*) ;;
+      *) log "WARN 现有证书的 SAN 不含 $h（客户端会报 ERR_TLS_CERT_ALTNAME_INVALID）；要重签就删掉 $CRT 再跑" ;;
+    esac
+  done
+}
+
+usage() {
+  cat <<'USAGE'
+用法: bash scripts/gen-cert.sh [--host IP或域名]... [-o 输出目录]
+
+  --host, -H   写进 SAN 的地址，可重复；不给时先读 .env 的 ERP_PUBLIC_HOST，再自动探测本机 IPv4
+  -o, --out    输出目录（默认 $ERP_CERT_DIR，再默认 ./certs）
+  --cn         证书 CN（默认 erp-tools，也是文件名）
+  --days       有效期天数（默认 825，Apple 客户端上限）
+  --ensure     只在证书缺失/7 天内过期时才签（幂等，给 up.sh / deploy.sh 用）
+  -h, --help   显示本帮助
+
+环境变量: ERP_PUBLIC_HOST / ERP_CERT_DIR / CERT_CN / CERT_DAYS / PYTHON / CERT_ALPINE_IMAGE
+（ERP_* 会从同目录 .env 读取，真实环境变量优先级更高）
+USAGE
+}
+
+while [ $# -gt 0 ]; do
+  case "$1" in
+    --host|-H) HOSTS+=("${2:?--host 需要一个参数}"); shift 2 ;;
+    -o|--out)  OUT_DIR="${2:?--out 需要一个参数}"; shift 2 ;;
+    --cn)      CN="${2:?--cn 需要一个参数}"; shift 2 ;;
+    --days)    DAYS="${2:?--days 需要一个参数}"; shift 2 ;;
+    --ensure)  ENSURE=1; shift ;;
+    -h|--help) usage; exit 0 ;;
+    *) log "未知参数：$1（--help 看用法）"; exit 2 ;;
+  esac
+done
+
+if [ ${#HOSTS[@]} -eq 0 ] && [ -n "${ERP_PUBLIC_HOST:-}" ]; then
+  # 直接从 .env 的 ERP_PUBLIC_HOST 取（逗号分隔的 host:port，去掉端口）
+  IFS=',' read -r -a _public <<< "$ERP_PUBLIC_HOST"
+  for item in "${_public[@]}"; do
+    item="$(printf '%s' "$item" | tr -d '[:space:]')"
+    [ -n "$item" ] || continue
+    HOSTS+=("${item%:*}")     # host:8443 -> host（IPv6 请改用 --host [::1]）
+  done
+  [ ${#HOSTS[@]} -gt 0 ] && log "从 ERP_PUBLIC_HOST 取到：${HOSTS[*]}"
+fi
+
+if [ ${#HOSTS[@]} -eq 0 ]; then
+  # 自动收集本机 IPv4（排除回环/链路本地）
+  while IFS= read -r ip; do
+    [ -n "$ip" ] || continue
+    case "$ip" in 127.*|169.254.*) continue ;; esac
+    HOSTS+=("$ip")
+  done < <(
+    { ip -4 -o addr show scope global 2>/dev/null | awk '{print $4}' | cut -d/ -f1; } ||
+    { hostname -I 2>/dev/null | tr ' ' '\n'; } || true
+  )
+fi
+
+# 本机自检总要能过（curl --cacert https://localhost:8443/healthz）
+HOSTS+=("localhost" "127.0.0.1")
+
+# 去重并拼 SAN：纯数字点分的当 IP，其余当 DNS
+SAN=""
+SEEN=" "
+for h in "${HOSTS[@]}"; do
+  [ -n "$h" ] || continue
+  case "$SEEN" in *" $h "*) continue ;; esac
+  SEEN="$SEEN$h "
+  if printf '%s' "$h" | grep -Eq '^[0-9]+(\.[0-9]+){3}$'; then
+    SAN="${SAN:+$SAN,}IP:$h"
+  else
+    SAN="${SAN:+$SAN,}DNS:$h"
+  fi
+done
+[ -n "$SAN" ] || { log "没有可用的 --host，且 .env 里没有 ERP_PUBLIC_HOST"; exit 2; }
+
+mkdir -p "$OUT_DIR"
+OUT_ABS="$(cd "$OUT_DIR" && pwd)"
+
+CRT="$OUT_ABS/$CN.crt"
+KEY="$OUT_ABS/$CN.key"
+
+chmod_key() { chmod 600 "$KEY" 2>/dev/null || true; }
+
+# --ensure：已经有证书且 7 天内不过期就直接返回（up.sh / deploy.sh 会用）
+if [ "$ENSURE" = 1 ] && [ -s "$CRT" ] && [ -s "$KEY" ]; then
+  if openssl_recent && ! openssl x509 -checkend $((7 * 86400)) -noout -in "$CRT" >/dev/null 2>&1; then
+    log "证书 7 天内过期，重新签"
+  elif ! openssl_recent && ! command -v openssl >/dev/null 2>&1; then
+    log "已有证书，跳过（无 openssl，无法校验有效期）"
+    exit 0
+  else
+    log "已有证书，跳过：$CRT"
+    warn_san_mismatch
+    exit 0
+  fi
+fi
+
+log "输出目录：$OUT_ABS"
+log "SAN：$SAN"
 
 if openssl_recent; then
   log "后端：系统 openssl（$(openssl version | cut -d' ' -f1-2)）"

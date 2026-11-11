@@ -47,7 +47,7 @@ src/erp_tools/
 docker/       nginx 反代配置（HTTPS / 纯 HTTP 两套）
 docs/         cli.md / api.md / mcp.md
 packaging/    PyInstaller + Inno Setup 打包
-scripts/      build.ps1 打包、gen-cert.sh 一键签证书、make-cert.py python 实现、deploy.sh 定时拉取并重建
+scripts/      up.sh 一条命令起栈、gen-cert.sh 签证书、deploy.sh 定时拉取重建、build.ps1 打包
 scripts/deploy.sh 服务器上按需重建（配合 cron / systemd timer）
 tests/        离线测试 + fixtures 真实页面夹具
 ```
