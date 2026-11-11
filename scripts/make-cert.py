@@ -131,7 +131,7 @@ def main(argv: list[str] | None = None) -> int:
           f"--tls-cert {cert_path} --tls-key {key_path} "
           + " ".join(f"--allow-host {h}:8765".replace(":8765:8765", ":8765") for h in hosts
                      if h not in ("localhost", "127.0.0.1")))
-    print("  # 客户端需信任上面这个 .crt；详见 README「团队部署」")
+    print("  # 客户端需信任上面这个 .crt；详见 docs/mcp.md 的「5.5 让客户端信任自签证书」")
     return 0
 
 

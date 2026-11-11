@@ -135,15 +135,28 @@ erp_quote_prepare            预览校验
 
 ### 5.1 生成证书
 
-```powershell
-# 自动收集本机 IPv4；也可显式指定要写进 SAN 的 IP / 域名
-.\.venv\Scripts\python.exe scripts\make-cert.py `
-    --host 192.168.1.226 --host erp-tools.lan --out-dir certs
+```bash
+# 服务器上一条命令搞定：给什么地址就签什么 SAN
+bash scripts/gen-cert.sh --host 192.168.1.10 --host erp-tools.lan
+# 输出目录默认取 $ERP_CERT_DIR，再默认 ./certs；也可 -o /srv/erp-tools/certs
 ```
 
-产出 `certs/erp-tools.crt` + `certs/erp-tools.key`（PEM，无口令）。
-证书自签且带 `CA:TRUE`，可直接当「受信任的根证书」分发。
-**SAN 必须写全客户端实际使用的地址**，否则 Node 客户端报 `ERR_TLS_CERT_ALTNAME_INVALID`。
+脚本按可用性自动挑后端，**不需要往项目里装 Python 依赖**：
+
+| 顺序 | 后端 | 说明 |
+| --- | --- | --- |
+| 1 | `docker` | 复用已拉取的 `nginx:1.27-alpine` 自带的 openssl（服务器部署 docker 时首选） |
+| 2 | `python3` + `cryptography` | 交给 `scripts/make-cert.py` |
+| 3 | 系统 `openssl` | 最后兜底 |
+
+不给 `--host` 时会自动收集本机 IPv4 并补上 `localhost`。产出
+`erp-tools.crt` + `erp-tools.key`（PEM，无口令，自签且 `CA:TRUE`，可直接当受信任根分发）。
+
+**SAN 必须写全客户端实际使用的地址**：用 IP 访问就写 IP，用域名就写域名，否则 Node 客户端报
+`ERR_TLS_CERT_ALTNAME_INVALID`。`ERP_PUBLIC_HOST` 里列了几个，这里就要签几个。
+
+> 想自己控制细节也可以直接调 `python scripts/make-cert.py --host ... --out-dir ...`
+> （需要本机有 `cryptography`），它和脚本的 python 分支是同一份实现。
 
 ### 5.2 启动
 
@@ -390,10 +403,8 @@ cd /srv/hb-erp-mcp
 
 # 1) 仓库外的配置与证书（不进 git）
 cp .env.example .env && vi .env          # 只填 ERP_HOST / ERP_PUBLIC_HOST / ERP_CERT_DIR
-mkdir -p /srv/erp-tools/certs
-python3 -m venv .venv && .venv/bin/pip -q install cryptography
-.venv/bin/python scripts/make-cert.py --host erp-tools.lan --out-dir /srv/erp-tools/certs
-#    若服务器没装 python，也可以在本地签好再 scp 上去
+bash scripts/gen-cert.sh --host 192.168.1.10 --host erp-tools.lan
+#    证书默认就落到 $ERP_CERT_DIR；不需要 python、不需要额外装包
 
 # 2) 首次构建
 docker compose up -d --build
@@ -432,209 +443,3 @@ api-key 只存 sha256，日志经 `SensitiveFilter` 脱敏。
   [quote_create/README.md](../src/erp_tools/tools/quote_create/README.md) 的「已知限制」。
 - 同一个 ERP 可能有多**端口实例**（实测 `8889` 与 `8890` 数据不互通），
   所有读写都落在 `ERP_HOST` 指向的那个实例上。
-
-## 9. 附录：局域网服务器部署清单（按顺序照做）
-
-假设：服务器是 Linux，装好 Docker；仓库放 `/srv/hb-erp-mcp`，
-证书放 `/srv/erp-tools/certs`（仓库外），对外地址 `erp-tools.lan:8443`。
-**顺序不能颠倒**：先确认网络 → 再拉代码 → 再备证书/配置 → 再构建 → 再放行端口 → 最后发 key。
-
-### 0. 前置检查（在服务器上）
-
-```bash
-docker version --format '{{.Server.Version}}'     # ≥ 24
-docker compose version                            # v2 即可（用到了 name: 顶层键）
-
-# 到 ERP 的两个端口都要通（主站 + 验证码在另一个端口）
-curl -sI http://192.168.1.199:8889/Admin/Login.aspx   | head -1   # 期望 200/302
-curl -sI http://192.168.1.199:8887/ValidateCode.aspx  | head -1   # 期望 200
-
-sudo timedatectl set-timezone Asia/Shanghai
-date -u
-```
-
-- 验证码端口规则：默认把 `ERP_HOST` 的端口换成 **8887**，可用 `ERP_CAPTCHA_HOST` 覆盖。
-- 拉私有仓库需要凭据：部署密钥（推荐只读）或 `https://<PAT>@github.com/...`。
-
-### 1. 拉代码
-
-```bash
-sudo mkdir -p /srv && sudo chown "$USER" /srv
-git clone git@github.com:Senthie/hb-erp-mcp.git /srv/hb-erp-mcp
-cd /srv/hb-erp-mcp
-git log --oneline -1
-```
-
-### 2. 准备仓库外的资产
-
-```bash
-sudo mkdir -p /srv/erp-tools/certs /srv/erp-tools/backup
-sudo chown -R "$USER" /srv/erp-tools
-cd /srv/hb-erp-mcp
-cp .env.example .env
-```
-
-`.env` 必须改这四项（其余保持注释即可）：
-
-```ini
-ERP_HOST=http://192.168.1.199:8889
-ERP_PUBLIC_HOST=erp-tools.lan:8443        # ★ 等于客户端实际访问的 host:port
-ERP_CERT_DIR=/srv/erp-tools/certs         # 证书放仓库外，重新 clone 也不丢
-# 可选：ERP_CAPTCHA_HOST / ERP_HTTPS_PORT / ERP_HTTP_PORT / ERPSRV_CONCURRENCY
-```
-
-证书二选一：
-
-```powershell
-# A) 在自己的 Windows 上签好再传（服务器上什么都不用装）
-.\.venv\Scripts\python.exe scripts\make-cert.py `
-    --host erp-tools.lan --host 192.168.1.226 --out-dir certs
-scp certs\erp-tools.crt certs\erp-tools.key user@server:/srv/erp-tools/certs/
-```
-
-```bash
-# B) 直接在服务器上签
-sudo apt-get install -y python3-venv
-python3 -m venv .venv && .venv/bin/pip -q install cryptography
-.venv/bin/python scripts/make-cert.py \
-    --host erp-tools.lan --host 192.168.1.226 --out-dir /srv/erp-tools/certs
-```
-
-> `--host` 要把客户端**所有**访问写法都列上（域名 + IP）。SAN 缺了哪个，
-> 客户端就报哪个 `ERR_TLS_CERT_ALTNAME_INVALID`。
-
-### 3. 渲染检查（不启动也能验配置）
-
-```bash
-docker compose config | grep -E 'ERP_HOST|ERPSRV_ALLOW_HOST|ERP_CERT_DIR|source:'
-```
-
-必须看到：`ERP_HOST` 已渲染出真实地址（没渲染会直接报 `请在 .env 里设置 ERP_HOST`）、
-`ERPSRV_ALLOW_HOST` 是 `erp-tools.lan:8443`、certs 的 source 指向 `/srv/erp-tools/certs`。
-
-### 4. 首次构建与启动
-
-```bash
-docker compose up -d --build
-docker compose ps                 # app 应为 healthy，nginx 应为 running/healthy
-docker compose logs --tail=50 app
-```
-
-自检（不经过客户端证书信任也能验）：
-
-```bash
-curl --cacert /srv/erp-tools/certs/erp-tools.crt https://localhost:8443/healthz
-# → {"status":"ok","version":"0.3.0","keys":0,"global_concurrency":6}
-```
-
-### 5. 放行端口（只开对外那一个）
-
-```bash
-sudo ufw allow 8443/tcp          # HTTPS 入口（nginx）
-# sudo ufw allow 8080/tcp        # 仅当用纯 HTTP 版
-sudo ufw status numbered
-```
-
-**不要**放行 8765：`app` 只 `expose` 在 docker 网内，宿主机的 8765 根本没监听。
-
-### 6. 换 api-key（在**客户端**机器上做，不必登服务器）
-
-```bash
-erp key --server https://erp-tools.lan:8443 --user 21146 \
-        --cacert /path/to/erp-tools.crt        # Windows 用 --cacert certs\erp-tools.crt
-# → stdout 输出 erp_xxx
-```
-
-每个人/每台 AI 各自执行一次，各拿各的 key；密码只在那一次请求里用。
-
-### 7. 客户端接入 + 冒烟测试
-
-```json
-{ "servers": { "erp": {
-  "type": "http",
-  "url": "https://erp-tools.lan:8443/mcp",
-  "headers": { "Authorization": "Bearer erp_xxx" } } } }
-```
-
-Node 系客户端要信任自签 CA（否则握手失败）：`setx NODE_EXTRA_CA_CERTS "<绝对路径>\erp-tools.crt"`，然后**重启客户端**。
-
-不装客户端也能验 MCP 本身：
-
-```bash
-curl --cacert erp-tools.crt -X POST https://erp-tools.lan:8443/mcp \
-  -H "Authorization: Bearer erp_xxx" \
-  -H "content-type: application/json" \
-  -H "accept: application/json, text/event-stream" \
-  -d '{"jsonrpc":"2.0","id":1,"method":"tools/list"}'
-# → 应返回 14 个工具名
-```
-
-### 8. 交给自动部署
-
-```bash
-sudo tee /etc/systemd/system/erp-tools-deploy.service >/dev/null <<'EOF'
-[Unit]
-Description=erp-tools auto deploy
-After=network-online.target docker.service
-Wants=network-online.target
-
-[Service]
-Type=oneshot
-WorkingDirectory=/srv/hb-erp-mcp
-ExecStart=/usr/bin/bash scripts/deploy.sh
-EOF
-
-sudo tee /etc/systemd/system/erp-tools-deploy.timer >/dev/null <<'EOF'
-[Unit]
-Description=检查 erp-tools 是否有新版本
-
-[Timer]
-OnBootSec=2min
-OnUnitActiveSec=10min
-Unit=erp-tools-deploy.service
-
-[Install]
-WantedBy=timers.target
-EOF
-
-sudo systemctl daemon-reload
-sudo systemctl enable --now erp-tools-deploy.timer
-systemctl list-timers erp-tools-deploy.timer
-```
-
-### 9. 日常运维
-
-```bash
-# 备份（只有这一个卷有状态）
-docker run --rm -v erp-tools-erpdata:/data -v /srv/erp-tools/backup:/backup alpine \
-    tar czf /backup/erpdata-$(date +%F).tar.gz -C /data .
-
-# 手动升级 / 强制重建（改了 .env 必须加 --force，否则代码没变不会重建）
-bash scripts/deploy.sh
-bash scripts/deploy.sh --force
-
-# 回滚：先停自动部署，再退代码重建
-sudo systemctl stop erp-tools-deploy.timer
-git log --oneline -5 && git reset --hard <上一个提交>
-docker compose up -d --build
-sudo systemctl start erp-tools-deploy.timer
-
-# 看日志
-docker compose logs -f --tail=100 app nginx
-```
-
-### 10. 卡住了先看这里
-
-| 卡在第几步 | 现象 | 处理 |
-| --- | --- | --- |
-| 0 | `curl` 到 ERP 超时 | 服务器与 ERP 不在同一网段 / 有防火墙；先在服务器上 `ping`/`curl` 通 |
-| 1 | `Permission denied (publickey)` | 服务器没配部署密钥；改用 `https://<PAT>@github.com/...` |
-| 3 | `请在 .env 里设置 ERP_HOST` | `.env` 没建或变量名拼错（compose 只从同目录 `.env` 读） |
-| 4 | `421 Invalid Host header` | `ERP_PUBLIC_HOST` 与客户端实际用的 `host:port` 不一致（含端口） |
-| 4 | 容器 healthy 但 `curl` 502 | 容器内到 ERP 不通，或 `ERP_HOST` 写错；`docker compose exec app python -c "import urllib.request;print(urllib.request.urlopen('http://192.168.1.199:8889/Admin/Login.aspx').status)"` |
-| 4 | nginx 起不来 / `cannot load certificate` | `ERP_CERT_DIR` 下没有 `erp-tools.crt`/`.key`，或文件名不符 |
-| 6 | `SSLCertVerificationError` | `--cacert` 指向的证书不对，或 SAN 不含该地址 |
-| 6 | `401 invalid_credentials` | 工号密码错；连续 10 次会锁 15 分钟 |
-| 7 | 客户端连不上但 `curl` 正常 | 客户端没信任自签 CA（Node 要 `NODE_EXTRA_CA_CERTS` 并重启） |
-| 8 | `deploy.sh` 退出 3 | 仓库里有未提交改动（多半是 `.env` 被误改进了仓库目录并被跟踪） |
-
