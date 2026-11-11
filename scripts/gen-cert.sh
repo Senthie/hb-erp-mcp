@@ -166,8 +166,6 @@ OUT_ABS="$(cd "$OUT_DIR" && pwd)"
 CRT="$OUT_ABS/$CN.crt"
 KEY="$OUT_ABS/$CN.key"
 
-chmod_key() { chmod 600 "$KEY" 2>/dev/null || true; }
-
 # --ensure：已经有证书且 7 天内不过期就直接返回（up.sh / deploy.sh 会用）
 if [ "$ENSURE" = 1 ] && [ -s "$CRT" ] && [ -s "$KEY" ]; then
   if openssl_recent && ! openssl x509 -checkend $((7 * 86400)) -noout -in "$CRT" >/dev/null 2>&1; then
