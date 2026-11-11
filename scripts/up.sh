@@ -66,6 +66,40 @@ else
   log "按要求跳过证书生成"
 fi
 
+# ── 1.5 证书预检：文件必须真的在 compose 会挂进去的目录里 ──
+# 否则 nginx 会无限重启：cannot load certificate "/etc/nginx/certs/erp-tools.crt"
+cert_dir="${ERP_CERT_DIR:-$(dotenv_get ERP_CERT_DIR ./certs)}"
+case "$cert_dir" in
+  /*) ;;
+  *) cert_dir="$ROOT/${cert_dir#./}" ;;
+esac
+cacert=""
+nginx_conf="$(dotenv_get NGINX_CONF docker/nginx.conf)"
+case "$nginx_conf" in
+  *nginx-http.conf)
+    log "纯 HTTP 版（$nginx_conf），不需要证书" ;;
+  *)
+    missing=""
+    [ -s "$cert_dir/erp-tools.crt" ] || missing="$missing $cert_dir/erp-tools.crt"
+    [ -s "$cert_dir/erp-tools.key" ] || missing="$missing $cert_dir/erp-tools.key"
+    if [ -n "$missing" ]; then
+      log "证书不在 compose 挂载的目录里，nginx 会无限重启。缺："
+      for f in $missing; do log "  - $f"; done
+      log "排查："
+      log "  1) .env 里的 ERP_CERT_DIR=$cert_dir —— 这就是容器要挂的宿主机目录"
+      log "  2) 若证书其实在 ${ROOT}/certs，要么 bash scripts/gen-cert.sh -o \"$cert_dir\"，"
+      log "     要么把 .env 的 ERP_CERT_DIR 改成 ./certs（然后 docker compose up -d）"
+      log "  3) 目录权限：Docker 自动建的目录属主是 root，非 root 用户写不进去 → sudo chown -R \"\$USER\" \"$cert_dir\""
+      exit 3
+    fi
+    if ! [ -r "$cert_dir/erp-tools.key" ]; then
+      log "私钥不可读：$cert_dir/erp-tools.key（检查权限，通常 chmod 600 + 属主是自己）"
+      exit 3
+    fi
+    cacert="$cert_dir/erp-tools.crt"
+    log "证书就绪：$cert_dir" ;;
+esac
+
 # ── 2. 构建并启动 ─────────────────────────────────────────
 log "docker compose up -d --build --remove-orphans"
 docker compose up -d --build --remove-orphans
@@ -85,8 +119,6 @@ fi
 # 发布的端口从 compose 读，别写死
 mapped="$(docker compose port nginx 443 2>/dev/null | head -1 || true)"
 scheme="https"
-cert_dir="${ERP_CERT_DIR:-$(dotenv_get ERP_CERT_DIR ./certs)}"
-cacert="$cert_dir/erp-tools.crt"
 if [ -z "$mapped" ]; then
   mapped="$(docker compose port nginx 80 2>/dev/null | head -1 || true)"
   scheme="http"
@@ -114,5 +146,7 @@ if [ "$ok" = 1 ]; then
 fi
 
 log "FAIL 40 秒内 $url 未返回 200，看日志："
-log "  docker compose logs --tail=80 nginx app"
+log "  docker compose logs --tail=30 nginx    # 证书/端口问题的报错都在这"
+log "  docker compose logs --tail=80 app"
+docker compose logs --tail=30 nginx 2>&1 | tail -30 >&2 || true
 exit 1
