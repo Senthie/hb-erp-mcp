@@ -282,12 +282,129 @@ compose 会注入成 `ERPSRV_ALLOW_HOST`。nginx 用 `proxy_set_header Host $htt
 
 **其它要点**
 
-- **数据卷** `erpdata:/data` 存 `auth.db`、`cookies/`、`qxid-<工号>.json`；删容器不丢登录态。
 - **不发布 app 端口**：`app` 只 `expose: 8765`，宿主机只能通过 nginx 访问。
 - **`ERPSRV_TRUST_PROXY=1` 必须开**（镜像里已设），否则限流按 nginx 的 IP 统计。
 - **换纯 HTTP**：`.env` 加 `NGINX_CONF=docker/nginx-http.conf`，并把
   `ERP_PUBLIC_HOST` 改成 `erp-tools.lan:8080`。
 - **端口冲突**：改 `ERP_HTTP_PORT` / `ERP_HTTPS_PORT`（默认 8080 / 8443）。
+
+### 6.1 数据持久化：重建堆栈什么会丢、什么不会
+
+compose 里有两类挂载，**重建（`up -d --build`）都不会丢**，区别在于删得快不快：
+
+| 挂载 | 类型 | 内容 | 会不会丢 |
+| --- | --- | --- | --- |
+| `erpdata:/data` | **命名卷**（默认名 `erp-tools-erpdata`） | `auth.db`（api-key 的 sha256）、`cookies/<工号>.json`、`qxid-<工号>.json` | `up -d` / `restart` / `down` 都保留；只有 **`down -v`** 或 `docker volume rm` 才删 |
+| `${ERP_CERT_DIR:-./certs}` | 绑定挂载 | nginx 的 `.crt` / `.key` | 与容器无关，宿主机文件在就一直在 |
+| `./${NGINX_CONF:-docker/nginx.conf}` | 绑定挂载 | nginx 站点配置 | 来自仓库，**跟着 git 更新** |
+
+要点：
+
+- **卷名被显式固定**成 `erp-tools-erpdata`（`volumes.erpdata.name`），所以换目录 clone、
+  或用 `-p` 指定别的项目名，都不会「凭空多出一个空卷」导致所有人 key 失效。
+- `docker compose down` 只删容器和网络；**永远不要**图省事敲 `down -v`，
+  那等于让所有人重新 `erp key` 一次。
+- 备份只需要这一个卷：
+
+  ```bash
+  docker run --rm -v erp-tools-erpdata:/data -v "$PWD":/backup alpine \
+      tar czf /backup/erpdata-$(date +%F).tar.gz -C /data .
+  ```
+
+- 证书与 `.env` **不在 git 里**（`.gitignore` 已排除）。如果服务器是「重新 clone 再重建」，
+  把这两样放到仓库外，用变量指过去：
+
+  ```ini
+  # /srv/erp-tools/deploy.env（或 compose 同目录的 .env）
+  ERP_CERT_DIR=/srv/erp-tools/certs
+  ```
+
+### 6.2 定时拉取 + 自动重建
+
+仓库自带 `scripts/deploy.sh`，逻辑是「**有变化才重建**」：
+
+```bash
+bash scripts/deploy.sh           # auto：远端有新提交才重建
+bash scripts/deploy.sh --force   # 强制重建一次（改了 .env 想让它生效时用）
+bash scripts/deploy.sh --check   # 只检查：退出码 0=最新，1=有更新（cron 里很好用）
+```
+
+它做的事与几个安全阀：
+
+| 行为 | 说明 |
+| --- | --- |
+| `git status --porcelain` 非空 → **退出 3** | 服务器上有人手改过代码，不自动覆盖 |
+| `git merge --ff-only` | 只快进，不产生 merge 提交 |
+| 本地有未推送提交 / 已分叉 → **退出 4** | 不自作主张往回退 |
+| `docker compose build --pull` + `up -d --remove-orphans` | **必须带 `--build`**：只用 `up -d` 不会重新构建镜像，代码改了也不会生效 |
+| `docker image prune -f` | 只清悬空镜像，不动数据卷 |
+| 成功后写 `.deployed-sha` | 记录当前部署的提交（已 gitignore） |
+
+**cron（每 10 分钟检查一次）**
+
+```cron
+*/10 * * * * cd /srv/hb-erp-mcp && bash scripts/deploy.sh >> /var/log/erp-deploy.log 2>&1
+```
+
+**systemd timer（更可控，能看日志和状态）**
+
+```ini
+# /etc/systemd/system/erp-tools-deploy.service
+[Unit]
+Description=erp-tools auto deploy
+After=network-online.target docker.service
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+WorkingDirectory=/srv/hb-erp-mcp
+ExecStart=/usr/bin/bash scripts/deploy.sh
+```
+
+```ini
+# /etc/systemd/system/erp-tools-deploy.timer
+[Unit]
+Description=检查 erp-tools 是否有新版本
+
+[Timer]
+OnBootSec=2min
+OnUnitActiveSec=10min
+Unit=erp-tools-deploy.service
+
+[Install]
+WantedBy=timers.target
+```
+
+```bash
+sudo systemctl daemon-reload
+sudo systemctl enable --now erp-tools-deploy.timer
+systemctl list-timers erp-tools-deploy.timer
+journalctl -u erp-tools-deploy.service -n 50 --no-pager
+```
+
+**服务器首次部署顺序**
+
+```bash
+git clone git@github.com:Senthie/hb-erp-mcp.git /srv/hb-erp-mcp
+cd /srv/hb-erp-mcp
+
+# 1) 仓库外的配置与证书（不进 git）
+cp .env.example .env && vi .env          # 只填 ERP_HOST / ERP_PUBLIC_HOST / ERP_CERT_DIR
+mkdir -p /srv/erp-tools/certs
+python3 -m venv .venv && .venv/bin/pip -q install cryptography
+.venv/bin/python scripts/make-cert.py --host erp-tools.lan --out-dir /srv/erp-tools/certs
+#    若服务器没装 python，也可以在本地签好再 scp 上去
+
+# 2) 首次构建
+docker compose up -d --build
+curl --cacert /srv/erp-tools/certs/erp-tools.crt https://localhost:8443/healthz
+
+# 3) 之后交给 deploy.sh（cron / systemd timer）
+```
+
+> 重启容器**不会**让已有的 api-key 失效：会话从卷里的 `cookies/<工号>.json` 恢复。
+> 只有 ERP 会话本身过期时才需要重新 `erp key`。
+
 
 ## 7. 错误码
 
