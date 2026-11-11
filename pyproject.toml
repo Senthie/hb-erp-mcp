@@ -14,9 +14,12 @@ dependencies = [
 
 [project.optional-dependencies]
 dev = ["pytest>=8.0", "pyinstaller>=6.0"]
+# MCP 服务端（Streamable HTTP）。只用 CLI 的用户不需要装。
+server = ["mcp>=1.10", "uvicorn>=0.30"]
 
 [project.scripts]
 erp = "erp_tools.cli:main"
+erp-mcp = "erp_tools.apps.mcp:main"
 
 [build-system]
 requires = ["uv_build>=0.12.16,<0.13.0"]

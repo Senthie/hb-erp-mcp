@@ -20,13 +20,31 @@ from __future__ import annotations
 import sys
 from typing import Iterator
 
-from ...core.aspnet import build_postback, extract_viewstate
+from ...core.aspnet import (
+    build_postback,
+    delta_update_panel,
+    extract_viewstate,
+    extract_viewstate_any,
+    soup_of,
+)
 from ...core.auth import AuthManager, ensure_authenticated
-from ...core.errors import ParseError, UpstreamError
+from ...core.errors import ConfigError, ParseError, UpstreamError
 from ..base import Option, Tool
 from .parser import AttendanceTable, parse_attendance_table
 
 PAGE_PATH = "RenShi/RS_KQDA_M/Add.aspx"
+
+#: 切月份 / 查询必须走异步回发（浏览器行为）：服务端把「当前考勤单」写进
+#: `__VIEWSTATE`，直接用初始页面的 viewstate 查历史月份只会回 1 号一行。
+AJAX_HEADERS = {
+    "X-MicrosoftAjax": "Delta=true",
+    "X-Requested-With": "XMLHttpRequest",
+}
+
+#: 页面「考勤日期 起-至」是两个下拉框，选项只有 01..30，**没有 31**。
+#: 传 31 服务端不会报错，而是退化成「只返回 1 号一行」——极容易被当成数据缺失，
+#: 所以这里统一收敛到 01..30（31 天月份的 31 号在本页面上本就无法查询）。
+MAX_DAY = 30
 
 #: 浏览器提交时 txtBMMC_Data 是 encodeURIComponent 后的值，必须原样再提交
 GRID_DATA_ENCODED = "%3Cr%3E%3Cc%3E%3C%2Fc%3E%3C%2Fr%3E"
@@ -100,19 +118,44 @@ BASE_PARAMS = {
 }
 
 
+def clamp_day(value: str | int | None, *, name: str = "day", default: int = 1) -> int:
+    """把日期序号收敛到 ERP 支持的 01..30。"""
+    if value is None or str(value).strip() == "":
+        return default
+    try:
+        day = int(str(value).strip())
+    except (TypeError, ValueError) as exc:
+        raise ConfigError(f"{name} 必须是 1-{MAX_DAY} 的整数，收到 {value!r}") from exc
+    return max(1, min(day, MAX_DAY))
+
+
 def build_search_params(*, qxid: str, month: str, start_day: str = "01",
                         end_day: str = "31", page_size: int = 5000) -> dict[str, str]:
+    start = clamp_day(start_day, name="start_day", default=1)
+    end = clamp_day(end_day, name="end_day", default=MAX_DAY)
+    if end < start:
+        raise ConfigError(f"end_day({end}) 不能小于 start_day({start})")
+
     params = dict(BASE_PARAMS)
     params.update({
         "ScriptManager1": "UpdatePanel1|btn_Search",
         "txtYF": month,
-        "txtKSDay": start_day.zfill(2),
-        "txtJZDay": end_day.zfill(2),
+        "txtKSDay": f"{start:02d}",
+        "txtJZDay": f"{end:02d}",
         "txtFXCX": "1",
         "txtEvenPageDataSize": str(page_size),
         "lblgVQXBH": qxid,
     })
     return params
+
+
+def page_month(html: str) -> str:
+    """读出页面上「考勤日期」当前选中的月份（如 `2026-11`）。"""
+    select = soup_of(html).find("select", {"id": "txtYF"})
+    if select is None:
+        return ""
+    option = select.find("option", selected=True) or select.find("option")
+    return (option.get("value") or "").strip() if option is not None else ""
 
 
 class AttendanceTool(Tool):
@@ -123,8 +166,9 @@ class AttendanceTool(Tool):
     def options() -> list[Option]:
         return [
             Option("month", "查询月份，如 2026-11", required=True, cli="--month"),
-            Option("start_day", "起始日（默认 01）", default="01", cli="--from"),
-            Option("end_day", "结束日（默认 31）", default="31", cli="--to"),
+            Option("start_day", f"起始日（01-{MAX_DAY}，默认 01）", default="01", cli="--from"),
+            Option("end_day", f"结束日（01-{MAX_DAY}，默认 {MAX_DAY}；传 31 自动收敛）",
+                   default=str(MAX_DAY), cli="--to"),
             Option("users", "工卡号列表；为空则用当前登录账号", default=None, cli="--emp"),
             Option("out", "Markdown 输出路径", cli="--out"),
             Option("jsonl", "JSONL 输出路径", cli="--jsonl"),
@@ -157,17 +201,49 @@ class AttendanceTool(Tool):
             raise ParseError("考勤页缺少 __VIEWSTATE，可能被重定向到登录页")
         return resp.text, vs
 
+    def _switch_month(self, auth: AuthManager, qxid: str, viewstate: dict[str, str],
+                      *, month: str, page_size: int) -> dict[str, str]:
+        """把页面「考勤日期」切到 month，返回新的隐藏状态字段。
+
+        等价于浏览器在下拉框里改月份触发的 `__doPostBack('txtYF','')`。
+        实测（2026-11）：**不切月份**直接带 `txtYF=2026-10` 查询，服务端只回
+        1 号一行；切完月份再用新 viewstate 查询才是整月 30 行。
+        """
+        params = build_search_params(qxid=qxid, month=month, start_day="01",
+                                     end_day=str(MAX_DAY), page_size=page_size)
+        body = build_postback(params, viewstate, event_target="txtYF",
+                              async_postback=True,
+                              strip_keys=("btn_Search.x", "btn_Search.y"))
+        resp = auth.client.post(self.page_url(auth, qxid), data=body,
+                                headers=AJAX_HEADERS)
+        if resp.status_code >= 500:
+            raise UpstreamError("切换考勤月份失败（HTTP %s）" % resp.status_code,
+                                resp.status_code, resp.text[:300])
+
+        try:
+            panel = delta_update_panel(resp.text)
+        except UpstreamError:
+            panel = ""
+        fresh = extract_viewstate_any(resp.text)
+        if "__VIEWSTATE" not in fresh and panel:
+            fresh = extract_viewstate_any(panel)
+        if "__VIEWSTATE" not in fresh:
+            raise ParseError("切换考勤月份后没有拿到新的 __VIEWSTATE")
+        return fresh
+
     def _search(self, auth: AuthManager, qxid: str, params: dict[str, str],
                 viewstate: dict[str, str]) -> tuple[AttendanceTable, str]:
         body = dict(params)
         body.update(viewstate)
         body["ScriptManager1"] = "UpdatePanel1|btn_Search"
+        body["__ASYNCPOST"] = "true"
 
-        resp = auth.client.post(self.page_url(auth, qxid), data=body)
+        resp = auth.client.post(self.page_url(auth, qxid), data=body,
+                                headers=AJAX_HEADERS)
         if resp.status_code >= 500:
             raise UpstreamError("考勤查询失败（HTTP %s）" % resp.status_code,
                                 resp.status_code, resp.text[:300])
-        table = parse_attendance_table(resp.text)
+        table = parse_attendance_table(delta_update_panel(resp.text))
         if not table.headers:
             raise ParseError("考勤结果里没有表格，页面结构可能又变了")
         return table, resp.text
@@ -175,7 +251,7 @@ class AttendanceTool(Tool):
     def _next_page(self, auth: AuthManager, qxid: str, params: dict[str, str],
                    current_html: str) -> tuple[AttendanceTable, str]:
         """兜底翻页：__EVENTTARGET=btnNext 全量回发。"""
-        body = build_postback(params, extract_viewstate(current_html),
+        body = build_postback(params, extract_viewstate_any(current_html),
                               event_target="btnNext")
         body["ScriptManager1"] = "UpdatePanel1|btnNext"
         body.pop("btn_Search.x", None)
@@ -185,7 +261,7 @@ class AttendanceTool(Tool):
             raise UpstreamError(
                 "btnNext 翻页被服务端拒绝（HTTP %s）；请调大 --page-size 一次取全"
                 % resp.status_code, resp.status_code, resp.text[:300])
-        table = parse_attendance_table(resp.text)
+        table = parse_attendance_table(delta_update_panel(resp.text))
         if not table.headers:
             raise UpstreamError("btnNext 翻页返回的不是考勤表格，翻页协议可能变了")
         return table, resp.text
@@ -196,7 +272,18 @@ class AttendanceTool(Tool):
         auth = self._auth_for(username, password)
         qxid = self.cfg.qxid_attendance or auth.qxid_for(PAGE_PATH)
 
+        if str(end_day).strip().isdigit() and int(end_day) > MAX_DAY:
+            self._log(
+                f"[WARN] 结束日 {end_day} 超出页面上限（01-{MAX_DAY}），"
+                f"已按 {MAX_DAY} 查询；传 31 会让服务端只回 1 号一行"
+            )
+
         html, vs = self._open_page(auth, qxid)
+        current = page_month(html)
+        if current and current != month:
+            self._log(f"[INFO] 切换考勤月份：{current} → {month}")
+            vs = self._switch_month(auth, qxid, vs, month=month, page_size=page_size)
+
         params = build_search_params(qxid=qxid, month=month, start_day=start_day,
                                      end_day=end_day, page_size=page_size)
         table, html = self._search(auth, qxid, params, vs)
@@ -218,7 +305,7 @@ class AttendanceTool(Tool):
                 yield {"_user": who, "_month": month, "_page": table.page, **row}
 
 
-    def run(self, *, month: str, start_day: str = "01", end_day: str = "31",
+    def run(self, *, month: str, start_day: str = "01", end_day: str = "30",
             users: list[str] | None = None, out: str | None = None,
             jsonl: str | None = None, page_size: int | None = None) -> Iterator[dict]:
         size = int(page_size or self.cfg.page_size_max)

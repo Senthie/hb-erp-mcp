@@ -92,8 +92,9 @@ def extract_product_qty(td, soup=None) -> dict[str, int | float | str | None]:
     return result
 
 
-def parse_quote_page(html: str, fallback_ywy: str | None = None,
-                     record_id: str | None = None) -> dict:
+def parse_quote_page(
+    html: str, fallback_ywy: str | None = None, record_id: str | None = None
+) -> dict:
     """把报价需求页解析成 ERP 客户订单需求 JSON（字段名与 ERP 一致）。"""
     soup = soup_of(html)
 

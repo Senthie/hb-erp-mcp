@@ -276,6 +276,11 @@ class AuthManager:
                          "Connection": "close"},
                 timeout=(self.cfg.timeout_connect, self.cfg.timeout_read / 2),
             )
+        except requests.RequestException as exc:
+            # 取不到验证码是**网络/端口**问题，不是账号问题：
+            # 必须抛 NetworkError（服务端映射成 502），否则会被当成 invalid_credentials
+            # 并白白消耗「连续失败 10 次锁定」的额度。
+            raise NetworkError(f"获取验证码失败：{exc}") from exc
         except Exception as exc:  # noqa: BLE001
             raise AuthError(f"获取验证码失败：{exc}") from exc
         if resp.status_code != 200 or not resp.content:

@@ -1,0 +1,76 @@
+# erp-tools 网关：app（Python/MCP）+ nginx（TLS 终止）
+#
+# 启动：
+#   在 .env 里只写 ERP_HOST（**不要写 ERP_PASSWORD**）
+#   python scripts\make-cert.py --host <域名或IP> --out-dir certs
+#   docker compose up -d --build
+#
+# 取 api-key（每个使用者用自己的工号密码，密码不进容器、不落盘）：
+#   erp key --server https://<域名或IP>:8443
+#
+# 访问：
+#   https://<域名或IP>:8443/mcp               # MCP 端点（需 Bearer api-key）
+#   https://<域名或IP>:8443/healthz           # 健康检查（无需 key）
+#
+# 想让 nginx 用纯 HTTP 内网配置：在 .env 里加 NGINX_CONF=docker/nginx-http.conf
+
+name: erp-tools
+
+services:
+  app:
+    build: .
+    image: erp-tools:0.3.0
+    restart: unless-stopped
+    # 注意：**不用 env_file**。容器只需要「连哪个 ERP」，
+    # 账号密码一律不进容器 —— 每个使用者自己 POST /v1/auth/login 换 api-key。
+    environment:
+      ERP_HOST: ${ERP_HOST:?请在 .env 里设置 ERP_HOST，如 http://192.168.1.199:8889}
+      ERP_CAPTCHA_HOST: ${ERP_CAPTCHA_HOST:-}
+      ERP_PAGE_SIZE_MAX: ${ERP_PAGE_SIZE_MAX:-5000}
+      ERP_REQUEST_DELAY: ${ERP_REQUEST_DELAY:-0.0}
+      ERPSRV_BIND: 0.0.0.0:8765
+      # TLS 由 nginx 终止，所以本进程说 HTTP —— 必须显式声明，否则拒绝启动
+      ERPSRV_ALLOW_PLAINTEXT: "1"
+      # 前面确实有 nginx，才开；否则限流会把所有客户端当成 127.0.0.1
+      ERPSRV_TRUST_PROXY: "1"
+      # ★ 必须等于客户端实际访问的 host:port（$http_host 原样透传后逐字比对）
+      ERPSRV_ALLOW_HOST: ${ERP_PUBLIC_HOST:-localhost:8443}
+      ERPSRV_CONCURRENCY: ${ERPSRV_CONCURRENCY:-6}
+      ERP_DATA_DIR: /data
+      COOKIE_DIR: /data/cookies
+      ERPSRV_DB: /data/auth.db
+      TZ: Asia/Shanghai
+    volumes:
+      # auth.db / cookie / qxid 缓存都在这，删容器不丢登录态
+      - erpdata:/data
+    expose:
+      - "8765"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:8765/healthz', timeout=4).status==200 else 1)"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+
+  nginx:
+    image: nginx:1.27-alpine
+    restart: unless-stopped
+    depends_on:
+      app:
+        condition: service_healthy
+    ports:
+      - "${ERP_HTTP_PORT:-8080}:80"
+      - "${ERP_HTTPS_PORT:-8443}:443"
+    volumes:
+      - ./${NGINX_CONF:-docker/nginx.conf}:/etc/nginx/conf.d/default.conf:ro
+      # make-cert.py 的输出目录；纯 HTTP 版用不到（挂进来也无害）
+      - ./certs:/etc/nginx/certs:ro
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://127.0.0.1/healthz"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+volumes:
+  erpdata:

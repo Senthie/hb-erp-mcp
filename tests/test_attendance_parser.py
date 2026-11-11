@@ -1,6 +1,15 @@
 """考勤表格解析测试（夹具为真实考勤查询结果）。"""
 
-from erp_tools.tools.attendance import parse_attendance_table
+import pytest
+
+from erp_tools.core.errors import ConfigError
+from erp_tools.tools.attendance import (
+    MAX_DAY,
+    build_search_params,
+    clamp_day,
+    page_month,
+    parse_attendance_table,
+)
 
 
 def test_parses_headers_and_rows(fixture_text):
@@ -29,3 +38,36 @@ def test_no_grid_returns_empty():
     table = parse_attendance_table("<html><body>没有表格</body></html>")
     assert table.rows == []
     assert table.headers == []
+
+
+# ══════════════════ 日期区间（ERP 下拉只有 01-30） ══════════════════
+def test_end_day_31_is_clamped_to_30():
+    """传 31 时服务端只会回 1 号一行，所以必须收敛到 30。"""
+    params = build_search_params(qxid="2553", month="2026-11", end_day="31")
+    assert params["txtJZDay"] == f"{MAX_DAY:02d}"
+    assert params["txtKSDay"] == "01"
+
+
+def test_days_are_clamped_into_range():
+    assert clamp_day("31") == MAX_DAY
+    assert clamp_day("0") == 1
+    assert clamp_day("") == 1
+    assert clamp_day(None, default=MAX_DAY) == MAX_DAY
+    assert clamp_day("05") == 5
+
+
+def test_invalid_day_raises():
+    with pytest.raises(ConfigError):
+        build_search_params(qxid="2553", month="2026-11", start_day="abc")
+
+
+def test_end_before_start_raises():
+    with pytest.raises(ConfigError):
+        build_search_params(qxid="2553", month="2026-11", start_day="10", end_day="05")
+
+
+# ══════════════════ 月份切换（历史月份必须切月份再查） ══════════════════
+def test_page_month_reads_selected_option(fixture_text):
+    html = fixture_text("attendance_page.html")
+    assert page_month(html) == "2026-11"
+    assert page_month("<html><body>no select</body></html>") == ""

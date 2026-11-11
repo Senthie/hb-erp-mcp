@@ -42,6 +42,31 @@ def extract_viewstate(html: str) -> dict[str, str]:
     return out
 
 
+def delta_hidden_fields(text: str) -> dict[str, str]:
+    """从 ScriptManager delta 里取 `hiddenField|name|value` 三段组。
+
+    delta 响应把整页状态拆成这些三元组，`__VIEWSTATE` 只有在里面才能拿到；
+    直接对 delta 做 BeautifulSoup 解析是拿不到的。
+    """
+    parts = (text or "").split("|")
+    out: dict[str, str] = {}
+    for i, part in enumerate(parts):
+        if part.strip() == "hiddenField" and i + 2 < len(parts):
+            out[parts[i + 1]] = parts[i + 2]
+    return out
+
+
+def extract_viewstate_any(text: str) -> dict[str, str]:
+    """整页 HTML / 异步 delta 两种响应都能取到隐藏状态字段。"""
+    vs = extract_viewstate(text)
+    if "__VIEWSTATE" in vs:
+        return vs
+    hidden = delta_hidden_fields(text)
+    if hidden:
+        vs.update({k: v for k, v in hidden.items() if k in VIEWSTATE_FIELDS})
+    return vs
+
+
 def build_postback(
     base: dict[str, str],
     viewstate: dict[str, str] | None = None,

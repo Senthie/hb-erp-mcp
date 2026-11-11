@@ -89,6 +89,82 @@ def cmd_qxid(args) -> int:
     return 0
 
 
+def cmd_key(args) -> int:
+    """向 erp-tools 网关换取 api-key。
+
+    密码**只在本次请求里用一次**：既不进 `.env`，也不写任何文件。
+    每个人都用**自己的** ERP 工号/密码换**自己的** key，服务端只存 key 的 sha256。
+    """
+    import requests
+
+    server = (args.server or "").strip().rstrip("/")
+    if not server:
+        _log("[ERROR] 需要 --server，例如 --server https://erp-tools.lan:8443")
+        return 2
+
+    username = (args.user or "").strip()
+    if not username:
+        if not sys.stdin.isatty():
+            _log("[ERROR] 缺少工号：加 -u <工号>")
+            return 2
+        username = input("ERP 工号：").strip()
+    if not username:
+        _log("[ERROR] 工号不能为空")
+        return 2
+
+    password = args.password or ""
+    if not password:
+        if not sys.stdin.isatty():
+            _log("[ERROR] 没有可交互终端，无法输入密码；请在本机终端里运行（不建议用 --password，"
+                 "它会把密码留在 shell 历史里）")
+            return 2
+        password = getpass.getpass(f"{username} 的 ERP 密码：")
+    if not password:
+        _log("[ERROR] 密码不能为空")
+        return 2
+
+    verify: object = True
+    if args.insecure:
+        verify = False
+        _log("[WARN] --insecure：已关闭证书校验，仅限临时排查自签证书")
+    elif args.cacert:
+        verify = args.cacert
+
+    try:
+        resp = requests.post(
+            f"{server}/v1/auth/login",
+            json={"username": username, "password": password},
+            verify=verify,
+            timeout=args.timeout,
+        )
+    except requests.RequestException as exc:
+        _log(f"[ERROR] 连不上 {server}：{exc}")
+        return 2
+
+    try:
+        payload = resp.json()
+    except ValueError:
+        _log(f"[ERROR] 返回的不是 JSON（HTTP {resp.status_code}）：{resp.text[:200]}")
+        return 1
+
+    if resp.status_code != 200:
+        _log(f"[ERROR] 登录失败（HTTP {resp.status_code}）："
+             f"{payload.get('error')} {payload.get('message')}")
+        hint = payload.get("hint")
+        if hint:
+            _log(f"         {hint}")
+        return 1
+
+    # key 打到 stdout（方便 `| clip` 或脚本捕获），说明打到 stderr
+    print(payload["api_key"])
+    _log(f"[OK] {payload.get('username')} / user_id={payload.get('user_id')} 已换到 api-key")
+    pages = payload.get("erp_pages") or {}
+    if pages:
+        _log(f"[OK] 该账号可访问页面：{', '.join(sorted(pages))}")
+    _log("提示：这把 key 会随 ERP 会话失效；换机器/换人请各自重新执行本命令。")
+    return 0
+
+
 def cmd_tools(args) -> int:
     for item in describe_tools():
         print(f"{item['name']:<12} {item['summary']}")
@@ -339,6 +415,57 @@ def cmd_attendance(args) -> int:
     return 0
 
 
+# ══════════════════ 服务模式 ══════════════════
+def cmd_serve(args) -> int:
+    """启动 api-key 网关（认证 + 未来的 MCP Streamable HTTP 挂载点）。"""
+    try:
+        import uvicorn
+    except ImportError:
+        _log("[ERROR] 缺少服务端依赖：请执行 `uv sync --extra server`")
+        return 2
+
+    from .apps.server.app import build_state, create_app
+    from .apps.server.config import ServerConfig
+
+    server_cfg = ServerConfig.from_args(args)
+    problems = server_cfg.validate()
+    if problems:
+        for item in problems:
+            _log(f"[ERROR] {item}")
+        return 2
+
+    erp_cfg = _build_config(args)
+    if (erp_cfg.password or "").strip():
+        _log("[WARN] 检测到 ERP_PASSWORD 已配置：**服务端不会使用它**。"
+             "每个使用者自己调 POST /v1/auth/login（或 `erp key`）传工号密码换 api-key，"
+             "服务端只存 api-key 的 sha256。建议把密码从 .env / 环境变量里删掉。")
+    state = build_state(server_cfg, erp_cfg)
+    app = create_app(state)
+
+    host, port = server_cfg.host, server_cfg.port
+    _log(f"[INFO] 监听 {host}:{port}  TLS={'on' if server_cfg.tls_enabled else 'off'}  "
+         f"全局并发={server_cfg.global_concurrency}")
+    _log(f"[INFO] api-key 库：{server_cfg.db_path}")
+    _log(f"[INFO] cookie 目录：{erp_cfg.cookie_dir}")
+    _log("[INFO] 回环模式，仅本机可访问" if server_cfg.is_loopback else
+         f"[INFO] 团队模式，允许 Host：{', '.join(server_cfg.allow_hosts)}")
+    if not server_cfg.tls_enabled and not server_cfg.is_loopback:
+        _log("[WARN] 已开 --allow-plaintext：本进程说 HTTP，"
+             "api-key 的加密完全依赖上游反向代理，请确认代理已启用 TLS")
+    if server_cfg.trust_proxy:
+        _log("[INFO] 信任 X-Forwarded-For（仅当前面确实有反向代理时打开）")
+
+    uvicorn.run(
+        app,
+        host=host,
+        port=port,
+        ssl_certfile=server_cfg.tls_cert or None,
+        ssl_keyfile=server_cfg.tls_key or None,
+        log_level="info",
+    )
+    return 0
+
+
 # ══════════════════ 参数解析 ══════════════════
 def build_parser() -> argparse.ArgumentParser:
     common = argparse.ArgumentParser(add_help=False)
@@ -367,6 +494,19 @@ def build_parser() -> argparse.ArgumentParser:
 
     p = sub.add_parser("tools", parents=[common], help="列出可用工具与选项")
     p.set_defaults(func=cmd_tools)
+
+    p = sub.add_parser("key", help="向网关换取 api-key（密码只用于这一次请求）")
+    p.add_argument("--server", required=True,
+                   help="网关地址，如 https://erp-tools.lan:8443")
+    p.add_argument("--user", "-u", default=None, help="ERP 工号（缺省时交互输入）")
+    p.add_argument("--password", "-p", default=None,
+                   help="ERP 密码（建议省略，用交互输入以免留在 shell 历史里）")
+    p.add_argument("--cacert", default=None,
+                   help="自签证书的 CA 路径（不装系统信任时用它校验）")
+    p.add_argument("--insecure", action="store_true",
+                   help="跳过 TLS 证书校验（仅临时排查）")
+    p.add_argument("--timeout", type=float, default=30.0, help="请求超时秒数，默认 30")
+    p.set_defaults(func=cmd_key)
 
     p = sub.add_parser("config", parents=[common], help="显示配置来源与数据目录")
     p.set_defaults(func=cmd_config)
@@ -412,14 +552,33 @@ def build_parser() -> argparse.ArgumentParser:
 
     p = sub.add_parser("attendance", parents=[common], help="查询月度考勤")
     p.add_argument("--month", "-m", required=True, help="月份，如 2026-11")
-    p.add_argument("--from", dest="start_day", default="01", help="起始日（默认 01）")
-    p.add_argument("--to", dest="end_day", default="31", help="结束日（默认 31）")
+    p.add_argument("--from", dest="start_day", default="01", help="起始日（01-30，默认 01）")
+    p.add_argument("--to", dest="end_day", default="30",
+                   help="结束日（01-30，默认 30；ERP 页面没有 31，传 31 只会回 1 号一行）")
     p.add_argument("--emp", dest="emp", action="append",
                    help="工卡号（可写 工号:密码），可重复；默认当前账号")
     p.add_argument("--out", help="Markdown 输出路径")
     p.add_argument("--jsonl", help="JSONL 输出路径")
     p.add_argument("--page-size", type=int, help="单页记录数（默认 ERP_PAGE_SIZE_MAX）")
     p.set_defaults(func=cmd_attendance)
+
+    p = sub.add_parser("serve", parents=[common],
+                       help="启动 api-key 网关（MCP Streamable HTTP）")
+    p.add_argument("--bind", default=None,
+                   help="监听地址，默认 127.0.0.1:8765；非回环地址必须配 --tls-cert/--tls-key，"
+                        "或显式 --allow-plaintext（TLS 由上游代理终止时）")
+    p.add_argument("--db", default=None, help="api-key 库路径，默认 <数据目录>/auth.db")
+    p.add_argument("--global-concurrency", type=int, dest="global_concurrency",
+                   default=None, help="全局 ERP 并发上限，默认 6（实测 4~8 饱和）")
+    p.add_argument("--tls-cert", dest="tls_cert", default=None, help="TLS 证书（团队模式必填）")
+    p.add_argument("--tls-key", dest="tls_key", default=None, help="TLS 私钥（团队模式必填）")
+    p.add_argument("--allow-host", dest="allow_host", action="append",
+                   help="允许的 Host，可重复（团队模式必填，如 erp-tools.lan:8765）")
+    p.add_argument("--trust-proxy", dest="trust_proxy", action="store_true",
+                   help="信任 X-Forwarded-For（放在反向代理后面时打开）")
+    p.add_argument("--allow-plaintext", dest="allow_plaintext", action="store_true",
+                   help="显式允许非回环 + 明文 HTTP（仅当 TLS 由上游反向代理终止，如 docker compose + nginx）")
+    p.set_defaults(func=cmd_serve)
 
     return parser
 

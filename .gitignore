@@ -48,6 +48,14 @@ local.settings.yaml
 *qxid-*.json
 *.pem
 *.key
+# 团队模式的 TLS 证书（scripts/make-cert.py 的输出目录）
+/certs/
+
+# 服务端 api-key 库（sqlite + WAL 旁路文件）
+auth.db
+auth.db-wal
+auth.db-shm
+/auth.db*
 
 # ── 抓取中间产物 / 临时目录 ───────────────────────────────
 /.scratch/

@@ -95,6 +95,14 @@ def form_snapshot(html: str) -> dict[str, str]:
         opt = sel.find("option", selected=True) or sel.find("option")
         data[name] = (opt.get("value") or "") if opt is not None else ""
 
+    # textarea 也要带上：报价子页的「配件描述/修改记录/检测项目/产品描述」都是 textarea，
+    # 漏掉它们会让保存被挡在「【配件描述】不能为空！」。
+    for area in soup.find_all("textarea"):
+        name = area.get("name")
+        if not name:
+            continue
+        data[name] = area.string or ""
+
     return data
 
 

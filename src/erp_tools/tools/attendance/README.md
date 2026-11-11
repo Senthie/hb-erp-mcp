@@ -12,8 +12,8 @@
 | 参数 | 默认 | 说明 |
 | --- | --- | --- |
 | `--month YYYY-MM` / `-m` | **必填** | 查询月份，如 `2026-11` |
-| `--from DD` | `01` | 起始日 |
-| `--to DD` | `31` | 结束日 |
+| `--from DD` | `01` | 起始日（**只有 01-30**，页面下拉没有 31） |
+| `--to DD` | `30` | 结束日（同上；传 `31` 会被收敛到 30 并打 WARN） |
 | `--emp 工号[:密码]` | 当前账号 | 可重复；不同账号各自登录。写 `工号:密码` 可查他人 |
 | `--out 路径` | 不写 | 输出 Markdown 表格 |
 | `--jsonl 路径` | 不写 | 输出 JSONL（结构化，含元数据列） |
@@ -70,6 +70,19 @@ rows = fetch_attendance(auth, "2026-11")          # list[dict]，自己这个账
 rows = fetch_attendance(auth, "2026-11", username="21146")
 ```
 
+## 月份切换（查历史月份必须做）
+
+页面「考勤日期」是个 `onchange="__doPostBack('txtYF','')"` 的下拉框，服务端把
+**当前考勤月份写进 `__VIEWSTATE`**。所以查非当月时，协议是三步（与浏览器一致）：
+
+1. GET 页面，读出 `txtYF` 当前选中月（`page_month()`）；
+2. 月份不同 → 异步回发切月份：`__EVENTTARGET=txtYF` + `__ASYNCPOST=true` +
+   请求头 `X-MicrosoftAjax: Delta=true`，从响应里取**新的** `__VIEWSTATE`；
+3. 用新 viewstate 发 `btn_Search`（同样带 `__ASYNCPOST` 与 Ajax 头）。
+
+不切月份直接带 `txtYF=2026-10` 查，服务端**不报错但只回 1 号一行**，看起来像“没数据”；
+只做第 2 步却没有 Ajax 头 / `__ASYNCPOST`，则两个月份都会变成 0 行。
+
 ## 分页策略
 
 1. **首选**：查询时把 `txtEvenPageDataSize` 直接设大（默认 5000），一次取全 → `lblPageCount == 1`。
@@ -78,6 +91,11 @@ rows = fetch_attendance(auth, "2026-11", username="21146")
 
 ## 协议要点 / 坑
 
+- **起止日是 `<select>`，选项只有 `01`..`30`，没有 `31`**（实测 2026-11）。
+  提交 `txtJZDay=31` 服务端不报错，但只返回 **1 号一行**（`lblRowsCount=1`），
+  看起来像“这个月没数据”。代码里 `clamp_day()` 统一收敛到 01..30。
+- **`txtFXCX` 是「本单查询(1) / 历史数据(2)」**：`2` 在本账号上返回 0 行；
+  历史月份用 `1` + 上节的月份切换即可拿到整月（实测 2026-10 返回 30 行）。
 - `txtBMMC_Data` 必须提交**二次编码**后的 `%3Cr%3E%3Cc%3E%3C%2Fc%3E%3C%2Fr%3E`；
   直接提交 `<r><c></c></r>` 会被 ASP.NET request validation 判「潜在危险的 Request.Form 值」→ 500。
 - `lblgVQXBH` 必须等于当前页 QXID（`2553`，由菜单自动探测）。
@@ -85,6 +103,7 @@ rows = fetch_attendance(auth, "2026-11", username="21146")
 - **没有 `LoginUserID` 也能查**：只要会话 cookie 有效，页面不带该参数同样返回数据；
   实测菜单接口必须带 uid，因此拿不到 uid 时 QXID 会回退到默认值（考勤 2553）。
 - 查询范围受账号数据权限限制：当前账号默认只看到本部门/本人，**不是工具问题**。
+- 页面日下拉只有 `01`..`30`，所以 **31 天月份的 31 号无法查询**（页面上也选不到）。
 
 ## 退出码
 

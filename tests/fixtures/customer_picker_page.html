@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html>
+<head><title>客户资料选择</title></head>
+<body>
+<form id="form1" method="post" action="./Base_KHZL_Select.aspx">
+  <table>
+    <tr>
+      <td>查询：</td>
+      <td><input name="txtKey" type="text" id="txtKey" value="" /></td>
+      <td><input type="submit" name="btn_Search" id="btn_Search" value="搜索" /></td>
+    </tr>
+  </table>
+
+  <div>
+    共 <span id="lblRowsCount" style="color:#E78A29;">2</span> 条，
+    第 <span id="lblCurrentPage">1</span>/<span id="lblPageCount">1</span> 页
+  </div>
+
+  <table id="gridView" style="width:1090px;border-collapse:collapse;">
+    <tr class="FixedTitleRow">
+      <th scope="col">客户类别</th>
+      <th scope="col">客户名称</th>
+      <th scope="col">客户英文名称</th>
+      <th scope="col">客户简称</th>
+      <th scope="col">开票客户名称</th>
+      <th scope="col">联系人</th>
+      <th scope="col">联系电话</th>
+      <th scope="col">手机</th>
+    </tr>
+    <tr ondblclick="SelectKHZL('aaaaaaaa-0000-0000-0000-000000000001','03.0064','示例客户A','8bac2b47-0000-0000-0000-000000000001','03','未定行业','张三','12345678','','电汇','香港发票(直接出口)','0','见提单5天','27','10','02','II级(标准)','示例地址A','11111111-1111-1111-1111-111111111111','张三','','','HKD','1','','','','','22222222-2222-2222-2222-222222222222','李四','示例客户A开票','','','','示例A','','','','')">
+      <td>未定行业</td><td>示例客户A</td><td></td><td>示例A</td><td>示例客户A开票</td><td>张三</td><td>12345678</td><td></td>
+    </tr>
+    <tr ondblclick="SelectKHZL('bbbbbbbb-0000-0000-0000-000000000002','03.0088','示例客户B','8bac2b47-0000-0000-0000-000000000001','03','未定行业','李四','87654321','13800000000','转账','香港发票(直接出口)','0','月结30天','05','5','02','II级(标准)','示例地址B','33333333-3333-3333-3333-333333333333','王五','','','USD','0.92','','','','','22222222-2222-2222-2222-222222222222','李四','示例客户B开票','','','','示例B','','','','')">
+      <td>未定行业</td><td>示例客户B</td><td></td><td>示例B</td><td>示例客户B开票</td><td>李四</td><td>87654321</td><td>13800000000</td>
+    </tr>
+    <tr onmouseover="this.style.cursor='hand';" style="word-break:break-all;"> </tr>
+  </table>
+</form>
+</body>
+</html>
