@@ -445,6 +445,25 @@ def cmd_price_detail(args) -> int:
     return 0
 
 
+def cmd_price_node(args) -> int:
+    cfg = _build_config(args)
+    auth = ensure_authenticated(cfg, interactive=sys.stdin.isatty())
+    tool = build_tool("price-node", auth)
+
+    count = 0
+    for _record in tool.run(
+        record_id=args.id,
+        node=args.node,
+        cpid=args.cpid,
+        bjid=args.bjid,
+        index=args.index,
+        out=args.out,
+    ):
+        count += 1
+    _log(f"[DONE] {count} 个节点")
+    return 0
+
+
 def cmd_attendance(args) -> int:
     cfg = _build_config(args)
     auth = ensure_authenticated(cfg, interactive=sys.stdin.isatty())
@@ -636,6 +655,18 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--no-description", action="store_true", dest="no_description",
                    help="不输出产品描述长文本")
     p.set_defaults(func=cmd_price_detail)
+
+    p = sub.add_parser("price-node", parents=[common],
+                       help="客户报价子数据（数量档/部件/部件辅料/费项明细）")
+    p.add_argument("--id", dest="id", required=True, help="记录 ID（列表的 记录ID）")
+    p.add_argument("--node", required=True,
+                   choices=["quantities", "part", "part_materials", "fees"],
+                   help="quantities=数量档 / part=部件 / part_materials=部件辅料 / fees=费项明细")
+    p.add_argument("--cpid", help="产品明细 ID（不传用详情页里的）")
+    p.add_argument("--bjid", help="部件 ID（part/part_materials）")
+    p.add_argument("--index", type=int, help="取第几个部件（1 起）")
+    p.add_argument("--out", help="输出 JSON 路径")
+    p.set_defaults(func=cmd_price_node)
 
     p = sub.add_parser("attendance", parents=[common], help="查询月度考勤")
     p.add_argument("--month", "-m", required=True, help="月份，如 2026-11")

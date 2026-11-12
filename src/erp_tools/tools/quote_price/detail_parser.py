@@ -204,6 +204,17 @@ def _find_part_table(soup):
     return _find_table_by_header(soup, ("部件名称", "开料尺寸", "切纸数量"))
 
 
+def _call_first_arg(el, func: str) -> str:
+    """从元素（或它的子元素）的 onclick 里取 `func('X', ...)` 的第一个参数。"""
+    targets = [el, *el.find_all(True)]
+    for item in targets:
+        raw = item.get("onclick") or ""
+        m = re.search(rf"{func}\(\s*'([^']*)'", raw)
+        if m:
+            return m.group(1)
+    return ""
+
+
 def parse_quantities(soup) -> list[dict[str, str]]:
     """数量明细表 → [{数量,单价,金额}, ...]。
 
@@ -220,7 +231,8 @@ def parse_quantities(soup) -> list[dict[str, str]]:
                for c in rows[0].find_all("td", recursive=False)]
     out: list[dict[str, str]] = []
     for tr in rows[1:]:
-        cells = [cell_value(td) for td in tr.find_all("td", recursive=False)]
+        tds = tr.find_all("td", recursive=False)
+        cells = [cell_value(td) for td in tds]
         if len(cells) != len(headers):
             break  # 数量明细到此结束（后面是部件表等）
         for start in range(0, len(cells) - 2, 3):
@@ -228,7 +240,12 @@ def parse_quantities(soup) -> list[dict[str, str]]:
                                        blank_if_placeholder(cells[start + 1]),
                                        blank_if_placeholder(cells[start + 2]))
             if quantity or price or amount:
-                out.append({"数量": quantity, "单价": price, "金额": amount})
+                tier = {"数量": quantity, "单价": price, "金额": amount}
+                # CPSLID 挂在「数量」那一格的 span 上，一行有 3 档，不能按行取
+                cpslid = _call_first_arg(tds[start], "OpenInputCPSLZLData")
+                if cpslid and cpslid != "-1":
+                    tier["cpslid"] = cpslid
+                out.append(tier)
     return out
 
 
@@ -250,6 +267,12 @@ def parse_parts(soup) -> list[dict[str, str]]:
         texts = [norm(td.get_text(" ", strip=True)) for td in tr.find_all("td", recursive=False)]
         if len(cells) >= len(headers) and not _is_label(texts[0]):
             current = dict(zip(headers, cells))
+            bjid = _call_first_arg(tr, "OpenInputBJZLData")
+            if bjid:
+                current["bjid"] = bjid
+            bjgx = _call_first_arg(tr, "OpenInputBJGXZLData")
+            if bjgx:
+                current.setdefault("bjid", bjgx)
             parts.append(current)
             continue
         # 子行：`印前工序： | 分纸->切纸`

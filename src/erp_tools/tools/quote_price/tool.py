@@ -16,6 +16,7 @@
 
 from __future__ import annotations
 
+import re
 from datetime import date, timedelta
 from typing import Iterator
 
@@ -542,9 +543,132 @@ class PriceDetailTool(Tool):
 
 
 
+class PriceNodeTool(Tool):
+    """客户报价详情页里「点开才有的子数据」（数量档 / 部件 / 部件辅料 / 费项明细）。
+
+    这些子页不能直接 GET，必须先向 `Add.aspx` 发一次 POST：
+    把 GUID 写进 `lblSelect*` 隐藏字段 + 回发对应的 `btnSelect*` 按钮，
+    响应里的 `showModalDialog('xxx.aspx?...')` 才是真正的子页 URL。
+    """
+
+    name = "price-node"
+    summary = "客户报价子数据（quantities/part/part_materials/fees）→ JSON"
+
+    @staticmethod
+    def options() -> list[Option]:
+        return [
+            Option("record_id", "记录 ID（列表的 记录ID）", cli="--id"),
+            Option("node", "子数据：quantities / part / part_materials / fees", cli="--node"),
+            Option("cpid", "产品明细 ID；不传用详情页里的值", cli="--cpid"),
+            Option("bjid", "部件 ID；part/part_materials 用，不传给第一个部件", cli="--bjid"),
+            Option("index", "取第几个部件（1 起），配合 part/part_materials", cli="--index"),
+            Option("out", "输出 JSON 路径", cli="--out"),
+        ]
+
+    # ══════════════════ 打开子页 ══════════════════
+    def _open(self, record_id: str, node: str, *, cpid: str = "",
+              bjid: str = "", cpslid: str = "-1") -> tuple[str, str, str, str]:
+        from .detail_parser import parse_price_detail
+
+        detail_tool = PriceDetailTool(self.auth)
+        html, url = detail_tool.open_record(record_id)
+        if not cpid or (node in ("part", "part_materials") and not bjid):
+            parsed = parse_price_detail(html, record_id=record_id)
+            cpid = cpid or parsed.cpid
+            if node in ("part", "part_materials") and not bjid:
+                bjid = next((p.get("bjid", "") for p in parsed.parts if p.get("bjid")), "")
+
+        body = form_snapshot(html)
+        if node == "quantities":
+            body.update({"lblSelectCPSLZL": "-1", "lblSelectCPZLPID": record_id,
+                         "lblSelectCPZLID": cpid, "btnSelectCPSLZL": ""})
+        elif node == "part":
+            body.update({"lblSelectBJZLID": bjid, "lblSelectBJZLPID": record_id,
+                         "btnSelectBJZL": ""})
+        elif node == "part_materials":
+            body.update({"lblSelectCPZLPID": record_id, "lblSelectBJZLID": bjid,
+                         "btnSelectBJFL": ""})
+        elif node == "fees":
+            body.update({"lblSelectCPZLPID": record_id, "lblSelectCPZLID": cpid,
+                         "lblSelectTZCPZLID": "-1",
+                         "lblSelectCPSLZL": cpslid, "btnBrowFXMX": ""})
+        else:
+            raise ParseError(f"未知节点 {node!r}；可用：quantities / part / "
+                             f"part_materials / fees")
+
+        resp = self.client.post(url, data=body)
+        m = re.search(r"showModalDialog\(\s*'([^']+)'", resp.text)
+        if m is None:
+            raise UpstreamError(f"{node} 子页没有弹出（页面结构可能变了，或该行没有这项数据）",
+                                resp.status_code)
+        sub = m.group(1).replace("&amp;", "&")
+        for prefix in ("/Admin/BaoJia/BJ_KHBJ/", "/Admin/"):
+            page = self.client.get(prefix + sub)
+            if page.status_code == 200 and "__VIEWSTATE" in page.text:
+                return page.text, self.client.url(prefix + sub), html, bjid
+        raise UpstreamError(f"{node} 子页打不开：{sub[:120]}")
+
+    def fetch(self, record_id: str, node: str, *, cpid: str = "", bjid: str = "",
+              cpslid: str = "-1") -> dict:
+        from . import node_parser
+        from .detail_parser import parse_price_detail
+
+        sub_html, page_url, parent_html, resolved_bjid = self._open(
+            record_id, node, cpid=cpid, bjid=bjid, cpslid=cpslid)
+        parser = node_parser.NODE_PARSERS[node]
+        payload = parser(sub_html)
+        if isinstance(payload, list):
+            result = {"records": payload, "count": len(payload)}
+        else:
+            result = payload
+        if node == "part":
+            # 部件页是个**空白编辑表单**（只回 txtID），真实值在父页的部件明细表里
+            detail = parse_price_detail(parent_html, record_id=record_id)
+            row = next((p for p in detail.parts if p.get("bjid") == resolved_bjid), {})
+            result["detail_row"] = row
+            if not result.get("fields", {}).get("部件名称"):
+                result["note"] = ("部件页在只读态不渲染字段值（只回 txtID）；"
+                                  "部件内容请看 detail_row / erp_price_detail.parts")
+        return {"node": node, "url": page_url, **result}
+
+    # ══════════════════ 主流程 ══════════════════
+    def run(self, *, record_id: str | None = None, node: str = "",
+            cpid: str | None = None, bjid: str | None = None,
+            index: int | None = None, out: str | None = None) -> Iterator[dict]:
+        import json
+        from pathlib import Path
+
+        rid = (record_id or "").strip()
+        if not rid:
+            raise ParseError("record_id 必填")
+        if index is not None:
+            detail = parse_price_detail(PriceDetailTool(self.auth).open_record(rid)[0])
+            parts = [p for p in detail.parts if p.get("bjid")]
+            pos = int(index) - 1
+            if pos < 0 or pos >= len(parts):
+                raise ParseError(f"index={index} 超出范围：该单共 {len(parts)} 个部件")
+            bjid = bjid or parts[pos]["bjid"]
+
+        result = self.fetch(rid, node, cpid=(cpid or ""), bjid=(bjid or ""))
+        if out:
+            path = Path(out)
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_text(json.dumps(result, ensure_ascii=False, indent=2),
+                            encoding="utf-8")
+            self._log(f"[DONE] → {out}")
+        yield result
+
+    @staticmethod
+    def _log(msg: str) -> None:
+        import sys
+
+        print(msg, file=sys.stderr, flush=True)
+
+
 __all__ = [
     "PriceListTool",
     "PriceDetailTool",
+    "PriceNodeTool",
     "PAGE_PATH",
     "DEFAULT_QXID",
     "DATE_FIELDS",

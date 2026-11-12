@@ -27,7 +27,7 @@ from ...tools.attendance import AttendanceTool
 from ...tools.quote_create import QuoteCreateService
 from ...tools.quote_index import QuoteListTool
 from ...tools.quote_index.parser import ACTION_COLUMNS
-from ...tools.quote_price import PriceDetailTool, PriceListTool
+from ...tools.quote_price import PriceDetailTool, PriceListTool, PriceNodeTool
 from ...tools.quote_request import QuoteRequestTool
 from ..server.state import ServerState
 from .schemas import QuoteProductInput
@@ -377,6 +377,51 @@ def register_tools(mcp: MCPServer, state: ServerState) -> None:
                 }
             return tool.fetch_one(rows[0]["记录ID"],
                                   include_description=include_description)
+
+    # ---------- 客户报价：子数据（点开才有） ----------
+    @mcp.tool(
+        name="erp_price_node",
+        description=(
+            "客户报价详情里「点开才有的子数据」（一次 POST + 一次 GET，约 1-2 秒）："
+            "quantities=数量档明细（数量/单价/金额/折扣率/折后价/建议利润/单款数量）；"
+            "part=单个部件的印刷资料（P数/尺寸/颜色/专色数/书脊方向/拼版方式）；"
+            "part_materials=部件已选辅料（材料编码/名称/单价/长宽/指定数量/系数）；"
+            "fees=每个数量档的费项明细（纸张/辅料/印前/印刷/版费/印后/其他）。"
+            "bdjid/index 不传默认取第一个部件；fees 默认不返回计算公式（体积很大）。"
+        ),
+    )
+    @_tool_errors
+    def erp_price_node(
+        record_id: Annotated[str, Field(description="记录 ID（列表的 记录ID）")],
+        node: Annotated[
+            str,
+            Field(description="quantities / part / part_materials / fees"),
+        ],
+        cpid: Annotated[str | None, Field(description="产品明细 ID，不传自动取")] = None,
+        bjid: Annotated[str | None, Field(description="部件 ID，不传取第一个部件")] = None,
+        index: Annotated[int | None, Field(description="取第几个部件（1 起）")] = None,
+        include_formula: Annotated[
+            bool, Field(description="fees 是否带计算公式（默认 false）")
+        ] = False,
+    ) -> dict[str, Any]:
+        session = _session(state)
+        tool = PriceNodeTool(session.auth)
+        with state.provider.slot():
+            if index is not None and not bjid:
+                detail = PriceDetailTool(session.auth).fetch_one(
+                    record_id, include_description=False)
+                parts = [p for p in detail.get("parts", []) if p.get("bjid")]
+                pos = int(index) - 1
+                if pos < 0 or pos >= len(parts):
+                    raise ToolError(f"index={index} 超出范围：该单共 {len(parts)} 个部件")
+                bjid = parts[pos]["bjid"]
+            result = tool.fetch(record_id, node, cpid=cpid or "", bjid=bjid or "")
+        if node == "fees" and not include_formula:
+            for group in result.get("groups", []):
+                for rows in group.get("fees", {}).values():
+                    for row in rows:
+                        row.pop("公式", None)
+        return result
 
     # ---------- 考勤 ----------
     @mcp.tool(

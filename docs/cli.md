@@ -68,6 +68,7 @@ qxid:
 | `erp query` | 报价需求【列表】查询 / 导出 CSV |
 | `erp price` | 客户报价【列表】查询 / 导出 CSV（`BJ_KHBJ`，一行=一个报价产品行） |
 | `erp price-detail` | 客户报价【详情】（表头+产品+数量+部件+费用+描述） |
+| `erp price-node` | 客户报价【子数据】（数量档 / 部件 / 部件辅料 / 费项明细） |
 | `erp quote` | 报价需求【详情】→ ERP 订单需求 JSON |
 | `erp attendance` | 月度考勤明细 → Markdown / JSONL |
 | `erp key` | 向网关换取 api-key（见 [mcp.md](mcp.md)） |
@@ -204,6 +205,28 @@ erp price-detail --bdbh KHBJ261112003 --row 2 --out out\row2.json
   实测有单号的日期与制单日期不一致的（如 `KHBJ261016002-01` 的制单日期在 11 月）。
 - 数量明细表**只有第一组**表头写「产品数量」，后面写「数量」；空值用 `.` 占位（已归一成空串）。
 - 部件表里跟在部件行后面的「印前工序/印刷机台/印后工序/部件辅料/部件备注」会挂到该部件上。
+
+### `erp price-node` — 客户报价子数据（点开才有）
+
+详情页上那些“单击可调出…明细”的格子，实际是**同一个 `Add.aspx` 发一次 POST**：
+把 GUID 写进 `lblSelect*` 隐藏字段 + 回发 `btnSelect*` 按钮，响应里
+`showModalDialog('xxx.aspx?...')` 才是子页 URL。工具会帮你做完这两步再解析。
+
+| `--node` | 子页 | 内容 |
+| --- | --- | --- |
+| `quantities` | `Add_CPSL.aspx` | 数量档：数量/单价/金额/折扣率/折后单价/折后金额/建议利润/单款数量 |
+| `part` | `Add_BJZL.aspx` | 单个部件（`detail_row` 是父页的真实部件行；子页在只读态只回 `txtID`） |
+| `part_materials` | `Add_BJFL.aspx` | 部件辅料：部件名称/材料编码/材料名称/单价/材料长宽/指定数量/系数 |
+| `fees` | `Brow_FXMX.aspx` | 每个数量档的费项：纸张/辅料/印前/印刷/版费/印后/其他 + 公式与单价 |
+
+```powershell
+erp price-node --id <记录ID> --node quantities --out out\q.json
+erp price-node --id <记录ID> --node part --index 2 --out out\bj2.json
+erp price-node --id <记录ID> --node fees --out out\fees.json
+```
+
+- `--cpid` / `--bjid` 不传时自动从详情页取（`bjid` 取第一个部件，`--index` 可选第几个）。
+- `fees` 一页约 1 MB（10 个数量档 × 7 类费项），MCP 里默认**不返回公式**（`include_formula=true` 才给）。
 
 ### `erp quote` — 报价需求详情
 
