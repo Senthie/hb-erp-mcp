@@ -15,7 +15,8 @@ dependencies = [
 [project.optional-dependencies]
 dev = ["pytest>=8.0", "pyinstaller>=6.0"]
 # MCP 服务端（Streamable HTTP）。只用 CLI 的用户不需要装。
-server = ["mcp>=1.10", "uvicorn>=0.30"]
+# pydantic 用来给 MCP 工具声明参数格式（inputSchema），mcp 自身也依赖它，这里显式列出。
+server = ["mcp>=1.10", "uvicorn>=0.30", "pydantic>=2.11"]
 
 [project.scripts]
 erp = "erp_tools.cli:main"

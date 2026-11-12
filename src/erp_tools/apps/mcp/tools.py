@@ -12,10 +12,11 @@
 from __future__ import annotations
 
 import functools
-from typing import Any
+from typing import Annotated, Any
 
 from mcp.server.mcpserver import MCPServer
 from mcp.server.mcpserver.exceptions import ToolError
+from pydantic import Field
 
 from ... import __version__
 from ...core.auth import normalize_page_path
@@ -160,16 +161,63 @@ def register_tools(mcp: MCPServer, state: ServerState) -> None:
     )
     @_tool_errors
     def erp_quote_list(
-        from_date: str | None = None,
-        to_date: str | None = None,
-        where: str | None = None,
-        customer: str | None = None,
-        sales: str | None = None,
-        status: str | None = None,
-        key: str = "",
-        field: str = "",
-        columns: str | None = None,
-        limit: int = DEFAULT_RECORDS,
+        from_date: Annotated[
+            str | None,
+            Field(description="制单起始日期，YYYY-MM-DD；默认本月 1 号",
+                  examples=["2026-11-01"]),
+        ] = None,
+        to_date: Annotated[
+            str | None,
+            Field(description="制单结束日期，YYYY-MM-DD；默认今天",
+                  examples=["2026-11-30"]),
+        ] = None,
+        where: Annotated[
+            str | None,
+            Field(
+                description=(
+                    "本地过滤表达式，多个条件用英文逗号分隔；语法 `字段 操作符 值`，"
+                    "操作符支持 = != ~ > < >= <=（~ 表示包含）"
+                ),
+                examples=["客户名称~ADG,报价状态=需求审批"],
+            ),
+        ] = None,
+        customer: Annotated[
+            str | None,
+            Field(description="客户名称片段（等价于 where 里的 客户名称~X）", examples=["ADG"]),
+        ] = None,
+        sales: Annotated[
+            str | None,
+            Field(description="业务员姓名片段（等价于 业务员~X）", examples=["陈"]),
+        ] = None,
+        status: Annotated[
+            str | None,
+            Field(description="报价状态片段（等价于 报价状态~X）", examples=["需求审批"]),
+        ] = None,
+        key: Annotated[
+            str,
+            Field(description="服务端关键字（配合 field 使用，减少传输量）",
+                  examples=["BJXQ2611"]),
+        ] = "",
+        field: Annotated[
+            str,
+            Field(
+                description=(
+                    "关键字匹配的列名（中文），如 表单编号 / 客户名称 / 产品名称 / 香港单号 / 业务员"
+                ),
+                examples=["表单编号"],
+            ),
+        ] = "",
+        columns: Annotated[
+            str | None,
+            Field(
+                description="只返回指定列，逗号分隔；列名用返回里的 columns",
+                examples=["记录ID,表单编号,客户名称,报价状态"],
+            ),
+        ] = None,
+        limit: Annotated[
+            int,
+            Field(description=f"返回条数，1~{MAX_RECORDS}；超出会被静默钳到上限并置 truncated"),
+        ] = DEFAULT_RECORDS,
     ) -> dict[str, Any]:
         session = _session(state)
         size = _clamp(limit)
@@ -201,8 +249,15 @@ def register_tools(mcp: MCPServer, state: ServerState) -> None:
     )
     @_tool_errors
     def erp_quote_detail(
-        record_id: str | None = None,
-        bdbh: str | None = None,
+        record_id: Annotated[
+            str | None,
+            Field(description="记录 ID（GUID），来自 erp_quote_list 的 记录ID 列"),
+        ] = None,
+        bdbh: Annotated[
+            str | None,
+            Field(description="表单编号，形如 BJXQ261112001；会给单号里的日期反查记录 ID",
+                  examples=["BJXQ261112001"]),
+        ] = None,
     ) -> dict[str, Any]:
         session = _session(state)
         if not record_id and not bdbh:
@@ -233,11 +288,29 @@ def register_tools(mcp: MCPServer, state: ServerState) -> None:
     )
     @_tool_errors
     def erp_attendance(
-        month: str,
-        start_day: str = "01",
-        end_day: str = "30",
-        users: list[str] | None = None,
-        limit: int = DEFAULT_RECORDS,
+        month: Annotated[
+            str,
+            Field(description="考勤月份，YYYY-MM", examples=["2026-11"]),
+        ],
+        start_day: Annotated[
+            str,
+            Field(description="起始日，两位数字 01~30；超过 30 会被 ERP 自行收敛到 30",
+                  examples=["01"]),
+        ] = "01",
+        end_day: Annotated[
+            str,
+            Field(description="结束日，两位数字 01~30；传 31 只会返回 1 号一行",
+                  examples=["30"]),
+        ] = "30",
+        users: Annotated[
+            list[str] | None,
+            Field(description="工卡号或员工姓名列表；为空则用当前登录账号",
+                  examples=[["2474"]]),
+        ] = None,
+        limit: Annotated[
+            int,
+            Field(description=f"返回行数，1~{MAX_RECORDS}；超出会被静默钳到上限并置 truncated"),
+        ] = DEFAULT_RECORDS,
     ) -> dict[str, Any]:
         session = _session(state)
         size = _clamp(limit)
@@ -292,8 +365,19 @@ def register_tools(mcp: MCPServer, state: ServerState) -> None:
     )
     @_tool_errors
     def erp_quote_product_form(
-        record_id: str | None = None,
-        cpid: str | None = None,
+        record_id: Annotated[
+            str | None,
+            Field(
+                description=(
+                    "给了就打开该单据的明细编辑页，返回当前值、真实下拉选项与只读状态；"
+                    "不给则返回静态注册表"
+                )
+            ),
+        ] = None,
+        cpid: Annotated[
+            str | None,
+            Field(description="明细行 ID（来自 erp_quote_details），与 record_id 搭配定位单行"),
+        ] = None,
     ) -> dict[str, Any]:
         session = _session(state)
         with state.provider.slot():
@@ -313,8 +397,17 @@ def register_tools(mcp: MCPServer, state: ServerState) -> None:
     )
     @_tool_errors
     def erp_quote_options(
-        field: str | None = None,
-        refresh: bool = False,
+        field: Annotated[
+            str | None,
+            Field(
+                description="只看某一组：sales / merchandiser / price_system（也接受业务员/跟单员/单价体系）",
+                examples=["sales"],
+            ),
+        ] = None,
+        refresh: Annotated[
+            bool,
+            Field(description="true 则跳过 5 分钟缓存，重新向 ERP 读取"),
+        ] = False,
     ) -> dict[str, Any]:
         """field 可选 sales / merchandiser / price_system（也接受中文名）。"""
         session = _session(state)
@@ -332,8 +425,14 @@ def register_tools(mcp: MCPServer, state: ServerState) -> None:
     )
     @_tool_errors
     def erp_quote_customer_search(
-        keyword: str = "",
-        limit: int = 20,
+        keyword: Annotated[
+            str,
+            Field(description="客户名称/简称的片段，留空则返回前若干条", examples=["ADG"]),
+        ] = "",
+        limit: Annotated[
+            int,
+            Field(description="最多返回几个客户", examples=[20]),
+        ] = 20,
     ) -> dict[str, Any]:
         session = _session(state)
         with state.provider.slot():
@@ -393,19 +492,58 @@ def register_tools(mcp: MCPServer, state: ServerState) -> None:
     )
     @_tool_errors
     def erp_quote_create(
-        customer: str | None = None,
+        customer: Annotated[
+            str | None,
+            Field(description="客户名称片段或客户 ID；可先用 erp_quote_customer_search 查",
+                  examples=["ADG"]),
+        ] = None,
         products: list[dict[str, Any]] | None = None,
-        sales: str | None = None,
-        merchandiser: str | None = None,
-        price_system: str | None = None,
-        contact: str | None = None,
-        phone: str | None = None,
-        mobile: str | None = None,
-        fax: str | None = None,
-        discount: str | None = None,
-        remark: str | None = None,
-        product_memo: str | None = None,
-        confirm: bool = False,
+        sales: Annotated[
+            str | None,
+            Field(description="业务员姓名或 GUID；为空时取客户默认业务员",
+                  examples=["陈小美"]),
+        ] = None,
+        merchandiser: Annotated[
+            str | None,
+            Field(description="跟单员姓名或 GUID；选项用 erp_quote_options 查"),
+        ] = None,
+        price_system: Annotated[
+            str | None,
+            Field(description="单价体系名称或 GUID；选项用 erp_quote_options 查"),
+        ] = None,
+        contact: Annotated[
+            str | None,
+            Field(description="联系人", examples=["陈先生"]),
+        ] = None,
+        phone: Annotated[
+            str | None,
+            Field(description="联系电话", examples=["0755-12345678"]),
+        ] = None,
+        mobile: Annotated[
+            str | None,
+            Field(description="手机；⚠ 实测该 ERP 不落库，提交后回读为空"),
+        ] = None,
+        fax: Annotated[
+            str | None,
+            Field(description="传真；⚠ 实测该 ERP 不落库，提交后回读为空"),
+        ] = None,
+        discount: Annotated[
+            str | None,
+            Field(description="折扣率，如 0.45；为空时取客户默认折扣率",
+                  examples=["0.45"]),
+        ] = None,
+        remark: Annotated[
+            str | None,
+            Field(description="备注（表头 txtRemark）"),
+        ] = None,
+        product_memo: Annotated[
+            str | None,
+            Field(description="产品描述（表头 txtCPMX）"),
+        ] = None,
+        confirm: Annotated[
+            bool,
+            Field(description="false（默认）只校验并返回 needs_confirmation，不落库；true 才真正保存"),
+        ] = False,
     ) -> dict[str, Any]:
         session = _session(state)
         with state.provider.slot():
@@ -426,7 +564,10 @@ def register_tools(mcp: MCPServer, state: ServerState) -> None:
         ),
     )
     @_tool_errors
-    def erp_quote_details(record_id: str) -> dict[str, Any]:
+    def erp_quote_details(record_id: Annotated[
+        str,
+        Field(description="报价需求记录 ID（GUID），来自 erp_quote_list 的 记录ID 列"),
+    ]) -> dict[str, Any]:
         session = _session(state)
         with state.provider.slot():
             return QuoteCreateService(session.auth).list_details(record_id)
@@ -441,17 +582,41 @@ def register_tools(mcp: MCPServer, state: ServerState) -> None:
     )
     @_tool_errors
     def erp_quote_update(
-        record_id: str,
-        remark: str | None = None,
-        contact: str | None = None,
-        phone: str | None = None,
-        mobile: str | None = None,
-        fax: str | None = None,
-        discount: str | None = None,
-        product_memo: str | None = None,
-        sales: str | None = None,
-        merchandiser: str | None = None,
-        confirm: bool = False,
+        record_id: Annotated[
+            str,
+            Field(description="报价需求记录 ID（GUID）"),
+        ],
+        remark: Annotated[str | None, Field(description="备注；不传则不修改")] = None,
+        contact: Annotated[str | None, Field(description="联系人；不传则不修改")] = None,
+        phone: Annotated[str | None, Field(description="联系电话；不传则不修改")] = None,
+        mobile: Annotated[
+            str | None,
+            Field(description="手机；⚠ 实测该 ERP 不落库"),
+        ] = None,
+        fax: Annotated[
+            str | None,
+            Field(description="传真；⚠ 实测该 ERP 不落库"),
+        ] = None,
+        discount: Annotated[
+            str | None,
+            Field(description="折扣率，如 0.45", examples=["0.45"]),
+        ] = None,
+        product_memo: Annotated[
+            str | None,
+            Field(description="产品描述（表头 txtCPMX）"),
+        ] = None,
+        sales: Annotated[
+            str | None,
+            Field(description="业务员姓名或 GUID"),
+        ] = None,
+        merchandiser: Annotated[
+            str | None,
+            Field(description="跟单员姓名或 GUID"),
+        ] = None,
+        confirm: Annotated[
+            bool,
+            Field(description="false（默认）只返回将要修改的字段；true 才写库"),
+        ] = False,
     ) -> dict[str, Any]:
         session = _session(state)
         with state.provider.slot():
@@ -472,12 +637,30 @@ def register_tools(mcp: MCPServer, state: ServerState) -> None:
     )
     @_tool_errors
     def erp_quote_update_product(
-        record_id: str,
-        cpid: str,
-        name: str | None = None,
-        spec: str | None = None,
-        qty: float | None = None,
-        confirm: bool = False,
+        record_id: Annotated[
+            str,
+            Field(description="报价需求记录 ID（GUID）"),
+        ],
+        cpid: Annotated[
+            str,
+            Field(description="明细行 ID，来自 erp_quote_details 返回的 cpid"),
+        ],
+        name: Annotated[
+            str | None,
+            Field(description="新产品名称（会写入明细 txtCPMC）；不传则不修改"),
+        ] = None,
+        spec: Annotated[
+            str | None,
+            Field(description="规格，形如 210*148；不传则不修改", examples=["210*148"]),
+        ] = None,
+        qty: Annotated[
+            float | None,
+            Field(description="产品数量，必须 > 0", examples=[3000]),
+        ] = None,
+        confirm: Annotated[
+            bool,
+            Field(description="false（默认）只返回待修改字段；true 才写库"),
+        ] = False,
     ) -> dict[str, Any]:
         session = _session(state)
         with state.provider.slot():
@@ -496,7 +679,16 @@ def register_tools(mcp: MCPServer, state: ServerState) -> None:
         ),
     )
     @_tool_errors
-    def erp_quote_delete(record_id: str, confirm: bool = False) -> dict[str, Any]:
+    def erp_quote_delete(
+        record_id: Annotated[
+            str,
+            Field(description="报价需求记录 ID（GUID），删除不可恢复"),
+        ],
+        confirm: Annotated[
+            bool,
+            Field(description="false（默认）只检查单据是否存在并返回单号；true 才真正删除"),
+        ] = False,
+    ) -> dict[str, Any]:
         session = _session(state)
         with state.provider.slot():
             return QuoteCreateService(session.auth).delete_quote(record_id, confirm=confirm)
