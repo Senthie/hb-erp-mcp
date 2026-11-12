@@ -103,7 +103,7 @@ VS Code `mcp.json`：
 | `erp_quote_list` | — | 报价需求列表查询（日期区间 + 一个关键字，其余条件本地过滤） |
 | `erp_price_list` | — | **客户报价列表**（`BJ_KHBJ`，一行=一个报价产品行）：日期区间可选作用于制单/交货/离厂 + 服务端下拉过滤 + 本地 `where` |
 | `erp_price_detail` | — | **客户报价详情**：表头 + 产品字段 + 数量明细 + 选配项目 + 部件明细(材料/尺寸/工序/辅料) + 费用 + 产品描述 + 制单审核 |
-| `erp_price_node` | — | **子数据**：`quantities` 数量档 / `part` 部件 / `part_materials` 部件辅料 / `fees` 每个数量档的费项明细（纸张/辅料/印前/印刷/版费/印后/其他） |
+| `erp_price_node` | `record_id` + `node`（可选 `cpid`/`bjid`/`index`/`cpslid`/`include_formula`） | **子数据 22 个节点**：`quantities` 数量档 / `part` 部件 / `part_materials` 部件辅料 / `part_process` 部件工序 / `part_machines` 部件机台 / `product_check` 送货资料 / `fees` 费项明细 / `other_fees` 其他费项 / `cp` 产品资料 / `cp_process` 产品工序 / `cp_materials` 产品辅料 / `feedback` 需求反馈 / `sgkb` 手工开版 / `split_price` 拆分价格；`panel:description`/`material_list`/`freight`/… 8 个折叠面板；`list` 列出节点；`all` 一次取整棵树 |
 | `erp_quote_detail` | — | 单条报价需求详情（ERP 订单需求字段） |
 | `erp_attendance` | — | 月度考勤明细 |
 | `erp_quote_new_form` | — | 空白页结构：表头字段、只读标记、三个下拉、textarea 列表 |

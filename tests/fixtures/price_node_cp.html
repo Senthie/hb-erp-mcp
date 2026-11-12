@@ -1,0 +1,143 @@
+<html><head><title>fixture</title></head><body>
+<table><tr>
+<td align="Right" width="10%"><label id="lblYMBTtxtCPDL"></label> <font color="red" style="font-size:10pt">产品大类：</font> </td>
+<td align="left" width="14%"><select id="txtCPDL" name="txtCPDL" onchange="javascript:setTimeout('__doPostBack(\'txtCPDL\',\'\')', 0)" style="color:Black;font-size:10pt;width:100%;">
+<option selected="selected" value="4">书版</option>
+</select></td>
+<td align="Right" width="10%"><label id="lblYMBTtxtCPLB"></label> <font color="red" style="font-size:10pt">产品类别：</font> </td>
+<td align="left" width="14%"><div style="position:absolute;top:0px;left:0px;visibility:hidden;"><img alt="" height="0" src="/Admin/Images/drop.gif" width="0"/>
+<img alt="" height="0" src="/Admin/Images/drop_hover.gif" width="0"/>
+</div><table cellpadding="0" cellspacing="0" class="comboBox" id="txtCPLB" noderowcssclass="tableTree" onmouseout="txtCPLB.HandleInputMouseOut()" onmouseover="txtCPLB.HandleInputMouseOver()" style="display:inline-block;color:Black;font-size:10pt;width:100%;visibility:hidden;">
+<tr>
+<td id="txtCPLB_TextBox" width="100%"><input class="comboTextBox" id="txtCPLB_Input" name="txtCPLB_Input" onblur="txtCPLB.HandleBlur(event)" onfocus="txtCPLB.HandleFocus()" onkeydown="txtCPLB.HandleKeyPress(event,this)" style="display:none;" type="text" value="27.06;精装揭页BB书"/></td><td><img alt="" id="txtCPLB_DropImage" onmousedown="txtCPLB.HandleDropClick(event,this)" onmouseup="txtCPLB.HandleDropMouseUp(event,this)" src="/Admin/Images/drop.gif" style="display:block;"/></td>
+</tr>
+</table><div class="comboDropDown" id="txtCPLB_DropDown" style="display:none;">
+<table border="0" cellpadding="0" cellspacing="0" width="100%">
+<tr>
+<td><div id="txtCPLB_DropDownContent" onmousedown="ComponentArt_CancelEvent(event)" onmouseup="txtCPLB.HandleMouseUp(event,this)">
+<div style="position:absolute;top:0px;left:0px;visibility:hidden;"><img alt="" height="0" src="/Admin/Images/TreeLines/folders.gif" width="0"/>
+<img alt="" height="0" src="/Admin/Images/TreeLines/folder.gif" width="0"/>
+<img alt="" height="0" src="/Admin/Images/TreeLines/i.gif" width="0"/>
+<img alt="" height="0" src="/Admin/Images/TreeLines/l.gif" width="0"/>
+<img alt="" height="0" src="/Admin/Images/TreeLines/r.gif" width="0"/>
+<img alt="" height="0" src="/Admin/Images/TreeLines/t.gif" width="0"/>
+<img alt="" height="0" src="/Admin/Images/TreeLines/lplus.gif" width="0"/>
+<img alt="" height="0" src="/Admin/Images/TreeLines/rplus.gif" width="0"/>
+<img alt="" height="0" src="/Admin/Images/TreeLines/tplus.gif" width="0"/>
+<img alt="" height="0" src="/Admin/Images/TreeLines/lminus.gif" width="0"/>
+<img alt="" height="0" src="/Admin/Images/TreeLines/rminus.gif" width="0"/>
+<img alt="" height="0" src="/Admin/Images/TreeLines/tminus.gif" width="0"/>
+<img alt="" height="0" src="/Admin/Images/TreeLines/minus.gif" width="0"/>
+<img alt="" height="0" src="/Admin/Images/TreeLines/plus.gif" width="0"/>
+<img alt="" height="0" src="/Admin/Images/TreeLines/dash.gif" width="0"/>
+<img alt="" height="0" src="/Admin/Images/TreeLines/dashplus.gif" width="0"/>
+<img alt="" height="0" src="/Admin/Images/TreeLines/dashminus.gif" width="0"/>
+<img alt="" height="0" src="/Admin/Images/TreeLines/noexpand.gif" width="0"/>
+</div><div class="TreeView" id="TreeView1" onclick="if(window.TreeView1_loaded) ComponentArt_SetKeyboardFocusedTree(this, TreeView1);" onmouseover="if(window.TreeView1_loaded) ComponentArt_SetActiveTree(TreeView1);" style="height:297px;width:248px;overflow:auto;"></div><a href="#" onfocus="ComponentArt_SetKeyboardFocusedTree(document.getElementById('TreeView1_div'), TreeView1);" style="position:absolute;z-index:99;"></a>
+</div></td>
+</tr>
+</table>
+</div><input id="txtCPLB_SelectedIndex" name="txtCPLB_SelectedIndex" type="hidden" value="-1"/><input id="txtCPLB_Data" name="txtCPLB_Data" type="hidden"/></td>
+<td align="Right" width="10%"><span id="lblZDFS" style="color:Black;font-size:10pt;">装订方式：</span></td>
+<td align="left" width="14%"><select id="txtZDFS" name="txtZDFS" style="color:Black;font-size:10pt;width:100%;">
+<option value="-0-">&lt;--请选择--&gt;</option>
+<option value="胶装/PAD书">胶装/PAD书</option>
+<option value="精装书">精装书</option>
+<option value="骑马钉">骑马钉</option>
+<option value="其他">其他</option>
+<option value="套装">套装</option>
+<option value="车线书">车线书</option>
+<option value="线圈书">线圈书</option>
+<option value="快线BB书   ">快线BB书   </option>
+<option value="中线BB书   ">中线BB书   </option>
+<option selected="selected" value="慢线BB书   ">慢线BB书   </option>
+</select></td>
+<td align="Right" width="10%"><font color="Black" style="font-size:10pt">排序号：</font> </td>
+<td align="left" width="14%"><input id="txtPXH" name="txtPXH" style="color:Black;font-size:10pt;width:95%;word-break:break-all;word-wrap:break-word" type="text" value="1"/></td>
+</tr><tr>
+<td align="Right" width="10%"><label id="lblYMBTtxtCPMC"></label> <font color="red" style="font-size:10pt">产品名称：</font> </td>
+<td align="left" colspan="5" width="14%"><input id="txtCPMC" name="txtCPMC" style="color:Black;font-size:10pt;width:95%;word-break:break-all;word-wrap:break-word" type="text" value="Claire/精装揭页BB书/侦察与线索/ Sleuth and Clue(FSC Mix)"/></td>
+<td align="Right" width="10%"><font color="Black" style="font-size:10pt">产品编号：</font> </td>
+<td align="left" width="14%"><input id="txtCPBH" name="txtCPBH" readonly="true" style="color:Black;font-size:10pt;width:95%;word-break:break-all;word-wrap:break-word" type="text"/></td>
+</tr><tr>
+<td align="Right" width="10%"><font color="Black" style="font-size:10pt">客户产品名称：</font> </td>
+<td align="left" colspan="5" width="14%"><input id="txtKHCPMC" name="txtKHCPMC" style="color:Black;font-size:10pt;width:100%;word-break:break-all;word-wrap:break-word" type="text"/></td>
+<td align="Right" width="10%"><font color="Black" style="font-size:10pt">客户产品编号：</font> </td>
+<td align="left" width="14%"><input id="txtKHCPBH" name="txtKHCPBH" style="color:Black;font-size:10pt;width:100%;word-break:break-all;word-wrap:break-word" type="text"/></td>
+</tr></table>
+<table><tr>
+<td align="right" height="22px" width="10%">
+<span id="lblCPDL">产品大类：</span>
+</td>
+<td align="right" height="22px" width="14%">
+</td>
+<td align="right" height="22px" width="10%">
+<span id="lblCPLB">产品类别：</span>
+</td>
+<td align="right" height="22px" width="14%">
+</td>
+<td align="right" height="22px" width="10%">
+</td>
+<td align="left" height="22px" width="14%">
+</td>
+<td align="right" height="22px" width="10%">
+<span id="lblPXH">排序号：</span>
+</td>
+<td align="left" height="22px" width="14%">
+</td>
+</tr><tr>
+<td align="right" height="22px" width="10%">
+<span id="lblCPMC">产品名称：</span>
+</td>
+<td align="left" colspan="5" height="22px">
+</td>
+<td align="right" height="22px" width="10%">
+<span id="lblCPBH">产品编号：</span>
+</td>
+<td align="left" height="22px" width="14%">
+</td>
+</tr><tr>
+<td align="right" height="22px" width="10%">
+<span id="lblKHCPMC">客户产品名称：</span>
+</td>
+<td align="left" colspan="3" height="22px">
+</td>
+<td align="right" height="22px" width="10%">
+<span id="lblKHCPBH">客户产品编号：</span>
+</td>
+<td align="left" height="22px" width="14%">
+</td>
+<td align="right" height="22px" width="10%">
+</td>
+<td align="left" height="22px" width="14%">
+</td>
+</tr><tr>
+<td align="right" height="25" width="30%">产品单价 ：
+
+                        </td>
+<td align="left" height="25" width="*">
+<input id="txtCPDJ" name="txtCPDJ" style="width:100%;" type="text" value="13.12183"/>
+</td>
+</tr><tr>
+<td align="right" height="25" width="30%">产品金额 ：
+
+                        </td>
+<td align="left" height="25" width="*">
+<input id="txtCPJE" name="txtCPJE" style="width:100%;" type="text" value="26243.65"/>
+</td>
+</tr><tr>
+<td align="right" height="25" width="30%">币种 ：
+
+                        </td>
+<td align="left" height="25" width="*">
+<input id="txtBZ" name="txtBZ" style="width:100%;" type="text" value="美元"/>
+</td>
+</tr><tr>
+<td align="right" height="25" width="30%">原客户产品名称 ：
+
+                        </td>
+<td align="left" height="25" width="*">
+<input id="txtOLD_KHCPMC" name="txtOLD_KHCPMC" style="width:100%;" type="text"/>
+</td>
+</tr></table>
+</body></html>

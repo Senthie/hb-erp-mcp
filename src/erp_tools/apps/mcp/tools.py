@@ -382,12 +382,15 @@ def register_tools(mcp: MCPServer, state: ServerState) -> None:
     @mcp.tool(
         name="erp_price_node",
         description=(
-            "客户报价详情里「点开才有的子数据」（一次 POST + 一次 GET，约 1-2 秒）："
-            "quantities=数量档明细（数量/单价/金额/折扣率/折后价/建议利润/单款数量）；"
-            "part=单个部件的印刷资料（P数/尺寸/颜色/专色数/书脊方向/拼版方式）；"
-            "part_materials=部件已选辅料（材料编码/名称/单价/长宽/指定数量/系数）；"
-            "fees=每个数量档的费项明细（纸张/辅料/印前/印刷/版费/印后/其他）。"
-            "bdjid/index 不传默认取第一个部件；fees 默认不返回计算公式（体积很大）。"
+            "客户报价详情里「点开才有的子数据」（每个节点一次 POST+GET，1-2 秒）。"
+            "node 取值：list=列出全部节点；all=整棵树(22 个节点一次取完，约 0.4 MB)；"
+            "quantities=数量档；part=部件资料；part_materials=部件辅料；"
+            "part_process=部件工序；part_machines=部件机台；product_check=送货资料；"
+            "fees=费项明细；other_fees=其他费项；cp=产品资料；cp_process=产品工序；"
+            "cp_materials=产品辅料；feedback=需求反馈；sgkb=手工开版；split_price=拆分价格；"
+            "panel:description/material_list/manual_process/change_log/process_list/"
+            "part_list/freight/price_mode=8 个折叠面板。"
+            "部件级节点不传 bjid/index 时默认第一个部件；fees 默认不返回计算公式。"
         ),
     )
     @_tool_errors
@@ -395,11 +398,13 @@ def register_tools(mcp: MCPServer, state: ServerState) -> None:
         record_id: Annotated[str, Field(description="记录 ID（列表的 记录ID）")],
         node: Annotated[
             str,
-            Field(description="quantities / part / part_materials / fees"),
+            Field(description="节点名；list 查看全部，all 取整棵树"),
         ],
         cpid: Annotated[str | None, Field(description="产品明细 ID，不传自动取")] = None,
         bjid: Annotated[str | None, Field(description="部件 ID，不传取第一个部件")] = None,
         index: Annotated[int | None, Field(description="取第几个部件（1 起）")] = None,
+        cpslid: Annotated[str | None,
+                         Field(description="数量档 ID（默认 fees 汇总、other_fees 第一档）")] = None,
         include_formula: Annotated[
             bool, Field(description="fees 是否带计算公式（默认 false）")
         ] = False,
@@ -415,12 +420,20 @@ def register_tools(mcp: MCPServer, state: ServerState) -> None:
                 if pos < 0 or pos >= len(parts):
                     raise ToolError(f"index={index} 超出范围：该单共 {len(parts)} 个部件")
                 bjid = parts[pos]["bjid"]
-            result = tool.fetch(record_id, node, cpid=cpid or "", bjid=bjid or "")
-        if node == "fees" and not include_formula:
+            result = tool.fetch(record_id, node, cpid=cpid or "", bjid=bjid or "",
+                                cpslid=cpslid or "")
+        if not include_formula:
             for group in result.get("groups", []):
                 for rows in group.get("fees", {}).values():
                     for row in rows:
                         row.pop("公式", None)
+            tree = result.get("nodes")
+            if isinstance(tree, dict):
+                for node in tree.values():
+                    for group in (node or {}).get("groups", []):
+                        for rows in group.get("fees", {}).values():
+                            for row in rows:
+                                row.pop("公式", None)
         return result
 
     # ---------- 考勤 ----------

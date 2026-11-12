@@ -122,6 +122,56 @@ erp price-detail --bdbh KHBJ261112003-01 --no-description            # 跳过长
 - 页面上那一大堆 `txtBJ*`/`txtKJ*`/`txtDT*` 是产品/部件弹窗编辑器的暂存控件，
   只读页里全是空值，**不要**当成数据源。
 
+## 子数据：`erp price-node` / MCP `erp_price_node`
+
+详情页里「单击可调出…明细」的格子分两类，处理方式完全不同：
+
+**① 弹窗子页（14 个）** —— 向 `Add.aspx` POST：把 GUID 写进 `lblSelect*`、
+回发对应的 `btnSelect*`，响应里的 `showModalDialog('xxx.aspx?...')` 才是子页地址。
+
+| node | 子页 | 内容 |
+| --- | --- | --- |
+| `quantities` | `Add_CPSL.aspx` | 数量档（11 列） |
+| `part` | `Add_BJZL.aspx` | 单部件（只读态空表单 → 回 `detail_row`） |
+| `part_materials` | `Add_BJFL.aspx` | 部件辅料 |
+| `part_process` | `Add_BJGXZL.aspx` | 部件工序（27 列） |
+| `part_machines` | `Add_BJJTZL.aspx` | 部件机台（30 列 + 机台参数） |
+| `product_check` | `Add_CPSHZL.aspx` | 送货/审核资料（28 列） |
+| `fees` | `Brow_FXMX.aspx` | 每档费项 × 7 类 |
+| `other_fees` | `Add_QTFX.aspx` | 其他费用项目（6 列） |
+| `cp` | `Add_CPZL.aspx` | 产品资料整表单（78 个字段） |
+| `cp_process` | `Add_CPGXZL.aspx` | 产品工序（29 列） |
+| `cp_materials` | `Add_CPFL.aspx` | 产品辅料（8 列） |
+| `feedback` | `Add_KHBJXQFK.aspx` | 需求反馈正文 |
+| `sgkb` | `Add_SGKB.aspx` | 手工开版附件 |
+| `split_price` | `KHBJ_SetJEXSMS.aspx` | 拆分价格（两棵树） |
+
+**② 折叠面板（8 个）** —— 不是弹窗，是整页回发 `__EVENTTARGET=Lbtn_Xxx`，
+内容渲染在 `div#Pan_gridView*`：`panel:description`（数量档/选配/部件 17 列）、
+`panel:material_list`、`panel:freight`、`panel:manual_process`、`panel:change_log`、
+`panel:process_list`、`panel:part_list`、`panel:price_mode`。
+
+```powershell
+erp price-node --id <记录ID> --node list              # 列出 22 个节点
+erp price-node --id <记录ID> --node part_machines --out out\jt.json
+erp price-node --id <记录ID> --node panel:description --out out\desc.json
+erp price-node --id <记录ID> --node all --out out\tree.json   # 整棵树，约 370 KB
+```
+
+### 子页解析的三个坑
+
+1. **列表和左侧编辑表单行宽一样**。`Add_CPFL` 的「已选材料」是 8 列，
+   左边的材料编辑表单也是 8 列（`材料名称：/品牌：/材料规格：`），
+   全文档按宽度抓会把表单的标签行当数据行 —— 所以 `grid_by_width()` 找到表头后
+   会**锁定在表头所在那张表**里取行。
+2. **表头可能是 `<th>` 也可能是 `<td>`**，而且列名里夹着 `\ufeff` / 全角空格
+   （`计价公 式`），必须先 `norm()` 再比对，否则 `must_have` 匹配不上。
+3. **colspan 排版抓不到网格**（运费清单的「单个重量(KG) | 0.413 | 长mm | …」），
+   退回「首行标签 / 次行值」按列序配对，放进 `fields`。
+
+另外：面板标题检测里 `[列表设置]` 也是粗体，但它不是面板名 —— 只在
+`PANEL_TARGETS` 里的 `Lbtn_*` 中找当前选中项。
+
 ## 页面事实（实测 2026-11，账号 2069）
 - 56 列：`选择/信息/打印` + 报价状态、有排交期、客户名称、香港单号、产品类型、装订方式、
   产品类别、产品名称、预计报完日期、规格、款数、语言数、最小值/中间值/最大值、单位、总P数、

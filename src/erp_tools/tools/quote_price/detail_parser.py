@@ -79,15 +79,21 @@ def cell_value(td) -> str:
 
     一个单元格可能同时有 `select`+辅助 `input`（如币种格里有 汇率）或一堆按钮，
     所以先看 select；占位项（`-0-`/`<--请选择-->`）一律当空，**不要**把全部 option 文字当成值。
+
+    注意：有些只读页的 `<select>` 没有任何 `selected` 属性（值本来就是空），
+    这时不能退化成「整格文字」——那会把所有 option 连成一串当值。有 select 时只认
+    select/input，都没有就返回空串。
     """
+    has_select = False
     for sel in td.find_all("select"):
+        has_select = True
         opt = sel.find("option", selected=True)
         if opt is None:
             continue
         value = (opt.get("value") or "").strip()
         label = norm(opt.get_text(strip=True))
         if value in ("", "-0-") or label.startswith("<--"):
-            return ""
+            continue
         return label
     for inp in td.find_all("input"):
         if (inp.get("type") or "").lower() in ("button", "submit", "image", "checkbox",
@@ -96,6 +102,8 @@ def cell_value(td) -> str:
         value = norm(inp.get("value") or "")
         if value:
             return value
+    if has_select:
+        return ""
     return norm(td.get_text(" ", strip=True))
 
 

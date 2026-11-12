@@ -464,16 +464,38 @@ class PriceDetailTool(Tool):
         return f"{url}&LoginUserID={uid}" if uid else url
 
     # ══════════════════ 取详情 ══════════════════
+    #: 详情页里记录自己的 ID（`<input name="lblID" value="<记录ID>">`）
+    _LBL_ID_RE = re.compile(r'name="lblID"[^>]*?value="([0-9a-fA-F-]{36})"')
+
+    @classmethod
+    def record_id_of(cls, html: str) -> str:
+        m = cls._LBL_ID_RE.search(html)
+        return (m.group(1) if m else "").lower()
+
     def open_record(self, record_id: str) -> tuple[str, str]:
+        """GET 详情页；发现 ERP 回的是**别的记录**时重试一次。
+
+        ERP 的表单页带“当前打开记录”这一层会话状态：同一 Cookie 下刚看过 A，
+        紧接着按 `id=B` GET，偶尔仍会返回 A 的页面（实测约 1/10）。
+        因此这里用页面内的 `lblID` 自校验，不一致就再 GET 一次。
+        """
         qxid = self.qxid()
         url = self.page_url(qxid, record_id)
-        resp = self.client.get(url)
-        if resp.status_code != 200:
-            raise UpstreamError(f"详情页打开失败（HTTP {resp.status_code}）",
-                                resp.status_code)
-        if "__VIEWSTATE" not in resp.text:
-            raise ParseError("详情页没有 __VIEWSTATE，可能被重定向到登录页")
-        return resp.text, url
+        want = (record_id or "").strip().lower()
+        last = ""
+        for _attempt in range(2):
+            resp = self.client.get(url)
+            if resp.status_code != 200:
+                raise UpstreamError(f"详情页打开失败（HTTP {resp.status_code}）",
+                                    resp.status_code)
+            if "__VIEWSTATE" not in resp.text:
+                raise ParseError("详情页没有 __VIEWSTATE，可能被重定向到登录页")
+            actual = self.record_id_of(resp.text)
+            if not actual or actual == want:
+                return resp.text, url
+            last = actual
+            self._log(f"[WARN] 详情页返回了别的记录（{last}），重试一次")
+        raise UpstreamError(f"详情页取不到指定的记录：请求 {want}，页面里是 {last}")
 
     def fetch_one(self, record_id: str, *, include_description: bool = True) -> dict:
         html, url = self.open_record(record_id)
@@ -543,98 +565,306 @@ class PriceDetailTool(Tool):
 
 
 
-class PriceNodeTool(Tool):
-    """客户报价详情页里「点开才有的子数据」（数量档 / 部件 / 部件辅料 / 费项明细）。
+#: 客户报价子数据节点目录：node → (回发按钮, 子页, 中文说明)
+NODE_CATALOG: dict[str, tuple[str, str, str]] = {
+    "quantities": ("btnSelectCPSLZL", "Add_CPSL.aspx", "数量档（数量/单价/金额/折扣率/折后价）"),
+    "part": ("btnSelectBJZL", "Add_BJZL.aspx", "单个部件印刷资料"),
+    "part_materials": ("btnSelectBJFL", "Add_BJFL.aspx", "部件已选辅料"),
+    "part_process": ("btnSelectBJGXZL", "Add_BJGXZL.aspx", "部件工序（27 列）"),
+    "part_machines": ("btnSelectBJJTZL", "Add_BJJTZL.aspx", "部件机台（30 列 + 机台参数）"),
+    "product_check": ("btnSelectCPSHZL", "Add_CPSHZL.aspx", "送货/审核资料（28 列）"),
+    "fees": ("btnBrowFXMX", "Brow_FXMX.aspx", "每个数量档的费项明细"),
+    "other_fees": ("btnSelectQTFX", "Add_QTFX.aspx", "其他费用项目"),
+    "cp": ("btnSelectCPZL", "Add_CPZL.aspx", "产品资料（整张产品表单）"),
+    "cp_process": ("btnSelectCPGXZL", "Add_CPGXZL.aspx", "产品级工序（29 列）"),
+    "cp_materials": ("btnSelectCPFL", "Add_CPFL.aspx", "产品级辅料（8 列）"),
+    "feedback": ("btnSelectKHBJXQFK", "Add_KHBJXQFK.aspx", "客户报价需求反馈正文"),
+    "sgkb": ("BtnOpenSGKBT", "Add_SGKB.aspx", "手工开版资料附件"),
+    "split_price": ("btn_CPJEXSMS", "KHBJ_SetJEXSMS.aspx", "拆分价格设置（两棵分配树）"),
+}
 
-    这些子页不能直接 GET，必须先向 `Add.aspx` 发一次 POST：
-    把 GUID 写进 `lblSelect*` 隐藏字段 + 回发对应的 `btnSelect*` 按钮，
-    响应里的 `showModalDialog('xxx.aspx?...')` 才是真正的子页 URL。
+#: 需要部件 ID 的节点
+NODE_NEEDS_BJID = frozenset({"part", "part_materials", "part_process",
+                             "part_machines", "product_check"})
+#: 需要数量档 ID 的节点（`-1` 表示汇总）
+NODE_NEEDS_CPSLID = frozenset({"fees", "other_fees"})
+
+#: 中文/简称别名 → node
+NODE_ALIASES: dict[str, str] = {
+    "数量": "quantities", "数量档": "quantities", "数量明细": "quantities",
+    "部件": "part", "部件资料": "part",
+    "部件辅料": "part_materials", "辅料": "part_materials", "已选材料": "part_materials",
+    "费项": "fees", "费项明细": "fees", "成本明细": "fees",
+    "其他费项": "other_fees", "其他费用": "other_fees",
+    "产品": "cp", "产品资料": "cp",
+    "产品工序": "cp_process", "工序": "cp_process",
+    "产品辅料": "cp_materials",
+    "部件工序": "part_process",
+    "部件机台": "part_machines", "机台": "part_machines",
+    "反馈": "feedback", "需求反馈": "feedback",
+    "开版": "sgkb", "手工开版": "sgkb",
+    "拆分价格": "split_price", "单价模式设置": "split_price",
+    "送货资料": "product_check", "审核资料": "product_check", "产品审核": "product_check",
+}
+
+#: 面板中文名 → PANEL_TARGETS 的键
+PANEL_ALIASES: dict[str, str] = {
+    "产品描述": "description", "材料清单": "material_list",
+    "手工工序": "manual_process", "修改日志": "change_log",
+    "工序清单": "process_list", "部件列表": "part_list",
+    "运费清单": "freight", "单价模式": "price_mode",
+}
+
+
+class PriceNodeTool(Tool):
+    """客户报价详情页里「点开才有的子数据」。
+
+    子页不能直接 GET，必须先向 `Add.aspx` 发一次 POST：把 GUID 写进 `lblSelect*`
+    隐藏字段 + 回发对应的 `btnSelect*` 按钮，响应里的 `showModalDialog('xxx.aspx?...')`
+    才是真正的子页 URL。
+
+    另外 8 个「折叠面板」是整页回发：`__EVENTTARGET=Lbtn_Xxx`，内容渲染在
+    `div#Pan_gridView*` 里（见 `node_parser.PANEL_TARGETS`）。
     """
 
     name = "price-node"
-    summary = "客户报价子数据（quantities/part/part_materials/fees）→ JSON"
+    summary = "客户报价子数据（数量档/部件/工序/辅料/费项/反馈/开版/面板…）→ JSON"
 
     @staticmethod
     def options() -> list[Option]:
         return [
             Option("record_id", "记录 ID（列表的 记录ID）", cli="--id"),
-            Option("node", "子数据：quantities / part / part_materials / fees", cli="--node"),
+            Option("node", "子数据节点；list=列出可用节点；all=全部拉一遍", cli="--node"),
             Option("cpid", "产品明细 ID；不传用详情页里的值", cli="--cpid"),
-            Option("bjid", "部件 ID；part/part_materials 用，不传给第一个部件", cli="--bjid"),
-            Option("index", "取第几个部件（1 起），配合 part/part_materials", cli="--index"),
+            Option("bjid", "部件 ID；部件级节点用，不传给第一个部件", cli="--bjid"),
+            Option("index", "取第几个部件（1 起），配合部件级节点", cli="--index"),
+            Option("cpslid", "数量档 ID（默认：fees=-1 汇总、other_fees=第一档）", cli="--cpslid"),
             Option("out", "输出 JSON 路径", cli="--out"),
         ]
 
-    # ══════════════════ 打开子页 ══════════════════
-    def _open(self, record_id: str, node: str, *, cpid: str = "",
-              bjid: str = "", cpslid: str = "-1") -> tuple[str, str, str, str]:
+    # ══════════════════ 节点名归一 ══════════════════
+    @staticmethod
+    def resolve_node(name: str) -> tuple[str, str]:
+        """节点名 → (kind, key)。kind ∈ {'sub', 'panel', 'all', 'list'}。"""
+        from .node_parser import PANEL_TARGETS
+
+        raw = (name or "").strip()
+        if not raw:
+            raise ParseError("node 必填；可用 node=list 查看全部节点")
+        low = raw.lower()
+        if low in ("list", "ls", "nodes"):
+            return "list", ""
+        if low in ("all", "全部", "整棵树"):
+            return "all", ""
+
+        # 折叠面板：panel:xxx / panel_xxx / Lbtn_Xxx / 中文名
+        panel_key = ""
+        for prefix in ("panel:", "面板:", "panel_"):
+            if raw.startswith(prefix):
+                panel_key = raw[len(prefix):]
+                break
+        if panel_key:
+            if panel_key in PANEL_TARGETS:
+                return "panel", PANEL_TARGETS[panel_key]
+            raise ParseError(f"未知面板 {raw!r}；可用：{', '.join(PANEL_TARGETS)}")
+        if low in PANEL_TARGETS:
+            return "panel", PANEL_TARGETS[low]
+        by_target = {target.upper(): target for target in PANEL_TARGETS.values()}
+        if raw.upper() in by_target:
+            return "panel", by_target[raw.upper()]
+        if raw in PANEL_ALIASES:
+            return "panel", PANEL_TARGETS[PANEL_ALIASES[raw]]
+
+        node = low if low in NODE_CATALOG else NODE_ALIASES.get(raw, "")
+        if not node:
+            known = " / ".join(NODE_CATALOG)
+            raise ParseError(f"未知节点 {raw!r}；可用：{known}；面板用 panel:<名称>")
+        return "sub", node
+
+    @staticmethod
+    def catalog() -> list[dict]:
+        """列出全部可用节点（含面板），给 `node=list` 和 MCP 文档用。"""
+        from .node_parser import PANEL_TARGETS
+
+        rows = [{"node": key, "kind": "sub", "page": page, "description": desc}
+                for key, (_button, page, desc) in NODE_CATALOG.items()]
+        rows += [{"node": f"panel:{key}", "kind": "panel", "page": target,
+                  "description": f"折叠面板 {target}"}
+                 for key, target in PANEL_TARGETS.items()]
+        return rows
+
+    # ══════════════════ 父页 ══════════════════
+    def _parent(self, record_id: str):
+        """GET 一次详情页，解析出 cpid / 第一个 bjid / 第一个 cpslid。"""
         from .detail_parser import parse_price_detail
 
-        detail_tool = PriceDetailTool(self.auth)
-        html, url = detail_tool.open_record(record_id)
-        if not cpid or (node in ("part", "part_materials") and not bjid):
-            parsed = parse_price_detail(html, record_id=record_id)
-            cpid = cpid or parsed.cpid
-            if node in ("part", "part_materials") and not bjid:
-                bjid = next((p.get("bjid", "") for p in parsed.parts if p.get("bjid")), "")
+        html, url = PriceDetailTool(self.auth).open_record(record_id)
+        detail = parse_price_detail(html, record_id=record_id)
+        return html, url, detail
 
-        body = form_snapshot(html)
-        if node == "quantities":
-            body.update({"lblSelectCPSLZL": "-1", "lblSelectCPZLPID": record_id,
-                         "lblSelectCPZLID": cpid, "btnSelectCPSLZL": ""})
-        elif node == "part":
-            body.update({"lblSelectBJZLID": bjid, "lblSelectBJZLPID": record_id,
-                         "btnSelectBJZL": ""})
-        elif node == "part_materials":
-            body.update({"lblSelectCPZLPID": record_id, "lblSelectBJZLID": bjid,
-                         "btnSelectBJFL": ""})
-        elif node == "fees":
-            body.update({"lblSelectCPZLPID": record_id, "lblSelectCPZLID": cpid,
-                         "lblSelectTZCPZLID": "-1",
-                         "lblSelectCPSLZL": cpslid, "btnBrowFXMX": ""})
-        else:
-            raise ParseError(f"未知节点 {node!r}；可用：quantities / part / "
-                             f"part_materials / fees")
+    @staticmethod
+    def _ctx(record_id: str, detail, *, cpid: str = "", bjid: str = "",
+             cpslid: str = "") -> dict[str, str]:
+        parts = [p for p in getattr(detail, "parts", []) if p.get("bjid")]
+        quants = [q for q in getattr(detail, "quantities", []) if q.get("cpslid")]
+        return {
+            "record_id": record_id,
+            "cpid": cpid or detail.cpid,
+            "bjid": bjid or (parts[0]["bjid"] if parts else ""),
+            "cpslid": cpslid or (quants[0]["cpslid"] if quants else "-1"),
+        }
 
-        resp = self.client.post(url, data=body)
+    @staticmethod
+    def _node_fields(node: str, ctx: dict[str, str]) -> dict[str, str]:
+        """每个子页要回发的 `lblSelect*` 隐藏字段（照抄页面里 Open* 函数的入参）。"""
+        rid, cpid, bjid, cpslid = (ctx["record_id"], ctx["cpid"],
+                                   ctx["bjid"], ctx["cpslid"])
+        if node == "quantities":            # OpenInputCPSLZLData('-1', PID, CPID)
+            return {"lblSelectCPSLZL": "-1", "lblSelectCPZLPID": rid,
+                    "lblSelectCPZLID": cpid}
+        if node == "part":                  # OpenInputBJZLData(ID, PID)
+            return {"lblSelectBJZLID": bjid, "lblSelectBJZLPID": rid}
+        if node == "part_materials":        # OpenInputBJFLData(PID, BJID)
+            return {"lblSelectCPZLPID": rid, "lblSelectBJZLID": bjid}
+        if node == "part_process":          # OpenInputBJGXZLData(PID, BJID, GXLB, TYSC, ZSJID)
+            return {"lblSelectCPZLPID": rid, "lblSelectBJZLID": bjid,
+                    "lblSelectBJGXLB": "", "txtTYSC": "0", "lblZSJID": ""}
+        if node == "part_machines":         # OpenInputBJJTZLData(PID, BJID)
+            return {"lblSelectCPZLPID": rid, "lblSelectBJZLID": bjid}
+        if node == "product_check":         # OpenInputCPSHZLData(ID, CPID, PID)
+            return {"lblSelectBJZLID": bjid, "lblSelectCPZLID": cpid,
+                    "lblSelectCPZLPID": rid}
+        if node == "fees":                  # OpenBrowFXMX(PID, CPID, TZZLID, CPSLID, CPSL)
+            return {"lblSelectCPZLPID": rid, "lblSelectCPZLID": cpid,
+                    "lblSelectTZCPZLID": "-1", "lblSelectCPSLZL": "-1",
+                    "lblSelectBJZLID": "1000"}
+        if node == "other_fees":            # OpenInputQTFXData(ID(=CPSLID), PID, CPID)
+            return {"lblSelectCPSLZL": cpslid, "lblSelectCPZLPID": rid,
+                    "lblSelectCPZLID": cpid}
+        if node == "cp":                    # OpenInputCPZLData(ID, PID, '0')
+            return {"lblSelectCPZLID": cpid, "lblSelectCPZLPID": rid}
+        if node == "cp_process":            # OpenInputCPGXZLData(CPID, PID, ZSJID)
+            return {"lblSelectCPZLID": cpid, "lblSelectCPZLPID": rid, "lblZSJID": ""}
+        if node == "cp_materials":          # OpenInputCPFLData(CPID, PID)
+            return {"lblSelectCPZLID": cpid, "lblSelectCPZLPID": rid}
+        if node == "feedback":              # OpenInputKHBJXQFKData(PID, CPID)
+            return {"lblSelectCPZLPID": rid, "lblSelectCPZLID": cpid}
+        if node == "sgkb":                  # OpenSGKBT(CPID, PID)
+            return {"lblSelectCPZLPID": rid, "lblSelectCPZLID": cpid}
+        if node == "split_price":           # OpenSetCPJEXSMS(ID)
+            return {"lblSelectCPZLID": cpid}
+        raise ParseError(f"未知节点 {node!r}")
+
+    def _sub_page(self, parent_html: str, parent_url: str, node: str,
+                  ctx: dict[str, str]) -> tuple[str, str]:
+        """回发按钮 → 取 showModalDialog 里的子页 URL → GET。"""
+        button = NODE_CATALOG[node][0]
+        body = form_snapshot(parent_html)
+        body.update(self._node_fields(node, ctx))
+        body[button] = ""
+        resp = self.client.post(parent_url, data=body)
         m = re.search(r"showModalDialog\(\s*'([^']+)'", resp.text)
         if m is None:
-            raise UpstreamError(f"{node} 子页没有弹出（页面结构可能变了，或该行没有这项数据）",
-                                resp.status_code)
+            raise UpstreamError(f"{node} 子页没有弹出（页面结构可能变了，"
+                                f"或该行没有这项数据）", resp.status_code)
         sub = m.group(1).replace("&amp;", "&")
         for prefix in ("/Admin/BaoJia/BJ_KHBJ/", "/Admin/"):
             page = self.client.get(prefix + sub)
             if page.status_code == 200 and "__VIEWSTATE" in page.text:
-                return page.text, self.client.url(prefix + sub), html, bjid
+                return page.text, self.client.url(prefix + sub)
         raise UpstreamError(f"{node} 子页打不开：{sub[:120]}")
 
-    def fetch(self, record_id: str, node: str, *, cpid: str = "", bjid: str = "",
-              cpslid: str = "-1") -> dict:
+    def _panel_page(self, parent_html: str, parent_url: str, target: str) -> str:
+        """折叠面板：整页回发（`__EVENTTARGET`），返回整页 HTML。"""
+        body = form_snapshot(parent_html)
+        body.update({"__EVENTTARGET": target, "__EVENTARGUMENT": ""})
+        resp = self.client.post(parent_url, data=body)
+        if resp.status_code != 200 or "__VIEWSTATE" not in resp.text:
+            raise UpstreamError(f"面板 {target} 回发失败（HTTP {resp.status_code}）",
+                                resp.status_code)
+        return resp.text
+
+    # ══════════════════ 取数据 ══════════════════
+    @staticmethod
+    def _run_parser(node: str, html: str) -> dict:
         from . import node_parser
+
+        payload = node_parser.NODE_PARSERS[node](html)
+        if isinstance(payload, list):
+            return {"records": payload, "count": len(payload)}
+        result = dict(payload)
+        if isinstance(result.get("records"), list):
+            result.setdefault("count", len(result["records"]))
+        return result
+
+    def fetch(self, record_id: str, node: str, *, cpid: str = "", bjid: str = "",
+              cpslid: str = "") -> dict:
         from .detail_parser import parse_price_detail
 
-        sub_html, page_url, parent_html, resolved_bjid = self._open(
-            record_id, node, cpid=cpid, bjid=bjid, cpslid=cpslid)
-        parser = node_parser.NODE_PARSERS[node]
-        payload = parser(sub_html)
-        if isinstance(payload, list):
-            result = {"records": payload, "count": len(payload)}
-        else:
-            result = payload
-        if node == "part":
+        kind, key = self.resolve_node(node)
+        if kind == "list":
+            rows = self.catalog()
+            return {"nodes": rows, "count": len(rows)}
+        if kind == "all":
+            return self.fetch_all(record_id, cpid=cpid, bjid=bjid, cpslid=cpslid)
+
+        parent_html, parent_url, detail = self._parent(record_id)
+        ctx = self._ctx(record_id, detail, cpid=cpid, bjid=bjid, cpslid=cpslid)
+        if kind == "panel":
+            from .node_parser import parse_panel_node
+
+            page = self._panel_page(parent_html, parent_url, key)
+            data = parse_panel_node(page)
+            return {"node": f"panel:{key}", "target": key, **data,
+                    "count": len(data["grids"])}
+
+        sub_html, page_url = self._sub_page(parent_html, parent_url, key, ctx)
+        result = self._run_parser(key, sub_html)
+        if key == "part":
             # 部件页是个**空白编辑表单**（只回 txtID），真实值在父页的部件明细表里
-            detail = parse_price_detail(parent_html, record_id=record_id)
-            row = next((p for p in detail.parts if p.get("bjid") == resolved_bjid), {})
+            row = next((p for p in detail.parts if p.get("bjid") == ctx["bjid"]), {})
             result["detail_row"] = row
             if not result.get("fields", {}).get("部件名称"):
                 result["note"] = ("部件页在只读态不渲染字段值（只回 txtID）；"
                                   "部件内容请看 detail_row / erp_price_detail.parts")
-        return {"node": node, "url": page_url, **result}
+        return {"node": key, "url": page_url, **result}
+
+    def fetch_all(self, record_id: str, *, cpid: str = "", bjid: str = "",
+                  cpslid: str = "") -> dict:
+        """整棵树：1 次详情 GET + 14 次子页 POST + 8 次面板回发（≈ 2.5 MB）。"""
+        from .node_parser import PANEL_TARGETS
+
+        parent_html, parent_url, detail = self._parent(record_id)
+        ctx = self._ctx(record_id, detail, cpid=cpid, bjid=bjid, cpslid=cpslid)
+        nodes: dict[str, dict] = {}
+        errors: dict[str, str] = {}
+        for node in NODE_CATALOG:
+            try:
+                sub_html, _url = self._sub_page(parent_html, parent_url, node, ctx)
+                nodes[node] = self._run_parser(node, sub_html)
+            except Exception as exc:      # noqa: BLE001 —— 单点失败不影响其它节点
+                errors[node] = f"{type(exc).__name__}: {exc}"
+        for key, target in PANEL_TARGETS.items():
+            try:
+                nodes[f"panel:{key}"] = self._run_parser_for_panel(
+                    self._panel_page(parent_html, parent_url, target))
+            except Exception as exc:      # noqa: BLE001
+                errors[f"panel:{key}"] = f"{type(exc).__name__}: {exc}"
+        return {"node": "all", "ids": ctx, "nodes": nodes, "errors": errors,
+                "count": len(nodes)}
+
+    @staticmethod
+    def _run_parser_for_panel(html: str) -> dict:
+        from .node_parser import parse_panel_node
+
+        data = parse_panel_node(html)
+        return {**data, "count": len(data["grids"])}
 
     # ══════════════════ 主流程 ══════════════════
     def run(self, *, record_id: str | None = None, node: str = "",
             cpid: str | None = None, bjid: str | None = None,
-            index: int | None = None, out: str | None = None) -> Iterator[dict]:
+            index: int | None = None, cpslid: str | None = None,
+            out: str | None = None) -> Iterator[dict]:
         import json
         from pathlib import Path
 
@@ -642,14 +872,15 @@ class PriceNodeTool(Tool):
         if not rid:
             raise ParseError("record_id 必填")
         if index is not None:
-            detail = parse_price_detail(PriceDetailTool(self.auth).open_record(rid)[0])
+            detail = self._parent(rid)[2]
             parts = [p for p in detail.parts if p.get("bjid")]
             pos = int(index) - 1
             if pos < 0 or pos >= len(parts):
                 raise ParseError(f"index={index} 超出范围：该单共 {len(parts)} 个部件")
             bjid = bjid or parts[pos]["bjid"]
 
-        result = self.fetch(rid, node, cpid=(cpid or ""), bjid=(bjid or ""))
+        result = self.fetch(rid, node, cpid=(cpid or ""), bjid=(bjid or ""),
+                            cpslid=(cpslid or ""))
         if out:
             path = Path(out)
             path.parent.mkdir(parents=True, exist_ok=True)
@@ -669,6 +900,9 @@ __all__ = [
     "PriceListTool",
     "PriceDetailTool",
     "PriceNodeTool",
+    "NODE_CATALOG",
+    "NODE_ALIASES",
+    "PANEL_ALIASES",
     "PAGE_PATH",
     "DEFAULT_QXID",
     "DATE_FIELDS",

@@ -68,7 +68,7 @@ qxid:
 | `erp query` | 报价需求【列表】查询 / 导出 CSV |
 | `erp price` | 客户报价【列表】查询 / 导出 CSV（`BJ_KHBJ`，一行=一个报价产品行） |
 | `erp price-detail` | 客户报价【详情】（表头+产品+数量+部件+费用+描述） |
-| `erp price-node` | 客户报价【子数据】（数量档 / 部件 / 部件辅料 / 费项明细） |
+| `erp price-node` | 客户报价【子数据】（数量档 / 部件 / 工序 / 辅料 / 费项 / 面板，共 22 个节点） |
 | `erp quote` | 报价需求【详情】→ ERP 订单需求 JSON |
 | `erp attendance` | 月度考勤明细 → Markdown / JSONL |
 | `erp key` | 向网关换取 api-key（见 [mcp.md](mcp.md)） |
@@ -217,16 +217,46 @@ erp price-detail --bdbh KHBJ261112003 --row 2 --out out\row2.json
 | `quantities` | `Add_CPSL.aspx` | 数量档：数量/单价/金额/折扣率/折后单价/折后金额/建议利润/单款数量 |
 | `part` | `Add_BJZL.aspx` | 单个部件（`detail_row` 是父页的真实部件行；子页在只读态只回 `txtID`） |
 | `part_materials` | `Add_BJFL.aspx` | 部件辅料：部件名称/材料编码/材料名称/单价/材料长宽/指定数量/系数 |
+| `part_process` | `Add_BJGXZL.aspx` | 部件工序（27 列：工序单价/起版费/版材/加放/工序正数…） |
+| `part_machines` | `Add_BJJTZL.aspx` | 部件机台（30 列：机台名称/正反面色/版材/加放）+ 机台字段 |
+| `product_check` | `Add_CPSHZL.aspx` | 送货/审核资料（28 列送货明细 + 客户/送货字段） |
 | `fees` | `Brow_FXMX.aspx` | 每个数量档的费项：纸张/辅料/印前/印刷/版费/印后/其他 + 公式与单价 |
+| `other_fees` | `Add_QTFX.aspx` | 其他费用项目（费用项目/计价公式/税点/金额） |
+| `cp` | `Add_CPZL.aspx` | 产品资料：整张产品表单（类别/装订/尺寸/金额拆分/纸箱/报关…） |
+| `cp_process` | `Add_CPGXZL.aspx` | 产品级工序（29 列） |
+| `cp_materials` | `Add_CPFL.aspx` | 产品级辅料（8 列） |
+| `feedback` | `Add_KHBJXQFK.aspx` | 客户报价需求反馈正文（textarea） |
+| `sgkb` | `Add_SGKB.aspx` | 手工开版资料附件 |
+| `split_price` | `KHBJ_SetJEXSMS.aspx` | 拆分价格设置（待分配 / 已分配两棵树） |
+
+折叠面板不弹窗、是**整页回发**（`__EVENTTARGET=Lbtn_Xxx`），内容在 `div#Pan_gridView*`：
+
+| `--node` | 面板 | 内容 |
+| --- | --- | --- |
+| `panel:description` | 【产品描述】 | 数量档 / 选配项目 / 部件明细（17 列）/ 送货明细 |
+| `panel:material_list` | 【材料清单】 | 需求数量/库存/报价单价/反馈单价 |
+| `panel:freight` | 【运费清单】 | 重量/装箱/总 CBM/运费 |
+| `panel:manual_process` | 【手工工序】 | 手工工序单价 |
+| `panel:change_log` | 【修改日志】 | 修订记录 |
+| `panel:process_list` | 【工序清单】 | 工序汇总 |
+| `panel:part_list` | 【部件列表】 | 部件汇总 |
+| `panel:price_mode` | 【单价模式】 | 单价模式 |
 
 ```powershell
 erp price-node --id <记录ID> --node quantities --out out\q.json
 erp price-node --id <记录ID> --node part --index 2 --out out\bj2.json
-erp price-node --id <记录ID> --node fees --out out\fees.json
+erp price-node --id <记录ID> --node part_machines --out out\jt.json
+erp price-node --id <记录ID> --node panel:description --out out\desc.json
+erp price-node --id <记录ID> --node list          # 列出全部节点
 ```
 
 - `--cpid` / `--bjid` 不传时自动从详情页取（`bjid` 取第一个部件，`--index` 可选第几个）。
+- `--node list` 打印 22 个节点（含 8 个面板）；`--node all` 一次取完整棵树
+  （1 次详情 GET + 14 次子页 + 8 次面板，实测约 370 KB / 20 秒；单节点失败会记到 `errors` 不影响其它）。
+- 节点名可用中文别名：`产品工序` / `部件工序` / `其他费用` / `产品描述` …
 - `fees` 一页约 1 MB（10 个数量档 × 7 类费项），MCP 里默认**不返回公式**（`include_formula=true` 才给）。
+- 子页里的列表和左侧编辑表单**行宽往往相同**，所以解析器找到表头后会锁定在那张表里取行；
+  运费清单那种 colspan 排版抓不到“网格”，会退回按「首行标签 / 次行值」配对后放进 `fields`。
 
 ### `erp quote` — 报价需求详情
 

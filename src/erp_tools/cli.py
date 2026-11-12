@@ -457,6 +457,7 @@ def cmd_price_node(args) -> int:
         cpid=args.cpid,
         bjid=args.bjid,
         index=args.index,
+        cpslid=args.cpslid,
         out=args.out,
     ):
         count += 1
@@ -657,14 +658,17 @@ def build_parser() -> argparse.ArgumentParser:
     p.set_defaults(func=cmd_price_detail)
 
     p = sub.add_parser("price-node", parents=[common],
-                       help="客户报价子数据（数量档/部件/部件辅料/费项明细）")
+                       help="客户报价子数据（数量档/部件/工序/辅料/费项/反馈/开版/折叠面板…）")
     p.add_argument("--id", dest="id", required=True, help="记录 ID（列表的 记录ID）")
     p.add_argument("--node", required=True,
-                   choices=["quantities", "part", "part_materials", "fees"],
-                   help="quantities=数量档 / part=部件 / part_materials=部件辅料 / fees=费项明细")
+                   help="quantities/part/part_materials/part_process/part_machines/"
+                        "fees/other_fees/cp/cp_process/cp_materials/feedback/sgkb/"
+                        "split_price/product_check；panel:<名称>=折叠面板；"
+                        "list=列出全部节点；all=整棵树")
     p.add_argument("--cpid", help="产品明细 ID（不传用详情页里的）")
-    p.add_argument("--bjid", help="部件 ID（part/part_materials）")
+    p.add_argument("--bjid", help="部件 ID（部件级节点）")
     p.add_argument("--index", type=int, help="取第几个部件（1 起）")
+    p.add_argument("--cpslid", help="数量档 ID（默认 fees=-1 汇总、other_fees=第一档）")
     p.add_argument("--out", help="输出 JSON 路径")
     p.set_defaults(func=cmd_price_node)
 
