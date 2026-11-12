@@ -158,8 +158,7 @@ def test_prepare_fills_header_from_customer(fixture_text) -> None:
     assert header["txtZKL"] == "10"
 
     assert result["products"][0] == {
-        "name": "彩盒", "spec": "210*148", "qty": 5000.0,
-        "description": "", "remark": "",
+        "name": "彩盒", "spec": "210*148", "qty": 5000.0, "fields": {},
     }
 
     # 写入已开放（erp_quote_create），但 prepare 本身仍然不落库
@@ -220,6 +219,44 @@ def test_prepare_only_keeps_fields_present_on_page(fixture_text) -> None:
     assert set(result["header"]) <= set(page_fields)
     assert result["header"]["txtRemark"] == "客户要求加急"
     assert result["header"]["txtCPMX"] == "四色印刷"
+
+
+def test_prepare_warns_when_erp_required_fields_missing(fixture_text) -> None:
+    """ERP 必填链缺字段时要提前提醒——否则明细被拒时主表已经建好了。"""
+    svc = _StubService(fixture_text("quote_new_page.html"), _customer())
+
+    result = svc.prepare(
+        customer="示例客户A",
+        products=[{"name": "彩盒", "spec": "210*148", "qty": 100,
+                   "packing": "纸箱包装"}],
+    )
+
+    assert result["ok"] is True          # 只是 warning，不拦
+    joined = " ".join(result["warnings"])
+    assert "ERP 必填字段" in joined
+    assert "packing" not in joined       # 已经给了
+    for key in ("pallet", "delivery", "product_desc", "inspection"):
+        assert key in joined, f"{key} 应该被提示为缺失"
+
+
+def test_prepare_no_required_warning_when_all_filled(fixture_text) -> None:
+    svc = _StubService(fixture_text("quote_new_page.html"), _customer())
+
+    result = svc.prepare(
+        customer="示例客户A",
+        products=[{
+            "name": "彩盒", "spec": "210*148", "qty": 100,
+            "binding": "胶装/PAD书", "packing": "纸箱包装", "pallet": "不打卡板",
+            "delivery": "FOB(NGV)", "delivery_date": "2026-12-20",
+            "expected_date": "2026-12-01", "parts_desc": "无",
+            "attribute": "三岁以上", "product_type": "新产品",
+            "product_desc": "示例", "modify_log": "无", "inspection": "无",
+            "cases": 1, "languages": 1,
+        }],
+    )
+
+    assert result["ok"] is True
+    assert not any("ERP 必填字段" in w for w in result["warnings"])
 
 
 # ══════════════════ 下拉选项（业务员 / 跟单员）══════════════════

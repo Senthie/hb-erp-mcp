@@ -24,6 +24,7 @@ from ...core.auth import AuthManager
 from ...core.errors import ErpError, ParseError
 from ...core.htmlutil import get_input_value
 from ..quote_index.tool import form_snapshot
+from . import fields as pf
 from .parser import (
     HEADER_FIELDS,
     SELECT_FIELDS,
@@ -33,6 +34,7 @@ from .parser import (
     parse_customer_rows,
     parse_detail_rows,
     parse_new_form,
+    parse_product_controls,
     parse_product_rows,
     parse_rows_count,
 )
@@ -49,23 +51,13 @@ _ALERT_RE = re.compile(
     re.S,
 )
 
-#: 产品明细子页里「业务上必填」的字段：入参名 -> 页面控件
-SUB_FIELD_MAP: dict[str, str] = {
-    "binding": "txtZDFS",          # 装订方式
-    "packing": "txtBZFS",          # 包装方式
-    "pallet": "txtTBLX",           # 台板类型
-    "delivery": "txtSHFS",         # 送货方式
-    "delivery_date": "txtJHRQ",    # 交货日期
-    "expected_date": "txtWCRQ",    # 预计下单日期
-    "parts_desc": "txtRemark1",    # 配件描述
-    "modify_log": "txtRemark3",    # 修改记录
-    "inspection": "txtRemark4",    # 检测项目
-    "product_desc": "txtCPMS",     # 产品描述
-    "attribute": "txtCPSX",        # 产品属性
-    "product_type": "txtCPLX",     # 产品类型
-    "cases": "txtTZS",             # 款数
-    "languages": "txtYYS",         # 语言数
-}
+#: 产品明细子页里「对外 JSON 字段名 -> 页面控件」。
+#: 现在覆盖子页**全部 195 个可见控件**，定义在 `fields.py`；
+#: 这里保留旧的 14 个名字（值不变）供老调用方与文档引用。
+SUB_FIELD_MAP: dict[str, str] = dict(pf.LEGACY_SUB_FIELD_MAP)
+
+#: 全部别名 / 控件名 -> 控件名（`prepare` 用它识别 products[].* 里的键）
+PRODUCT_ALIASES: dict[str, str] = dict(pf.ALIAS_MAP)
 
 #: 页面 `<select>` -> (对外字段名, 中文名)
 SELECT_LABELS: dict[str, tuple[str, str]] = {
@@ -192,10 +184,107 @@ def float_or_none(value: Any) -> float | None:
         return None
 
 
-def _is_placeholder(value: str | None) -> bool:
-    """判断一个控件是不是还停在「<--请选择-->」之类的占位值上。"""
-    text = (value or "").strip()
-    return not text or text.startswith("<--")
+def _checkbox_value(raw: Any) -> str:
+    """把 JSON 里的布尔/字符串转成 HTML checkbox 的提交值。"""
+    if isinstance(raw, bool):
+        return "on" if raw else ""
+    text = str(raw or "").strip()
+    return "" if text.lower() in ("", "0", "false", "off", "no", "n") else text
+
+
+def normalize_product_fields(
+    item: dict[str, Any],
+    index: int = 1,
+) -> tuple[dict[str, str], list[str], list[str]]:
+    """把一条明细入参里的所有字段解析成 `{页面控件: 待提交值}`。
+
+    支持三种写法，可混用：
+
+    * `{"packing": "纸箱包装"}` —— 别名（旧写法，14 个老名字继续有效）
+    * `{"txtBZFS": "纸箱包装"}` —— 直接写页面控件名
+    * `{"fields": {"packing": "...", "txtBZFS": "..."}}` —— 显式分组
+
+    返回 `(fields, errors, warnings)`。`errors` 里只放「写了就一定不对」的键，
+    `warnings` 放「值需要落库时按真实页面再解析」这类提示。
+    """
+    errors: list[str] = []
+    warnings: list[str] = []
+    raw_values: dict[str, Any] = {}
+
+    def _collect(source: dict[str, Any], origin: str) -> None:
+        for key, value in source.items():
+            if key in pf.RESERVED_ITEM_KEYS:
+                continue
+            if value is None:
+                continue
+            if key in pf.STATE_FIELDS:
+                errors.append(
+                    f"第 {index} 条明细{origin}不允许提交 ASP.NET 状态域 {key}"
+                )
+                continue
+            control = pf.resolve_control(key)
+            if control is None:
+                hint = "、".join(pf.suggest(key)) or "（无相近字段）"
+                errors.append(
+                    f"第 {index} 条明细{origin}的字段 {key!r} 不认识；"
+                    f"相近字段：{hint}。全部可用字段见 erp_quote_product_form"
+                )
+                continue
+            if control in pf.STATE_FIELDS:
+                errors.append(f"第 {index} 条明细{origin}不允许提交 ASP.NET 状态域 {control}")
+                continue
+            raw_values[control] = value
+
+    _collect(item, "")
+    nested = item.get("fields")
+    if nested is not None:
+        if not isinstance(nested, dict):
+            errors.append(f"第 {index} 条明细的 fields 必须是对象（控件名/别名 -> 值）")
+        else:
+            _collect(nested, " fields")
+
+    allow_readonly = bool(item.get("allow_readonly"))
+    out: dict[str, str] = {}
+    for control, value in raw_values.items():
+        spec = pf.CONTROL_MAP.get(control)
+        if spec is None:
+            # 页面新增了 fields.py 里没有的控件：仍然透传，但提示一下
+            warnings.append(f"第 {index} 条明细的控件 {control} 不在已知清单里，已原样透传")
+            out[control] = _checkbox_value(value) if isinstance(value, bool) else str(value)
+            continue
+        # ① 可见性是硬约束：折叠面板里的字段不是「高级选项」，是别的分区的数据
+        if not spec.visible:
+            errors.append(
+                f"第 {index} 条明细的 {spec.alias or control}（{spec.label}）在页面上"
+                "不可见（折叠面板），本协议禁止写入；只有首屏可见字段可以上传"
+            )
+            continue
+        # ② 可见但只读/系统生成
+        if not spec.writable and not allow_readonly:
+            errors.append(
+                f"第 {index} 条明细的 {spec.alias or control}（{spec.label}）是只读/系统字段，"
+                "不能由调用方写入"
+            )
+            continue
+        if spec.kind == pf.KIND_CHECKBOX:
+            text = _checkbox_value(value)
+            if text:
+                out[control] = text
+            continue
+        if spec.kind == pf.KIND_SELECT:
+            text = str(value).strip()
+            if not spec.options or text in spec.options:
+                out[control] = text
+            else:
+                warnings.append(
+                    f"第 {index} 条明细的 {spec.label} 取值 {text!r} 不在离线选项表里，"
+                    f"落库时会按真实页面解析；可用值：{'、'.join(list(spec.options)[:8])}…"
+                )
+                out[control] = text
+            continue
+        out[control] = str(value)
+
+    return out, errors, warnings
 
 
 def _is_placeholder(value: str | None) -> bool:
@@ -295,6 +384,105 @@ class QuoteCreateService:
                 "写入是三步：① 保存主表（btn_SonNew 会先建主表）② 产品子页保存明细 "
                 "③ 主表保存。调用 erp_quote_create 时必须传 confirm=true。"
             ),
+        }
+
+    # ══════════════════ 1a. 产品明细子页的完整字段清单 ══════════════════
+    def describe_product_form(
+        self,
+        record_id: str | None = None,
+        *,
+        cpid: str | None = None,
+        include_readonly: bool = True,
+    ) -> dict[str, Any]:
+        """返回 `Add_CPZL.aspx`（产品明细子页）的**全部**字段。
+
+        没有 `record_id` 时只返回静态注册表（`fields.py`，来自 2026-11-12 的真实页面抓取）；
+        给了 `record_id` 就顺手打开真实页面，把当前值、真实下拉选项、真实只读状态一起带回来。
+
+        页面 DOM 里有 **205** 个控件，其中首屏可见 53 个；其余在 `display:none` 的
+        `table#TableVisible` 面板里，但**仍然是有效 ERP 字段**，本工具一并列出。
+        """
+        live: dict[str, Any] = {}
+        url = ""
+        if record_id:
+            html, _url = self.open_record(record_id)
+            soup = soup_of(html)
+            sub_url = self._sub_page_url(
+                record_id,
+                get_input_value(soup, "txtKHID") or "",
+                get_input_value(soup, "txtZKL"),
+                cpid=(cpid or "-1"),
+            )
+            resp = self.auth.client.get(sub_url)
+            if resp.status_code != 200:
+                raise ParseError(f"产品明细子页打开失败（HTTP {resp.status_code}）")
+            url = sub_url
+            live = {c.control: c for c in parse_product_controls(resp.text)}
+
+        items: list[dict[str, Any]] = []
+        for spec in pf.PRODUCT_FIELDS:
+            page = live.get(spec.control)
+            if page is None and include_readonly is False:
+                continue
+            record: dict[str, Any] = {
+                "control": spec.control,
+                "alias": spec.alias,
+                "label": spec.label,
+                "group": spec.group,
+                "kind": spec.kind,
+                # visible = DOM 首屏可见；uploadable = 可见 且 可写（MCP 唯一放行的集合）
+                "visible": spec.visible,
+                "writable": spec.writable,
+                "uploadable": spec.uploadable,
+                "visible_on_page": spec.visible,   # 兼容旧字段名
+            }
+            if spec.note:
+                record["note"] = spec.note
+            if spec.options:
+                record["known_options"] = list(spec.options)
+            if page is not None:
+                record["page"] = {
+                    "present": True,
+                    "value": page.value,
+                    "readonly": page.readonly,
+                    "disabled": page.disabled,
+                    "css_hidden": page.css_hidden,
+                }
+                if page.options:
+                    record["options"] = [
+                        {"text": text, "value": value} for text, value in page.options.items()
+                    ]
+            elif live:
+                record["page"] = {"present": False}
+            if include_readonly or spec.uploadable:
+                items.append(record)
+
+        unknown = sorted(set(live) - set(pf.CONTROL_MAP) - set(pf.STATE_FIELDS))
+        return {
+            "url": url,
+            "record_id": record_id or "",
+            "live": bool(live),
+            "counts": {
+                "registry": len(pf.PRODUCT_FIELDS),
+                "visible_on_page": len(pf.VISIBLE_CONTROLS),
+                "uploadable": len(pf.UPLOAD_CONTROLS),
+                "hidden_blocked": sum(
+                    1 for s in pf.PRODUCT_FIELDS
+                    if not s.visible and s.control not in pf.STATE_FIELDS
+                ),
+                "live_controls": len(live),
+                "live_unknown": len(unknown),
+            },
+            "fields": items,
+            "upload": pf.upload_payload_schema(),
+            "unknown_controls": unknown,
+            "notes": [
+                "control 是 ERP 提交字段名（权威）；alias 是给人用的名字，两者都可作为入参键。",
+                "**只有 uploadable=true（首屏可见且可写）的字段能写入**；hidden 字段一律拒绝。",
+                "products[].fields 或 products[].[alias] 都可传；也可用 products[].fields 显式分组。",
+                "下拉请传显示文字（如「纸箱包装」），落库时按真实页面换成提交值。",
+                "upload.json_schema 就是可直接用来生成/校验上传 JSON 的结构。",
+            ],
         }
 
     # ══════════════════ 1b. 下拉选项（业务员 / 跟单员 / 单价体系）══════════════════
@@ -445,6 +633,8 @@ class QuoteCreateService:
         *,
         customer: str | None = None,
         sales: str | None = None,
+        merchandiser: str | None = None,
+        price_system: str | None = None,
         products: list[dict[str, Any]] | None = None,
         contact: str | None = None,
         phone: str | None = None,
@@ -457,9 +647,14 @@ class QuoteCreateService:
         """把调用方参数组装成「将要提交的字段」，并给出校验结果。
 
         **不会向 ERP 写任何东西**，也不执行 `btnSave`。
+
+        注意：表头页 `Add.aspx` **没有客户单号输入框**（实测 103 个控件里只有
+        客户名称/业务员/跟单员/单价体系/联系人/电话/手机/传真/折扣率/备注/产品描述）；
+        客户单号是**明细级**字段 `txtKHCPMC`，走 `products[].customer_order_no`。
         """
         errors: list[str] = []
         warnings: list[str] = []
+        dropped: list[str] = []
 
         form = self.open_form()
         header: dict[str, str] = {}
@@ -505,12 +700,38 @@ class QuoteCreateService:
             header["txtSJ"] = mobile
         if fax:
             header["txtCZ"] = fax
+        # 实测（2026-11-12，建单 + 改单两条路径都试过）：这台 ERP 的
+        # 手机 `txtSJ` / 传真 `txtCZ` **提交后不落库**，回读永远是空。
+        # 它们多半由【客户联系人】记录派生，不接受表单写入。
+        if mobile or fax:
+            warnings.append(
+                "mobile / fax 会照常提交，但该 ERP 实测不落库（保存后回读为空），"
+                "如需维护请在客户联系人或 ERP 界面里改"
+            )
         if discount:
             header["txtZKL"] = str(discount)
         if remark:
             header["txtRemark"] = remark
         if product_memo:
             header["txtCPMX"] = product_memo
+
+        # 跟单员 / 单价体系：和业务员一样必须换成页面下拉里的 GUID
+        for label, control, name in (
+            (merchandiser, "txtGDYXM", "跟单员"),
+            (price_system, "txtDJTX", "单价体系"),
+        ):
+            if not label:
+                continue
+            resolved = form.resolve_select(control, label)
+            if resolved is None or resolved == "-0-":
+                available = "、".join(
+                    k for k in form.selects.get(control, {}) if not k.startswith("<")
+                )
+                errors.append(
+                    f"{name} {label!r} 不在页面下拉里；可用：{available or '(页面无此下拉)'}"
+                )
+            else:
+                header[control] = resolved
 
         # ---- 产品明细 ----
         items = list(products or [])
@@ -532,21 +753,35 @@ class QuoteCreateService:
             except (TypeError, ValueError):
                 errors.append(f"第 {index} 条明细的 qty 必须是正数")
                 qty_value = 0
+            fields, field_errors, field_warnings = normalize_product_fields(item, index)
+            errors.extend(field_errors)
+            warnings.extend(field_warnings)
+            missing_required = [
+                spec.alias or spec.control
+                for spec in pf.PRODUCT_FIELDS
+                if spec.required and spec.control not in fields
+            ]
+            if missing_required:
+                warnings.append(
+                    f"第 {index} 条明细缺少 ERP 必填字段：{'、'.join(missing_required)}。"
+                    "缺这些时产品明细会被 ERP 挡下，而主表已经建好（会留下空单）"
+                )
             normalized.append({
                 "name": name,
                 "spec": spec,
                 "qty": qty_value,
-                "description": str(item.get("description") or ""),
-                "remark": str(item.get("remark") or ""),
-                **{
-                    key: item.get(key)
-                    for key in SUB_FIELD_MAP
-                    if item.get(key) not in (None, "")
-                },
+                # 全部明细字段（控件名 -> 值），覆盖子页 195 个可见控件
+                "fields": fields,
             })
 
         # 只保留页面真的有的字段，避免提交未知控件
+        requested = set(header)
         header = {k: v for k, v in header.items() if k in form.fields}
+        dropped = sorted(requested - set(header))
+        if dropped:
+            warnings.append(
+                f"这些表头控件在当前账号的页面上不存在，已丢弃：{', '.join(dropped)}"
+            )
         missing_from_page = [k for k in ("txtKHID", "txtYGXM") if k not in form.fields]
         if missing_from_page:
             warnings.append(
@@ -560,6 +795,7 @@ class QuoteCreateService:
             "customer": picked.as_dict() if picked else None,
             "header": header,
             "products": normalized,
+            "dropped_header_fields": dropped,
             "submit_supported": True,
             "next": (
                 "校验已通过。真正写入请调用 erp_quote_create（confirm=true）："
@@ -671,7 +907,11 @@ class QuoteCreateService:
         return None
 
     def _restore_product_category(
-        self, body: dict[str, str], editor_html: str, product_name: str
+        self,
+        body: dict[str, str],
+        editor_html: str,
+        product_name: str,
+        archive: ProductOption | None = None,
     ) -> None:
         """把树状「产品类别」补回提交体。
 
@@ -682,12 +922,13 @@ class QuoteCreateService:
         page = soup_of(editor_html)
         if not _is_placeholder(get_input_value(page, "txtCPLB_Input")):
             return
-        if not product_name:
-            return
-        try:
-            archive = self.find_product(product_name)
-        except ErpError:
-            return
+        if archive is None:
+            if not product_name:
+                return
+            try:
+                archive = self.find_product(product_name)
+            except ErpError:
+                return
         if "txtCPLB_Input" in body:
             body["txtCPLB_Input"] = archive.category
         archive_fields = archive.page_fields()
@@ -700,6 +941,8 @@ class QuoteCreateService:
         *,
         customer: str | None = None,
         sales: str | None = None,
+        merchandiser: str | None = None,
+        price_system: str | None = None,
         products: list[dict[str, Any]] | None = None,
         contact: str | None = None,
         phone: str | None = None,
@@ -715,7 +958,8 @@ class QuoteCreateService:
         `confirm=False` 时只做校验与预览，不写库。
         """
         prepared = self.prepare(
-            customer=customer, sales=sales, products=products, contact=contact,
+            customer=customer, sales=sales, merchandiser=merchandiser,
+            price_system=price_system, products=products, contact=contact,
             phone=phone, mobile=mobile, fax=fax, discount=discount,
             remark=remark, product_memo=product_memo,
         )
@@ -772,29 +1016,39 @@ class QuoteCreateService:
         sub_html = sub_resp.text
         allowed = _control_names(sub_html)
         sub_body = form_snapshot(sub_html)
+        # ① 先按产品档案回填（编码/单位/规格/尺寸/类别/条码…约 35 个字段）
         for key, value in product.page_fields().items():
             if key in allowed:
                 sub_body[key] = value
         unit_value = _select_value(sub_html, "txtDWMC", product.unit)
         if unit_value is not None and "txtDWMC" in allowed:
             sub_body["txtDWMC"] = unit_value
-        # 产品数量：ERP 真正校验/落库的是隐藏字段 `txtCPSL`；
-        # `txtCPSL1..10` 只是「每款一行」的展示输入框（款数=1 时取 txtCPSL1）。
-        # 只填 txtCPSL1 会一直被挡在「【产品数量】不能为空！」，两者都要发。
-        qty_text = _fmt_qty(items[0]["qty"])
-        sub_body["txtCPSL1"] = qty_text
-        if "txtCPSL" in allowed:
-            sub_body["txtCPSL"] = qty_text
-        sub_body["txtCPLB_Input"] = product.category
-        for key, control in SUB_FIELD_MAP.items():
-            raw = items[0].get(key)
-            if raw in (None, ""):
-                continue
+        # ② 再按调用方给的全部明细字段覆盖（`prepare` 已解析成 控件名 -> 值）
+        skipped: list[str] = []
+        for control, raw in (items[0].get("fields") or {}).items():
             if control not in allowed:
+                skipped.append(control)
                 continue
             text = str(raw)
-            resolved = _select_value(sub_html, control, text)
-            sub_body[control] = resolved if resolved is not None else text
+            if pf.CONTROL_MAP.get(control) is not None and \
+                    pf.CONTROL_MAP[control].kind == pf.KIND_SELECT:
+                resolved = _select_value(sub_html, control, text)
+                text = resolved if resolved is not None else text
+            sub_body[control] = text
+        # ③ 产品数量：ERP 真正校验/落库的是隐藏字段 `txtCPSL`；
+        # `txtCPSL1..10` 只是「每款一行」的展示输入框（款数=1 时取 txtCPSL1）。
+        # 只填 txtCPSL1 会一直被挡在「【产品数量】不能为空！」，两者都要发。
+        # 若调用方显式给了 qty_1，则保留它，不被 qty 覆盖。
+        qty_text = _fmt_qty(items[0]["qty"])
+        provided = items[0].get("fields") or {}
+        if "txtCPSL1" not in provided:
+            sub_body["txtCPSL1"] = qty_text
+        if "txtCPSL" in allowed and "txtCPSL" not in provided:
+            sub_body["txtCPSL"] = qty_text
+        # ④ 产品类别（ComponentArt 树）：`form_snapshot` 拿到的是占位符，
+        # 必须按产品档案补回 txtCPLB_Input / txtLBID / txtLBBM，
+        # 否则服务端一律报「请选择【产品类别】的数据！」。
+        self._restore_product_category(sub_body, sub_html, product.name, archive=product)
         sub_body["btnSave"] = "· 保存 ·"
         save_resp = self.auth.client.post(sub_url, data=sub_body)
         if save_resp.status_code >= 500:
@@ -803,7 +1057,9 @@ class QuoteCreateService:
         # 注意：ERP 保存成功后仍可能在返回页里残留一条提示（实测「请输入【产品数量】…」就是这种），
         # 所以**不能**用提示文案判断成败，必须以回读结果为准。
         steps.append({"step": "save_product", "ok": True,
-                      "product_id": product.product_id, "message": warning or ""})
+                      "product_id": product.product_id, "message": warning or "",
+                      "fields_sent": len(items[0].get("fields") or {}),
+                      "skipped_controls": skipped})
 
         # ---- 步骤 3：回读校验（不再重复保存主表）----
         # 血的教训：用 `btn_SonNew` 之前的旧快照再 POST 一次 btnSave，会把刚写入的

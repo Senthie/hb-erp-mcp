@@ -276,6 +276,30 @@ def register_tools(mcp: MCPServer, state: ServerState) -> None:
         with state.provider.slot():
             return QuoteCreateService(session.auth).describe_form()
 
+    # ---------- 新增报价需求：产品明细子页的完整字段清单 ----------
+    @mcp.tool(
+        name="erp_quote_product_form",
+        description=(
+            "【只读】返回产品明细子页(Add_CPZL.aspx)的字段清单与**上传用 JSON Schema**："
+            "control(ERP 提交名) / alias(JSON 字段名) / 中文标签 / 类型 / "
+            "visible(DOM 首屏可见) / writable / uploadable / 已知下拉选项。"
+            "只有 uploadable=true（可见且可写，51 个）的字段能通过 erp_quote_create 写入；"
+            "折叠面板里的 142 个隐藏字段会被拒绝。"
+            "不传 record_id 时返回静态注册表；传 record_id 会打开真实页面，"
+            "带上当前值、真实下拉选项与只读状态。返回里的 upload 含 json_schema + example。"
+        ),
+    )
+    @_tool_errors
+    def erp_quote_product_form(
+        record_id: str | None = None,
+        cpid: str | None = None,
+    ) -> dict[str, Any]:
+        session = _session(state)
+        with state.provider.slot():
+            return QuoteCreateService(session.auth).describe_product_form(
+                record_id, cpid=cpid,
+            )
+
     # ---------- 新增报价需求：下拉选项 ----------
     @mcp.tool(
         name="erp_quote_options",
@@ -328,6 +352,8 @@ def register_tools(mcp: MCPServer, state: ServerState) -> None:
     def erp_quote_prepare(
         customer: str | None = None,
         sales: str | None = None,
+        merchandiser: str | None = None,
+        price_system: str | None = None,
         products: list[dict[str, Any]] | None = None,
         contact: str | None = None,
         phone: str | None = None,
@@ -340,9 +366,10 @@ def register_tools(mcp: MCPServer, state: ServerState) -> None:
         session = _session(state)
         with state.provider.slot():
             return QuoteCreateService(session.auth).prepare(
-                customer=customer, sales=sales, products=products,
-                contact=contact, phone=phone, mobile=mobile, fax=fax,
-                discount=discount, remark=remark, product_memo=product_memo,
+                customer=customer, sales=sales, merchandiser=merchandiser,
+                price_system=price_system, products=products, contact=contact,
+                phone=phone, mobile=mobile, fax=fax, discount=discount,
+                remark=remark, product_memo=product_memo,
             )
 
 
@@ -354,6 +381,8 @@ def register_tools(mcp: MCPServer, state: ServerState) -> None:
             "confirm=false（默认）时只做校验并返回 needs_confirmation，不会落库；"
             "传 confirm=true 才会真正保存，成功返回表单编号(BDBH)与记录ID。"
             "产品名称会先在【产品档案】里模糊检索，必须唯一匹配才继续。"
+            "明细字段只接受 DOM 首屏可见的 51 个（见 erp_quote_product_form），"
+            "折叠面板里的隐藏字段会被拒绝；键名拼错也会直接报错。"
             "写完后会回读校验（明细行 CPMC + 产品数量）；任一项不符就返回 status=partial，"
             "detail_error 说明卡在哪一步，不会假报成功。"
             "已知限制：产品类别（树形下拉）与多语言数量明细不落库。"
@@ -364,6 +393,8 @@ def register_tools(mcp: MCPServer, state: ServerState) -> None:
         customer: str | None = None,
         products: list[dict[str, Any]] | None = None,
         sales: str | None = None,
+        merchandiser: str | None = None,
+        price_system: str | None = None,
         contact: str | None = None,
         phone: str | None = None,
         mobile: str | None = None,
@@ -376,10 +407,10 @@ def register_tools(mcp: MCPServer, state: ServerState) -> None:
         session = _session(state)
         with state.provider.slot():
             return QuoteCreateService(session.auth).create(
-                customer=customer, sales=sales, products=products,
-                contact=contact, phone=phone, mobile=mobile, fax=fax,
-                discount=discount, remark=remark, product_memo=product_memo,
-                confirm=confirm,
+                customer=customer, sales=sales, merchandiser=merchandiser,
+                price_system=price_system, products=products, contact=contact,
+                phone=phone, mobile=mobile, fax=fax, discount=discount,
+                remark=remark, product_memo=product_memo, confirm=confirm,
             )
 
 

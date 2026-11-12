@@ -93,7 +93,7 @@ VS Code `mcp.json`：
 
 ## 4. 工具清单
 
-14 个工具，全部要求 `Authorization: Bearer <api-key>`。
+15 个工具，全部要求 `Authorization: Bearer <api-key>`。
 列表类结果默认 50 条、上限 500 条，超出时 `truncated=true`。
 
 | 工具 | 写库 | 说明 |
@@ -104,6 +104,7 @@ VS Code `mcp.json`：
 | `erp_quote_detail` | — | 单条报价需求详情（ERP 订单需求字段） |
 | `erp_attendance` | — | 月度考勤明细 |
 | `erp_quote_new_form` | — | 空白页结构：表头字段、只读标记、三个下拉、textarea 列表 |
+| `erp_quote_product_form` | — | **产品明细子页字段清单**（205 个控件，其中 51 个可上传）+ `upload` JSON Schema |
 | `erp_quote_options` | — | 业务员 / 跟单员 / 单价体系选项 + `employees` 合并名单 |
 | `erp_quote_customer_search` | — | 客户检索（返回 `customer_id` 与该客户默认业务员/折扣率） |
 | `erp_quote_prepare` | — | 校验并预览将要提交的字段（不会落库） |
@@ -119,6 +120,7 @@ VS Code `mcp.json`：
 典型写入链路：
 
 ```
+erp_quote_product_form       看明细子页能填什么（控件名/别名/下拉值）
 erp_quote_prepare            预览校验
   → erp_quote_create         落库（回读 CPMC + txtCPSL）
   → erp_quote_details        拿 cpid
@@ -608,7 +610,7 @@ curl --cacert erp-tools.crt -X POST https://erp-tools.lan:8443/mcp \
   -H "content-type: application/json" \
   -H "accept: application/json, text/event-stream" \
   -d '{"jsonrpc":"2.0","id":1,"method":"tools/list"}'
-# → 应返回 14 个工具名
+# → 应返回 15 个工具名
 ```
 
 ### 8. 交给自动部署

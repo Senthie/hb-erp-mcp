@@ -107,12 +107,14 @@ def parse_detail_rows(html: str) -> list[dict[str, str]]:
 
 
 
-#: 空白页里值得回给调用方的业务字段（不含 __VIEWSTATE 之类）
+#: 空白页里值得回给调用方的业务字段（不含 __VIEWSTATE 之类）。
+#: 实测 `Add.aspx` 只有这些：客户名称只读、客户 ID/编码由客户资料页选、
+#: 制单人/制单时间 disabled；**没有客户单号**（那是明细级 `txtKHCPMC`）。
 HEADER_FIELDS: tuple[str, ...] = (
     "txtBDBH", "txtKHID", "txtKHMC", "txtKHBM",
     "txtYGID", "txtYGXM", "txtGDYXM", "txtDJTX",
     "txtLXR", "txtLXDH", "txtSJ", "txtCZ", "txtZKL",
-    "txtKHDDH", "txtRemark", "txtCPMX",
+    "txtRemark", "txtCPMX",
 )
 
 #: 三个真正的 `<select>`：name -> 提交值
@@ -299,7 +301,95 @@ def parse_rows_count(html: str) -> int | None:
         return None
 
 
+# ══════════════════ 产品明细子页（Add_CPZL.aspx）控件清单 ══════════════════
+_HIDDEN_STYLE = re.compile(r"display\s*:\s*none|visibility\s*:\s*hidden", re.I)
+_SKIP_INPUT_TYPES = ("image", "submit", "button", "reset", "file")
+
+
+@dataclass(frozen=True)
+class ProductControl:
+    """明细子页里的一个控件（原样读出，不做语义映射）。"""
+
+    control: str
+    tag: str
+    kind: str                     # text / number / select / textarea / checkbox
+    value: str = ""
+    readonly: bool = False
+    disabled: bool = False
+    hidden_input: bool = False    # <input type="hidden">
+    css_hidden: bool = False      # 祖先节点 display:none（折叠面板）
+    options: dict[str, str] = field(default_factory=dict)
+
+
+def _css_hidden(el) -> bool:
+    node = el.parent
+    while node is not None:
+        if _HIDDEN_STYLE.search(node.get("style") or ""):
+            return True
+        if node.has_attr("hidden"):
+            return True
+        node = node.parent
+    return False
+
+
+def _input_kind(el) -> str:
+    itype = (el.get("type") or "text").lower()
+    if itype == "checkbox":
+        return "checkbox"
+    return "text"
+
+
+def parse_product_controls(html: str) -> list[ProductControl]:
+    """把明细子页的**全部**表单控件读出来（含折叠面板里的）。
+
+    页面 DOM 里有 205 个控件（2026-11 实测），但只有 53 个在首屏可见，
+    其余在 `table#TableVisible` 这类 `display:none` 容器里。是否可见交给
+    `fields.py` 的语义标注，这里只如实反映 DOM。
+    """
+    soup = soup_of(html)
+    out: list[ProductControl] = []
+    seen: set[str] = set()
+    for el in soup.find_all(["input", "select", "textarea"]):
+        name = el.get("name")
+        if not name or name in seen:
+            continue
+        itype = (el.get("type") or "").lower()
+        if el.name == "input" and itype in _SKIP_INPUT_TYPES:
+            continue
+        seen.add(name)
+        if el.name == "select":
+            options: dict[str, str] = {}
+            for opt in el.find_all("option"):
+                label = opt.get_text(strip=True)
+                if label:
+                    options.setdefault(label, opt.get("value") or "")
+            current = el.find("option", selected=True)
+            out.append(ProductControl(
+                control=name, tag="select", kind="select",
+                value=(current.get("value") or "") if current is not None else "",
+                readonly=el.has_attr("readonly"), disabled=el.has_attr("disabled"),
+                css_hidden=_css_hidden(el), options=options,
+            ))
+            continue
+        if el.name == "textarea":
+            out.append(ProductControl(
+                control=name, tag="textarea", kind="textarea",
+                value=el.get_text() or "",
+                readonly=el.has_attr("readonly"), disabled=el.has_attr("disabled"),
+                css_hidden=_css_hidden(el),
+            ))
+            continue
+        out.append(ProductControl(
+            control=name, tag="input", kind=_input_kind(el),
+            value=el.get("value") or "",
+            readonly=el.has_attr("readonly"), disabled=el.has_attr("disabled"),
+            hidden_input=itype == "hidden", css_hidden=_css_hidden(el),
+        ))
+    return out
+
+
 __all__ = [
     "CUSTOMER_FIELDS", "CustomerOption", "HEADER_FIELDS", "NewQuoteForm",
-    "SELECT_FIELDS", "parse_customer_rows", "parse_new_form", "parse_rows_count",
+    "parse_customer_rows", "parse_new_form", "parse_product_controls",
+    "parse_rows_count", "ProductControl", "SELECT_FIELDS",
 ]

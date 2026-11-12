@@ -114,7 +114,7 @@ def test_initialize_and_list_tools(mcp_client) -> None:
     names = {t["name"] for t in tools}
     assert {"erp_whoami", "erp_capabilities", "erp_quote_list",
             "erp_quote_detail", "erp_attendance",
-            "erp_quote_new_form", "erp_quote_options",
+            "erp_quote_new_form", "erp_quote_product_form", "erp_quote_options",
             "erp_quote_customer_search",
             "erp_quote_prepare", "erp_quote_create", "erp_quote_delete",
             "erp_quote_details", "erp_quote_update", "erp_quote_update_product"} <= names

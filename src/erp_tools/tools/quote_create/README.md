@@ -9,6 +9,7 @@
 | 工具 | 用途 | 写库 |
 | --- | --- | --- |
 | `erp_quote_new_form` | 读空白页：表头字段与只读标记、三个下拉的「名称 → GUID」、textarea 列表 | 否 |
+| `erp_quote_product_form` | 读产品明细子页：**全量 205 个控件的字段清单** + 真实下拉选项/当前值 | 否 |
 | `erp_quote_options` | 单独查下拉选项：业务员 / 跟单员 / 单价体系，另给 `employees` 合并名单 | 否 |
 | `erp_quote_customer_search` | 在客户资料页按名称片段检索，返回 `customer_id` 与该客户默认的业务员/跟单员/折扣率 | 否 |
 | `erp_quote_prepare` | 校验并组装「将要提交的字段」，返回 `ok / errors / warnings / header` | 否 |
@@ -148,10 +149,37 @@ GET /Admin/BaoJia/BJ_KHBJXQ/Add.aspx?QXID=873&MenuTree=1&LoginUserID=2474
 → 产品描述 → 修改记录 / 检测项目
 ```
 
-这些字段已通过 `SUB_FIELD_MAP` / `create(products=[{...}])` 对外开放：
-`binding / packing / pallet / delivery / delivery_date / expected_date /
-parts_desc / modify_log / inspection / product_desc / attribute / product_type /
-cases / languages`。
+这条链已经固化到 `fields.FieldSpec.required`（`REQUIRED_PRODUCT_FIELDS`，14 个）：
+
+* **产品类别**（第 1 环）由产品档案自动补 `txtCPLB_Input`/`txtLBID`/`txtLBBM`；
+* **产品数量**（第 5 环）由 `qty` 自动写 `txtCPSL` + `txtCPSL1`；
+* 其余 14 个必须由调用方给出，`prepare()` 会给出「缺少 ERP 必填字段：…」的 warning。
+
+> ⚠ 必须当真：ERP 是「先建主表、再存明细」，明细被拒时主表已经存在，会留下一条空单。
+
+### 明细字段：可见的才允许上传（2026-11-12）
+
+`fields.py` 是子页的字段注册表，来源是真实页面抓取（`scripts/probe-quote-fields.py`）：
+
+| 分类 | 数量 | 能否上传 |
+| --- | --- | --- |
+| DOM 控件总数 | 205 | — |
+| 首屏可见 | 53 | — |
+| **可上传（可见 且 可写）** | **51** | ✅ |
+| 首屏可见但只读 | 2 | ❌（`txtKHDDH` 香港单号 / `txtKHDQ` 客户地区） |
+| 折叠面板里的隐藏字段 | 142 | ❌ **硬拒绝**，`allow_readonly` 也绕不过 |
+| ASP.NET 状态域 | 10 | ❌ |
+
+`products[]` 支持三种写法（可混用）：别名、页面控件名、或 `fields:{...}` 分组；
+键名拼错直接报错并给相近字段，不再静默丢弃。旧的 14 个名字（`binding` / `packing` / …）
+值完全不变、且全部依然可上传，`LEGACY_SUB_FIELD_MAP` 里有断言保证。
+
+上传载荷的 JSON Schema + 示例：`fields.upload_payload_schema()`
+（也可直接调 `erp_quote_product_form`，返回里的 `upload` 就是它）。
+
+回填顺序：**先产品档案（`ProductOption.page_fields()`，约 35 个字段）→ 再入参覆盖
+→ 最后补 `txtCPSL`/`txtCPSL1`**。档案回填属于「用户在界面上选产品」的等价行为，
+不算用户输入；用户输入只限那 51 个可见字段。
 
 
 ## 删除单据（已实现并验证）
