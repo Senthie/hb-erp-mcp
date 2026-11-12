@@ -7,11 +7,14 @@ from typing import Type
 from .attendance import AttendanceTool
 from .base import Option, Tool
 from .quote_index import QuoteListTool
+from .quote_price import PriceDetailTool, PriceListTool
 from .quote_request import QuoteRequestTool
 
 #: 名字 -> 实现类
 _TOOLS: dict[str, Type[Tool]] = {
     QuoteListTool.name: QuoteListTool,
+    PriceListTool.name: PriceListTool,
+    PriceDetailTool.name: PriceDetailTool,
     QuoteRequestTool.name: QuoteRequestTool,
     AttendanceTool.name: AttendanceTool,
 }

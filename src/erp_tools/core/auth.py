@@ -48,6 +48,8 @@ MENU_AJAX_PATH = "/Admin/indexAjax.ashx"
 DEFAULT_QXIDS = {
     "baojia/bj_khbjxq/add.aspx": "873",
     "baojia/bj_khbjxq/index.aspx": "876",
+    "baojia/bj_khbj/add.aspx": "857",
+    "baojia/bj_khbj/index.aspx": "860",
     "renshi/rs_kqda_m/add.aspx": "2553",
 }
 

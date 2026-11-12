@@ -15,9 +15,9 @@ from datetime import date
 from pathlib import Path
 from typing import Iterator
 
-from ...core.aspnet import soup_of
 from ...core.errors import ParseError, UpstreamError
 from ..base import Option, Tool
+from ..gridlist import field_codes, form_snapshot
 from .filters import Condition, apply_conditions, parse_where
 from .parser import ACTION_COLUMNS, QuoteListPage, parse_list_page
 
@@ -67,58 +67,6 @@ def default_date_range() -> tuple[str, str]:
     """默认查本月：1 号 ~ 今天（页签默认只给 7 天，容易漏数据）。"""
     today = _today()
     return today.replace(day=1).isoformat(), today.isoformat()
-
-
-def form_snapshot(html: str) -> dict[str, str]:
-    """把页面 form1 里的所有可提交控件状态快照成字典。
-
-    跳过：`gridView$*`（每行勾选框）、image/submit/button（不参与普通提交）、
-    未勾选的 checkbox。select 取当前选中项。
-    """
-    soup = soup_of(html)
-    data: dict[str, str] = {}
-
-    for el in soup.find_all("input"):
-        name = el.get("name")
-        if not name or name.startswith("gridView$"):
-            continue
-        if el.get("type") in ("image", "submit", "button", "reset", "file"):
-            continue
-        if el.get("type") == "checkbox" and not el.has_attr("checked"):
-            continue
-        data[name] = el.get("value") or ""
-
-    for sel in soup.find_all("select"):
-        name = sel.get("name")
-        if not name:
-            continue
-        opt = sel.find("option", selected=True) or sel.find("option")
-        data[name] = (opt.get("value") or "") if opt is not None else ""
-
-    # textarea 也要带上：报价子页的「配件描述/修改记录/检测项目/产品描述」都是 textarea，
-    # 漏掉它们会让保存被挡在「【配件描述】不能为空！」。
-    for area in soup.find_all("textarea"):
-        name = area.get("name")
-        if not name:
-            continue
-        data[name] = area.string or ""
-
-    return data
-
-
-def field_codes(page_html: str, which: str = "DropField") -> dict[str, str]:
-    """取关键字字段下拉的 中文名 -> 代码 映射（如 客户名称 -> KHMC）。"""
-    soup = soup_of(page_html)
-    sel = soup.find("select", {"name": which})
-    if sel is None:
-        return {}
-    out = {}
-    for opt in sel.find_all("option"):
-        label = opt.get_text(strip=True)
-        value = opt.get("value") or ""
-        if label and value:
-            out.setdefault(label, value)
-    return out
 
 
 class QuoteListTool(Tool):
@@ -296,7 +244,13 @@ class QuoteListTool(Tool):
             from_date=from_date, to_date=to_date, key=key, field=field, where=where,
             customer=customer, sales=sales, status=status, limit=limit,
             page_size=page_size, max_pages=max_pages)
+        yield from self.emit(rows, headers, columns=columns, out=out, jsonl=jsonl,
+                             dry_run=dry_run)
 
+    def emit(self, rows: list[dict], headers: list[str], *,
+             columns: str | None = None, out: str | None = None,
+             jsonl: str | None = None, dry_run: bool = False) -> Iterator[dict]:
+        """把已取到的行按 `--columns` 导出/预览（列表类工具共用）。"""
         use_columns = self._pick_columns(columns, headers)
         if dry_run:
             self._log(f"[DRY-RUN] 命中 {len(rows)} 条；将导出列：{', '.join(use_columns)}")

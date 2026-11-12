@@ -27,6 +27,7 @@ from ...tools.attendance import AttendanceTool
 from ...tools.quote_create import QuoteCreateService
 from ...tools.quote_index import QuoteListTool
 from ...tools.quote_index.parser import ACTION_COLUMNS
+from ...tools.quote_price import PriceDetailTool, PriceListTool
 from ...tools.quote_request import QuoteRequestTool
 from ..server.state import ServerState
 from .schemas import QuoteProductInput
@@ -40,6 +41,8 @@ MAX_RECORDS = 500
 PAGE_KEYS = {
     "quote_index": "BaoJia/BJ_KHBJXQ/Index.aspx",
     "quote": "BaoJia/BJ_KHBJXQ/Add.aspx",
+    "price_index": "BaoJia/BJ_KHBJ/Index.aspx",
+    "price": "BaoJia/BJ_KHBJ/Add.aspx",
     "attendance": "RenShi/RS_KQDA_M/Add.aspx",
 }
 
@@ -131,7 +134,7 @@ def register_tools(mcp: MCPServer, state: ServerState) -> None:
         name="erp_capabilities",
         description=(
             "返回当前账号在 ERP 里能访问哪些页面（QXID 能否从菜单探测到）。"
-            "missing_pages 为空说明三个页面都可访问；字段级缺失记录在每条数据的 _diagnostics 里。"
+            "missing_pages 为空说明这些页面都可访问；字段级缺失记录在每条数据的 _diagnostics 里。"
         ),
     )
     @_tool_errors
@@ -229,6 +232,8 @@ def register_tools(mcp: MCPServer, state: ServerState) -> None:
                 where=where, customer=customer, sales=sales, status=status, limit=size,
             )
         available = [h for h in headers if h not in ACTION_COLUMNS]
+        if "记录ID" not in available:
+            available.append("记录ID")
         picked, unknown = _pick_columns(columns, available)
         return {
             "columns": picked,
@@ -276,6 +281,102 @@ def register_tools(mcp: MCPServer, state: ServerState) -> None:
                     )
             record = QuoteRequestTool(session.auth).fetch_one(session.auth.client, resolved)
         return {"record_id": resolved, "record": record}
+
+    # ---------- 客户报价：列表 ----------
+    @mcp.tool(
+        name="erp_price_list",
+        description=(
+            "查询客户报价列表（BJ_KHBJ）。⚠ 一行=一个报价产品行，同一表单编号可能多行，"
+            "用 记录ID 定位单行。date_type 选日期字段；filters 传服务端下拉；"
+            "其余用 where 本地过滤。"
+            f"默认 {DEFAULT_RECORDS} 行，上限 {MAX_RECORDS}。"
+        ),
+    )
+    @_tool_errors
+    def erp_price_list(
+        from_date: Annotated[str | None, Field(description="起 YYYY-MM-DD")] = None,
+        to_date: Annotated[str | None, Field(description="止 YYYY-MM-DD")] = None,
+        date_type: Annotated[str, Field(description="制单/交货/离厂日期")] = "制单日期",
+        where: Annotated[
+            str | None,
+            Field(description="本地过滤，逗号分隔；操作符 = != ~ > < >= <=（~ 为包含）"),
+        ] = None,
+        customer: Annotated[str | None, Field(description="客户名称片段")] = None,
+        sales: Annotated[str | None, Field(description="业务员片段")] = None,
+        status: Annotated[str | None, Field(description="报价状态片段")] = None,
+        filters: Annotated[
+            dict[str, str] | None,
+            Field(
+                description=(
+                    "服务端下拉过滤，值可写中文。键：审批状态/报废状态/确认情况/"
+                    "签订单/查询方式/客户属性/模板/预计报价月份/报价分类"
+                )
+            ),
+        ] = None,
+        key: Annotated[str, Field(description="服务端关键字（配合 field）")] = "",
+        field: Annotated[
+            str, Field(description="关键字字段：表单编号/客户名称/产品名称/香港单号…")
+        ] = "",
+        columns: Annotated[str | None, Field(description="只返回这些列，逗号分隔")] = None,
+        limit: Annotated[int, Field(description=f"1~{MAX_RECORDS}，超出截断")] = DEFAULT_RECORDS,
+    ) -> dict[str, Any]:
+        session = _session(state)
+        size = _clamp(limit)
+        tool = PriceListTool(session.auth)
+        with state.provider.slot():
+            rows, headers, page = tool.collect(
+                from_date=from_date, to_date=to_date, date_type=date_type,
+                key=key or "", field=field or "",
+                where=where, customer=customer, sales=sales, status=status,
+                filters=filters, limit=size,
+            )
+        available = [h for h in headers if h not in ACTION_COLUMNS]
+        if "记录ID" not in available:
+            available.append("记录ID")
+        picked, unknown = _pick_columns(columns, available)
+        return {
+            "columns": picked,
+            "unknown_columns": unknown,
+            "records": [{c: row.get(c) for c in picked} for row in rows],
+            "count": len(rows),
+            "total": page.total,
+            "pages": page.pages,
+            "truncated": bool(page.total and len(rows) < page.total),
+            "note": "一行 = 一个报价产品行；同一表单编号可能多行，用 记录ID 定位单行",
+        }
+
+    # ---------- 客户报价：详情 ----------
+    @mcp.tool(
+        name="erp_price_detail",
+        description=(
+            "客户报价【详情】（BJ_KHBJ/Add.aspx，只读）：一个报价产品行的表头、产品字段、"
+            "数量明细、部件明细（材料/尺寸/工序/辅料）、费用、产品描述、制单审核。"
+            "命中多行时返回 candidates，再传 row 或 record_id。"
+        ),
+    )
+    @_tool_errors
+    def erp_price_detail(
+        record_id: Annotated[str | None, Field(description="记录 ID")] = None,
+        bdbh: Annotated[str | None, Field(description="表单编号或前缀")] = None,
+        row: Annotated[int | None, Field(description="取第几行，1 起")] = None,
+        include_description: Annotated[bool, Field(description="返回产品描述全文")] = True,
+    ) -> dict[str, Any]:
+        session = _session(state)
+        tool = PriceDetailTool(session.auth)
+        with state.provider.slot():
+            rows = tool.resolve_records(record_id=record_id, bdbh=bdbh, row=row)
+            if len(rows) > 1:
+                return {
+                    "status": "need_row",
+                    "count": len(rows),
+                    "candidates": [
+                        {k: r.get(k) for k in ("记录ID", "表单编号", "产品名称", "报价状态")}
+                        for r in rows
+                    ],
+                    "hint": "该表单编号有多行产品，请带 row(1 起) 或直接用 record_id 再调一次",
+                }
+            return tool.fetch_one(rows[0]["记录ID"],
+                                  include_description=include_description)
 
     # ---------- 考勤 ----------
     @mcp.tool(

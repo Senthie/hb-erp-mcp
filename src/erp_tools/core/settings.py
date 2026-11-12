@@ -31,6 +31,8 @@ YAML_TO_ENV: dict[tuple[str, str], str] = {
     ("runtime", "cookie_dir"): "COOKIE_DIR",
     ("qxid", "quote"): "ERP_QXID_QUOTE",
     ("qxid", "quote_index"): "ERP_QXID_QUOTE_INDEX",
+    ("qxid", "price"): "ERP_QXID_PRICE",
+    ("qxid", "price_index"): "ERP_QXID_PRICE_INDEX",
     ("qxid", "attendance"): "ERP_QXID_ATTENDANCE",
 }
 

@@ -66,6 +66,8 @@ qxid:
 | `erp qxid` | 打印「页面路径 → QXID」映射 |
 | `erp tools` | 列出业务工具与全部选项 |
 | `erp query` | 报价需求【列表】查询 / 导出 CSV |
+| `erp price` | 客户报价【列表】查询 / 导出 CSV（`BJ_KHBJ`，一行=一个报价产品行） |
+| `erp price-detail` | 客户报价【详情】（表头+产品+数量+部件+费用+描述） |
 | `erp quote` | 报价需求【详情】→ ERP 订单需求 JSON |
 | `erp attendance` | 月度考勤明细 → Markdown / JSONL |
 | `erp key` | 向网关换取 api-key（见 [mcp.md](mcp.md)） |
@@ -109,6 +111,99 @@ erp query --where "报价状态~需求审批" --dry-run
 - 服务端只支持「日期 + 两个关键字」，多条件一律本地过滤。
 - 查不到时 ERP 会返回**一行全空占位**，解析时已丢弃。
 - 列名与含义见 [quote_index/README.md](../src/erp_tools/tools/quote_index/README.md)。
+
+### `erp price` — 客户报价列表
+
+客户报价（`BaoJia/BJ_KHBJ/Index.aspx`，QXID=**860**）与报价需求（`BJ_KHBJXQ`）是两个模块。
+本页**一行 = 一个报价产品行**（56 列）：同一个表单编号会有多行，形如
+`KHBJ261112003-01`（末尾 `-NN` 是行号），用 `记录ID` 定位单行。
+
+| 选项 | 默认 | 说明 |
+| --- | --- | --- |
+| `--from` / `--to` | 本月 1 号 ~ 今天 | 日期区间 |
+| `--date-type` | `制单日期` | 区间作用于哪个日期：`制单日期` / `交货日期` / `离厂日期` |
+| `--key` / `--field` | 空 | 服务端关键字（`--field` 用下拉里的中文名：表单编号/客户名称/产品名称…） |
+| `--key1` / `--field1` | 空 | 第二套关键字 |
+| `--filter` | 空 | **服务端**下拉过滤，可重复：`--filter 审批状态=已全审批` |
+| `--customer` / `--sales` / `--status` | 空 | 便捷条件，等价于 `--where` |
+| `--where` | 空 | **本地**过滤，语法同 `erp query` |
+| `--columns` | 全部 53 列 + `记录ID` | 只输出这些列（前 3 个操作列默认剔除） |
+| `--page-size` | `ERP_PAGE_SIZE_MAX` | 调大一次取全；不够则用 `btnNext` 续翻 |
+
+`--filter` 的键可以写中文别名或控件名：审批状态(`txtCheck`)、报废状态(`txt_SFBF`)、
+确认情况(`txtQDQK`)、签订单(`txtXKHDD`)、查询方式(`txtFXCX`)、客户属性(`txtKHSX`)、
+模板(`txtMBF`)、预计报价月份(`txtBetRQ`)、报价分类(`txtCFWZ`)。值用下拉的显示文字或提交值都行。
+
+```powershell
+erp price --out out\price.csv
+erp price --filter 审批状态=已全审批 --filter 报废状态=未报废 --out out\ok.csv
+erp price --date-type 交货日期 --from 2027-01-01 --to 2027-12-31 --limit 20
+erp price --key KHBJ261112003 --field 表单编号 --dry-run
+```
+
+- 页面的 `搜索` 是 `<input type="submit" name="btn_Search">`，**必须把它自己的 name/value
+  一起回发**（代码里从页面读，别写死文案）；只发 `.x/.y` 会让 ERP 走默认绑定，条件全被忽略。
+- 查不到时同样返回一行全空占位 + 一行「合计」，解析时都已丢弃。
+
+### `erp price` — 客户报价列表
+
+客户报价（`BaoJia/BJ_KHBJ/Index.aspx`，QXID=**860**）与报价需求（`BJ_KHBJXQ`）是两个模块。
+本页**一行 = 一个报价产品行**（56 列）：同一个表单编号会有多行，形如
+`KHBJ261112003-01`（末尾 `-NN` 是行号），用 `记录ID` 定位单行。
+
+| 选项 | 默认 | 说明 |
+| --- | --- | --- |
+| `--from` / `--to` | 本月 1 号 ~ 今天 | 日期区间 |
+| `--date-type` | `制单日期` | 区间作用于哪个日期：`制单日期` / `交货日期` / `离厂日期` |
+| `--key` / `--field` | 空 | 服务端关键字（`--field` 用下拉里的中文名：表单编号/客户名称/产品名称…） |
+| `--key1` / `--field1` | 空 | 第二套关键字 |
+| `--filter` | 空 | **服务端**下拉过滤，可重复：`--filter 审批状态=已全审批` |
+| `--customer` / `--sales` / `--status` | 空 | 便捷条件，等价于 `--where` |
+| `--where` | 空 | **本地**过滤，语法同 `erp query` |
+| `--columns` | 全部 53 列 + `记录ID` | 只输出这些列（前 3 个操作列默认剔除） |
+| `--page-size` | `ERP_PAGE_SIZE_MAX` | 调大一次取全；不够则用 `btnNext` 续翻 |
+
+`--filter` 的键可以写中文别名或控件名：审批状态(`txtCheck`)、报废状态(`txt_SFBF`)、
+确认情况(`txtQDQK`)、签订单(`txtXKHDD`)、查询方式(`txtFXCX`)、客户属性(`txtKHSX`)、
+模板(`txtMBF`)、预计报价月份(`txtBetRQ`)、报价分类(`txtCFWZ`)。值用下拉的显示文字或提交值都行。
+
+```powershell
+erp price --out out\price.csv
+erp price --filter 审批状态=已全审批 --filter 报废状态=未报废 --out out\ok.csv
+erp price --date-type 交货日期 --from 2027-01-01 --to 2027-12-31 --limit 20
+erp price --key KHBJ261112003 --field 表单编号 --dry-run
+```
+
+- 页面的 `搜索` 是 `<input type="submit" name="btn_Search">`，**必须把它自己的 name/value
+  一起回发**（代码里从页面读，别写死文案）；只发 `.x/.y` 会让 ERP 走默认绑定，条件全被忽略。
+- 查不到时同样返回一行全空占位 + 一行「合计」，解析时都已丢弃。
+
+### `erp price-detail` — 客户报价详情
+
+按 `记录ID`（或表单编号）打开 `BJ_KHBJ/Add.aspx?id=<GUID>&Option=3`（QXID=**857**，只读），
+解析成一个 JSON：`header` / `product` / `quantities` / `optionals` / `parts` / `fees` / `audit` / `description`。
+（`optionals` 是「选配项目列表」，只有部分报价单才有，没有时是空列表。）
+
+| 选项 | 说明 |
+| --- | --- |
+| `--id GUID` | 列表页的 `记录ID` |
+| `--bdbh 单号` | 表单编号；可以只给前缀（如 `KHBJ261112003` 命中 `-01/-02` 全部行） |
+| `--row N` | 配合 `--bdbh`：取第 N 行（1 起） |
+| `--out 路径` | 写 JSON（`.jsonl` 结尾则写 JSONL） |
+| `--no-description` | 不输出产品描述长文本 |
+
+```powershell
+erp price-detail --id 89ad5e46-4872-4b26-83f5-18cab4fe2fe4 --out out\d.json
+erp price-detail --bdbh KHBJ261112003 --row 2 --out out\row2.json
+```
+
+- 详情页是 `Option=3` 只读态：真正的值在**单元格里没有 name 的 `<INPUT readonly VALUE>`** 上，
+  所以按「标签格 → 右邻格」读，不能按控件名取（`txtBJ*`/`txtKJ*` 那些是弹窗编辑器的暂存控件，都是空的）。
+- `汇率/发票税率/折扣率` 没有独立的标签格（和 币种/发票类别 挤在同一格），按控件名取。
+- `--bdbh` 先按单号里的日期查（`KHBJ` + YYMMDD），查不到再退到「本月」「近一年」——
+  实测有单号的日期与制单日期不一致的（如 `KHBJ261016002-01` 的制单日期在 11 月）。
+- 数量明细表**只有第一组**表头写「产品数量」，后面写「数量」；空值用 `.` 占位（已归一成空串）。
+- 部件表里跟在部件行后面的「印前工序/印刷机台/印后工序/部件辅料/部件备注」会挂到该部件上。
 
 ### `erp quote` — 报价需求详情
 

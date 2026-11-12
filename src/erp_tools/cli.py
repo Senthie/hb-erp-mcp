@@ -395,6 +395,56 @@ def cmd_query(args) -> int:
     return 0
 
 
+def cmd_price(args) -> int:
+    cfg = _build_config(args)
+    auth = ensure_authenticated(cfg, interactive=sys.stdin.isatty())
+    tool = build_tool("price", auth)
+
+    count = 0
+    for _row in tool.run(
+        from_date=args.from_date,
+        to_date=args.to_date,
+        date_type=args.date_type,
+        key=args.key or "",
+        field=args.field or "",
+        key1=args.key1 or "",
+        field1=args.field1 or "",
+        where=args.where,
+        customer=args.customer,
+        sales=args.sales,
+        status=args.status,
+        filters=args.filter,
+        columns=args.columns,
+        out=args.out,
+        jsonl=args.jsonl,
+        limit=args.limit,
+        page_size=args.page_size,
+        max_pages=args.max_pages,
+        dry_run=args.dry_run,
+    ):
+        count += 1
+    _log(f"[DONE] 返回 {count} 行")
+    return 0
+
+
+def cmd_price_detail(args) -> int:
+    cfg = _build_config(args)
+    auth = ensure_authenticated(cfg, interactive=sys.stdin.isatty())
+    tool = build_tool("price-detail", auth)
+
+    count = 0
+    for _record in tool.run(
+        record_id=args.id,
+        bdbh=args.bdbh,
+        row=args.row,
+        out=args.out,
+        no_description=args.no_description,
+    ):
+        count += 1
+    _log(f"[DONE] 取到 {count} 条详情")
+    return 0
+
+
 def cmd_attendance(args) -> int:
     cfg = _build_config(args)
     auth = ensure_authenticated(cfg, interactive=sys.stdin.isatty())
@@ -549,6 +599,43 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--dry-run", action="store_true", dest="dry_run",
                    help="只看条件和命中数，不写文件")
     p.set_defaults(func=cmd_query)
+
+    p = sub.add_parser("price", parents=[common],
+                       help="查询客户报价列表（BJ_KHBJ；一行=一个报价产品行）")
+    p.add_argument("--from", dest="from_date", help="日期区间起 YYYY-MM-DD（默认本月1号）")
+    p.add_argument("--to", dest="to_date", help="日期区间止 YYYY-MM-DD（默认今天）")
+    p.add_argument("--date-type", dest="date_type", default="制单日期",
+                   help="日期区间作用于：制单日期（默认）/交货日期/离厂日期")
+    p.add_argument("--key", help="服务端关键字")
+    p.add_argument("--field", help="关键字字段中文名：客户名称/表单编号/产品名称…")
+    p.add_argument("--key1", help="第二个服务端关键字")
+    p.add_argument("--field1", help="第二个关键字字段中文名")
+    p.add_argument("--where", help="本地过滤：客户名称~ADG,报价状态=已审批")
+    p.add_argument("--customer", help="客户名称包含")
+    p.add_argument("--sales", help="业务员包含")
+    p.add_argument("--status", help="报价状态包含")
+    p.add_argument("--filter", action="append",
+                   help="服务端下拉过滤，如 审批状态=已全审批（可重复）")
+    p.add_argument("--columns", help="只导出这些列，逗号分隔")
+    p.add_argument("--out", help="导出 CSV（.jsonl 结尾则写 JSONL）")
+    p.add_argument("--jsonl", help="额外写一份 JSONL")
+    p.add_argument("--limit", type=int, help="最多返回多少条")
+    p.add_argument("--page-size", type=int, dest="page_size",
+                   help="每页记录数（默认 ERP_PAGE_SIZE_MAX）")
+    p.add_argument("--max-pages", type=int, default=200, dest="max_pages")
+    p.add_argument("--dry-run", action="store_true", dest="dry_run",
+                   help="只看条件和命中数，不写文件")
+    p.set_defaults(func=cmd_price)
+
+    p = sub.add_parser("price-detail", parents=[common],
+                       help="客户报价【详情】（一个报价产品行）→ JSON")
+    p.add_argument("--id", dest="id", help="记录 ID（列表页的 记录ID）")
+    p.add_argument("--bdbh", help="表单编号，如 KHBJ261112003-01；也可只给前缀 KHBJ261112003")
+    p.add_argument("--row", type=int, help="配合 --bdbh：取第几行（1 起）")
+    p.add_argument("--out", help="输出 JSON（.jsonl 结尾则写 JSONL）")
+    p.add_argument("--no-description", action="store_true", dest="no_description",
+                   help="不输出产品描述长文本")
+    p.set_defaults(func=cmd_price_detail)
 
     p = sub.add_parser("attendance", parents=[common], help="查询月度考勤")
     p.add_argument("--month", "-m", required=True, help="月份，如 2026-11")

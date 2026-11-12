@@ -102,6 +102,8 @@ class ErpConfig:
     #: 各页面的 QXID 覆盖值；空则自动探测
     qxid_quote: str = ""
     qxid_quote_index: str = ""
+    qxid_price: str = ""
+    qxid_price_index: str = ""
     qxid_attendance: str = ""
 
     #: 单页返回的最大记录数（考勤翻页主策略：调大页大小，一次拿全）
@@ -188,6 +190,8 @@ class ErpConfig:
             require_auth=_env_bool("ERP_REQUIRE_AUTH", True),
             qxid_quote=_env_str("ERP_QXID_QUOTE"),
             qxid_quote_index=_env_str("ERP_QXID_QUOTE_INDEX"),
+            qxid_price=_env_str("ERP_QXID_PRICE"),
+            qxid_price_index=_env_str("ERP_QXID_PRICE_INDEX"),
             qxid_attendance=_env_str("ERP_QXID_ATTENDANCE"),
             page_size_max=max(50, _env_int("ERP_PAGE_SIZE_MAX", 5000)),
         )

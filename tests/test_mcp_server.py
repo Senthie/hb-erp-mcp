@@ -114,7 +114,7 @@ def test_initialize_and_list_tools(mcp_client) -> None:
     tools = list_tools(client, key)
     names = {t["name"] for t in tools}
     assert {"erp_whoami", "erp_capabilities", "erp_quote_list",
-            "erp_quote_detail", "erp_attendance",
+            "erp_quote_detail", "erp_attendance", "erp_price_list", "erp_price_detail",
             "erp_quote_new_form", "erp_quote_product_form", "erp_quote_options",
             "erp_quote_customer_search",
             "erp_quote_create", "erp_quote_delete",
@@ -127,6 +127,11 @@ def test_initialize_and_list_tools(mcp_client) -> None:
     assert {"from_date", "to_date", "where", "customer", "limit"} <= set(props)
     # 参数要带说明与示例，否则模型只能猜
     assert props["where"].get("description") and props["where"].get("examples")
+    price_props = by_name["erp_price_list"]["inputSchema"]["properties"]
+    assert {"from_date", "to_date", "date_type", "filters", "where"} <= set(price_props)
+    assert price_props["date_type"]["default"] == "制单日期"
+    detail_props = by_name["erp_price_detail"]["inputSchema"]["properties"]
+    assert {"record_id", "bdbh", "row", "include_description"} <= set(detail_props)
     assert by_name["erp_quote_detail"]["inputSchema"]["properties"].keys() >= {"record_id", "bdbh"}
     assert by_name["erp_attendance"]["inputSchema"]["required"] == ["month"]
 
@@ -149,7 +154,12 @@ def test_create_tool_declares_product_structure(mcp_client) -> None:
 
 
 def test_tools_list_schema_budget(mcp_client) -> None:
-    """tools/list 每次对话都会全量下发，体积涨上去就是常驻成本。"""
+    """tools/list 每次对话都会全量下发，体积涨上去就是常驻成本。
+
+    预算 22000（2026-11 从 20000 上调）：16 个工具里 `erp_quote_create` 一个就占
+    11209 字符（51 个产品字段的结构化 schema，是它存在的理由）；其余工具合计约 9.2K。
+    再加工具前先看 `tmp/schema-size.py` 的分布，别让列表类工具把余量吃掉。
+    """
     client, _state = mcp_client
     key = get_key(client)
     initialize(client, key)
@@ -157,7 +167,7 @@ def test_tools_list_schema_budget(mcp_client) -> None:
         len(json.dumps(t["inputSchema"], ensure_ascii=False))
         for t in list_tools(client, key)
     )
-    assert total <= 20_000, f"inputSchema 合计 {total} 字符，超预算 20000"
+    assert total <= 22_000, f"inputSchema 合计 {total} 字符，超预算 22000"
 
 
 # ══════════════════ 工具调用 ══════════════════

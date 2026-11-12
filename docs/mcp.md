@@ -93,7 +93,7 @@ VS Code `mcp.json`：
 
 ## 4. 工具清单
 
-15 个工具，全部要求 `Authorization: Bearer <api-key>`。
+16 个工具，全部要求 `Authorization: Bearer <api-key>`。
 列表类结果默认 50 条、上限 500 条，超出时 `truncated=true`。
 
 | 工具 | 写库 | 说明 |
@@ -101,6 +101,8 @@ VS Code `mcp.json`：
 | `erp_whoami` | — | 当前身份 / 会话状态；`erp_alive=false` 表示会话过期 |
 | `erp_capabilities` | — | 当前账号能访问哪些页面（`missing_pages` 为空即齐全） |
 | `erp_quote_list` | — | 报价需求列表查询（日期区间 + 一个关键字，其余条件本地过滤） |
+| `erp_price_list` | — | **客户报价列表**（`BJ_KHBJ`，一行=一个报价产品行）：日期区间可选作用于制单/交货/离厂 + 服务端下拉过滤 + 本地 `where` |
+| `erp_price_detail` | — | **客户报价详情**：表头 + 产品字段 + 数量明细 + 选配项目 + 部件明细(材料/尺寸/工序/辅料) + 费用 + 产品描述 + 制单审核 |
 | `erp_quote_detail` | — | 单条报价需求详情（ERP 订单需求字段） |
 | `erp_attendance` | — | 月度考勤明细 |
 | `erp_quote_new_form` | — | 空白页结构：表头字段、只读标记、三个下拉、textarea 列表 |
