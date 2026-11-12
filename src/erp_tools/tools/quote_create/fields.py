@@ -474,7 +474,7 @@ for _alias, _control in LEGACY_SUB_FIELD_MAP.items():
 
 #: 已占用的顶层键（不能当明细字段名用）
 RESERVED_ITEM_KEYS: frozenset[str] = frozenset(
-    {"name", "spec", "qty", "fields", "allow_readonly"}
+    {"name", "spec", "qty", "fields", "allow_readonly", "product_category"}
 )
 
 
@@ -605,6 +605,15 @@ def upload_payload_schema(*, include_excluded: bool = True) -> dict:
             "exclusiveMinimum": 0,
             "description": "同时写隐藏汇总值 txtCPSL 与首屏展示框 txtCPSL1",
         },
+        "product_category": {
+            "type": "string",
+            "title": "产品类别",
+            "description": (
+                "形如 `27.01;普通BB书`（也接受 `27.01` 或 `普通BB书`）。"
+                "产品档案里搜不到时必须给；档案能命中时可省略"
+            ),
+            "examples": ["27.01;普通BB书", "04.01;STD彩盒"],
+        },
     }
     field_props: dict[str, dict] = {}
     for spec in PRODUCT_FIELDS:
@@ -645,6 +654,7 @@ def upload_payload_schema(*, include_excluded: bool = True) -> dict:
             "name": "示例产品名称",
             "spec": "210*148",
             "qty": 12000,
+            "product_category": "27.01;普通BB书",
             "fields": example_fields,
         },
         "allowed": {
@@ -653,6 +663,7 @@ def upload_payload_schema(*, include_excluded: bool = True) -> dict:
         },
         "rules": [
             "fields 里只能用上面 allowed.aliases 或对应的页面控件名（x-control）。",
+            "product_category 是 products[] 层的键，不是 fields 里的键。",
             "隐藏字段（折叠面板）一律拒绝——隐藏字段不是「可选高级项」，是别的分区的数据。",
             "只读/系统字段（如香港单号、产品数量汇总、数量明细 GUID）同样拒绝。",
             "下拉传显示文字；checkbox 传 true/false；数字字段传 number 或数字字符串。",

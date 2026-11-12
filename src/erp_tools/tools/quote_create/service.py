@@ -28,9 +28,11 @@ from . import fields as pf
 from .parser import (
     HEADER_FIELDS,
     SELECT_FIELDS,
+    CategoryOption,
     CustomerOption,
     NewQuoteForm,
     ProductOption,
+    parse_category_tree,
     parse_customer_rows,
     parse_detail_rows,
     parse_new_form,
@@ -82,11 +84,18 @@ _OPTIONS_TTL = 300.0
 _options_cache: dict[tuple[str, str], tuple[float, dict[str, Any]]] = {}
 _options_lock = threading.Lock()
 
+#: 产品类别树缓存（90 个节点，从一个内嵌了树的页面解析出来）
+_CATEGORY_TTL = 600.0
+_category_cache: dict[str, tuple[float, list[CategoryOption]]] = {}
+_category_lock = threading.Lock()
+
 
 def clear_options_cache() -> None:
     """清空下拉选项缓存（测试与「强制刷新」用）。"""
     with _options_lock:
         _options_cache.clear()
+    with _category_lock:
+        _category_cache.clear()
 
 
 #: 客户行字段 -> 单据页字段（能直接回填的那些）
@@ -393,6 +402,7 @@ class QuoteCreateService:
         *,
         cpid: str | None = None,
         include_readonly: bool = True,
+        include_categories: bool = True,
     ) -> dict[str, Any]:
         """返回 `Add_CPZL.aspx`（产品明细子页）的**全部**字段。
 
@@ -475,6 +485,9 @@ class QuoteCreateService:
             },
             "fields": items,
             "upload": pf.upload_payload_schema(),
+            "categories": [
+                cat.as_dict() for cat in self.load_categories()
+            ] if include_categories else [],
             "unknown_controls": unknown,
             "notes": [
                 "control 是 ERP 提交字段名（权威）；alias 是给人用的名字，两者都可作为入参键。",
@@ -627,6 +640,54 @@ class QuoteCreateService:
             )
         return CustomerOption(values={k: v or "" for k, v in rows[0].items()})
 
+    # ══════════════════ 2b. 产品类别树（新产品没档案时用）══════════════════
+    def load_categories(self, *, refresh: bool = False) -> list[CategoryOption]:
+        """返回全部产品类别（code / name / lbid），默认缓存 600 秒。
+
+        树嵌在页面的 JS 里（`ComponentArt_Storage_TreeView1`）。用**产品档案选择页**
+        解析，不需要先有单据；实测 90 个节点，GUID 与历史单据的 `txtLBID` 一致。
+        """
+        key = self.auth.cfg.username or "anonymous"
+        now = time.time()
+        if not refresh:
+            with _category_lock:
+                hit = _category_cache.get(key)
+            if hit is not None and now - hit[0] < _CATEGORY_TTL:
+                return list(hit[1])
+
+        resp = self.auth.client.get(f"/Admin/{PRODUCT_PICKER_PATH}")
+        if resp.status_code != 200:
+            raise ParseError(f"产品档案页打开失败（HTTP {resp.status_code}）")
+        categories = parse_category_tree(resp.text)
+        if not categories:
+            raise ParseError("页面里没有解析出产品类别树（ComponentArt_Storage_TreeView1）")
+        with _category_lock:
+            _category_cache[key] = (now, categories)
+        return list(categories)
+
+    def find_category(self, keyword: str) -> CategoryOption:
+        """把 `27.01` / `27.01;普通BB书` / `普通BB书` 解析成唯一的类别节点。"""
+        text = (keyword or "").strip()
+        if not text:
+            raise ParseError("产品类别不能为空")
+        categories = self.load_categories()
+
+        for cat in categories:
+            if text in (cat.lbid, cat.text, cat.code):
+                return cat
+        exact = [c for c in categories if c.name == text]
+        if len(exact) == 1:
+            return exact[0]
+        fuzzy = [c for c in categories if text in c.name or text in c.code]
+        if len(fuzzy) == 1:
+            return fuzzy[0]
+        if not fuzzy:
+            raise ParseError(
+                f"产品类别 {text!r} 在产品类别树里找不到（共 {len(categories)} 个节点）"
+            )
+        names = "、".join(c.text for c in fuzzy[:8])
+        raise ParseError(f"产品类别 {text!r} 匹配到 {len(fuzzy)} 个（{names}…），请给更精确的编码")
+
     # ══════════════════ 3. 组装并校验 ══════════════════
     def prepare(
         self,
@@ -770,6 +831,8 @@ class QuoteCreateService:
                 "name": name,
                 "spec": spec,
                 "qty": qty_value,
+                # 新产品没档案时用它指定产品类别（`27.01` / `27.01;普通BB书` / 名称）
+                "product_category": str(item.get("product_category") or "").strip(),
                 # 全部明细字段（控件名 -> 值），覆盖子页 195 个可见控件
                 "fields": fields,
             })
@@ -929,12 +992,29 @@ class QuoteCreateService:
                 archive = self.find_product(product_name)
             except ErpError:
                 return
-        if "txtCPLB_Input" in body:
-            body["txtCPLB_Input"] = archive.category
         archive_fields = archive.page_fields()
-        for key in ("txtLBID", "txtLBBM"):
-            if key in body and not (body.get(key) or "").strip():
-                body[key] = archive_fields.get(key, "")
+        lbid = (archive_fields.get("txtLBID") or "").strip()
+        code = (archive_fields.get("txtLBBM") or "").strip()
+
+        # 档案给的 `txtCPLB` 只是名称（`STD彩盒`），ERP 认的是 `编码;名称`
+        # （`04.01;STD彩盒`）：只写名称能过校验但存不住，所以用 LBID 去类别树换完整形态。
+        text = ""
+        if lbid or archive.category:
+            try:
+                category = self.find_category(lbid or archive.category)
+                text, lbid, code = category.text, category.lbid, category.code
+            except ErpError:
+                if code and archive.category:
+                    text = f"{code};{archive.category}"
+        if not text:
+            return
+
+        if "txtCPLB_Input" in body:
+            body["txtCPLB_Input"] = text
+        if "txtLBBM" in body and code:
+            body["txtLBBM"] = code
+        if "txtLBID" in body and lbid:
+            body["txtLBID"] = lbid
 
     def create(
         self,
@@ -982,6 +1062,49 @@ class QuoteCreateService:
         khid = header.get("txtKHID", "")
         customer_info = prepared.get("customer") or {}
         steps: list[dict[str, Any]] = []
+        item = items[0]
+        notes: list[str] = list(prepared.get("warnings") or [])
+
+        # ---- 步骤 0：先定产品与类别 ----
+        # 排查失败时**不要**先建主表：ERP 是先建主表再存明细，明细被拒就会留下空单。
+        product: ProductOption | None = None
+        archive_error = ""
+        try:
+            product = self.find_product(item["name"])
+        except ErpError as exc:
+            archive_error = str(exc)
+
+        category: CategoryOption | None = None
+        requested_category = str(item.get("product_category") or "").strip()
+        if requested_category:
+            try:
+                category = self.find_category(requested_category)
+            except ErpError as exc:
+                # 类别树是按产品大类过滤的（书版树里没有 04.x 彩盒），
+                # 所以 `编码;名称` 这种完整写法允许原样提交，LBID 用档案的。
+                if ";" not in requested_category:
+                    raise
+                code, _, name = requested_category.partition(";")
+                archive_lbid = ""
+                if product is not None:
+                    archive_lbid = (product.page_fields().get("txtLBID") or "").strip()
+                category = CategoryOption(
+                    lbid=archive_lbid,
+                    text=requested_category,
+                    code=code.strip(),
+                    name=name.strip(),
+                )
+                notes.append(
+                    f"产品类别 {requested_category!r} 不在当前类别树里（树按产品大类过滤），"
+                    "已按 `编码;名称` 原样提交"
+                )
+        elif product is None:
+            raise ParseError(
+                f"产品档案里找不到 {item['name']!r}（{archive_error}），"
+                "且没有给 products[0].product_category。"
+                "新产品请直接指定产品类别，如 \"27.01\" 或 \"27.01;普通BB书\"；"
+                "类别清单可用 erp_quote_product_form 的 categories 查。"
+            )
 
         # ---- 步骤 1：建主表（btn_SonNew 的副作用就是先保存主表）----
         html, page_url = self._open_form_html()
@@ -1007,7 +1130,6 @@ class QuoteCreateService:
             }
 
         # ---- 步骤 2：产品明细子页 ----
-        product = self.find_product(items[0]["name"])
         discount_value = discount or customer_info.get("discount") or ""
         sub_url = self._sub_page_url(record_id, khid, discount_value)
         sub_resp = self.auth.client.get(sub_url)
@@ -1016,13 +1138,20 @@ class QuoteCreateService:
         sub_html = sub_resp.text
         allowed = _control_names(sub_html)
         sub_body = form_snapshot(sub_html)
-        # ① 先按产品档案回填（编码/单位/规格/尺寸/类别/条码…约 35 个字段）
-        for key, value in product.page_fields().items():
-            if key in allowed:
-                sub_body[key] = value
-        unit_value = _select_value(sub_html, "txtDWMC", product.unit)
-        if unit_value is not None and "txtDWMC" in allowed:
-            sub_body["txtDWMC"] = unit_value
+        # ① 有档案：先按产品档案回填（编码/单位/规格/尺寸/类别/条码…约 35 个字段）
+        if product is not None:
+            for key, value in product.page_fields().items():
+                if key in allowed:
+                    sub_body[key] = value
+            unit_value = _select_value(sub_html, "txtDWMC", product.unit)
+            if unit_value is not None and "txtDWMC" in allowed:
+                sub_body["txtDWMC"] = unit_value
+        else:
+            # 无档案（新产品）：名称/规格直接写，不再依赖产品档案
+            if "txtCPMC" in allowed:
+                sub_body["txtCPMC"] = item["name"]
+            if "txtGG" in allowed:
+                sub_body["txtGG"] = item["spec"]
         # ② 再按调用方给的全部明细字段覆盖（`prepare` 已解析成 控件名 -> 值）
         skipped: list[str] = []
         for control, raw in (items[0].get("fields") or {}).items():
@@ -1046,9 +1175,18 @@ class QuoteCreateService:
         if "txtCPSL" in allowed and "txtCPSL" not in provided:
             sub_body["txtCPSL"] = qty_text
         # ④ 产品类别（ComponentArt 树）：`form_snapshot` 拿到的是占位符，
-        # 必须按产品档案补回 txtCPLB_Input / txtLBID / txtLBBM，
+        # 必须补回 txtCPLB_Input（形如 `27.01;普通BB书`）/ txtLBID / txtLBBM，
         # 否则服务端一律报「请选择【产品类别】的数据！」。
-        self._restore_product_category(sub_body, sub_html, product.name, archive=product)
+        if category is not None:
+            if "txtCPLB_Input" in allowed:
+                sub_body["txtCPLB_Input"] = category.text
+            if "txtLBBM" in allowed:
+                sub_body["txtLBBM"] = category.code
+            if "txtLBID" in allowed:
+                sub_body["txtLBID"] = category.lbid
+        else:
+            self._restore_product_category(
+                sub_body, sub_html, item["name"], archive=product)
         sub_body["btnSave"] = "· 保存 ·"
         save_resp = self.auth.client.post(sub_url, data=sub_body)
         if save_resp.status_code >= 500:
@@ -1057,7 +1195,10 @@ class QuoteCreateService:
         # 注意：ERP 保存成功后仍可能在返回页里残留一条提示（实测「请输入【产品数量】…」就是这种），
         # 所以**不能**用提示文案判断成败，必须以回读结果为准。
         steps.append({"step": "save_product", "ok": True,
-                      "product_id": product.product_id, "message": warning or "",
+                      "product_id": product.product_id if product else "",
+                      "product_source": "archive" if product else "free-text",
+                      "category": category.text if category else "",
+                      "message": warning or "",
                       "fields_sent": len(items[0].get("fields") or {}),
                       "skipped_controls": skipped})
 
@@ -1100,12 +1241,17 @@ class QuoteCreateService:
             "record_id": record_id,
             "bdbh": bdbh,
             "url": page_url,
+            "warnings": notes,
             "header_saved": True,
             "detail_saved": detail_saved,
             "detail_error": detail_error,
             "product": {
-                "name": product.name, "spec": product.spec,
-                "unit": product.unit, "qty": items[0]["qty"],
+                "name": item["name"], "spec": item["spec"],
+                "unit": (product.unit if product else
+                         (items[0].get("fields") or {}).get("txtDWMC", "")),
+                "qty": items[0]["qty"],
+                "source": "archive" if product else "free-text",
+                "category": category.text if category else "",
             },
             "steps": steps,
             "message": (

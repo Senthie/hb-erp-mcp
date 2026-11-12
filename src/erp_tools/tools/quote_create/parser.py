@@ -388,8 +388,75 @@ def parse_product_controls(html: str) -> list[ProductControl]:
     return out
 
 
+@dataclass(frozen=True)
+class CategoryOption:
+    """产品类别树的一个节点。
+
+    `Text` 形如 `27.01;普通BB书`，`Value` 是类别 GUID（提交时写 `txtLBID`）。
+    """
+
+    lbid: str
+    text: str
+    code: str = ""
+    name: str = ""
+
+    def as_dict(self) -> dict[str, str]:
+        return {"lbid": self.lbid, "code": self.code, "name": self.name, "text": self.text}
+
+
+#: 类别树有两种渲染方式，都要认：
+#: 1. 产品档案选择页把每个节点画成链接：
+#:    `href="javascript:OnTreeView1Click('27.01;9e132616-...')" ...>普通BB书</a>`
+#: 2. 明细子页把整棵树塞进 JS：`[['Value','<GUID>'],['Text','27.01;普通BB书']]`
+_TREE_LINK = re.compile(
+    r"OnTreeView1Click\(\s*(?:&#39;|')\s*([0-9A-Za-z.\-]+)\s*;\s*([0-9a-fA-F-]{36})\s*(?:&#39;|')\s*\)"
+    r"[^>]*>([^<]*)</a>"
+)
+_TREE_NODE = re.compile(
+    r"\['Value','([0-9a-fA-F-]{36})'\]\s*,\s*\['Text','([^']*)'\]"
+)
+
+
+def _clean(text: str) -> str:
+    return " ".join((text or "").replace("\\'", "'").split())
+
+
+def parse_category_tree(html: str) -> list[CategoryOption]:
+    """从页面里抽出完整的产品类别树。
+
+    实测 2026-11-12：`Base_CPZL_Select.aspx`（产品档案选择页）用链接形式渲染了
+    全部 90 个节点，`Add_CPZL.aspx`（明细子页）则把同一棵树内嵌进 JS；
+    两种来源的 GUID 与历史单据里的 `txtLBID` 完全一致。
+    """
+    out: list[CategoryOption] = []
+    seen: set[str] = set()
+    page = html or ""
+
+    for code, lbid, name in _TREE_LINK.findall(page):
+        if lbid in seen:
+            continue
+        seen.add(lbid)
+        clean_name = _clean(name)
+        out.append(CategoryOption(
+            lbid=lbid, text=f"{code};{clean_name}", code=code, name=clean_name,
+        ))
+
+    for lbid, text in _TREE_NODE.findall(page):
+        if lbid in seen:
+            continue
+        raw = _clean(text)
+        if not raw:
+            continue
+        seen.add(lbid)
+        code, _, name = raw.partition(";")
+        out.append(CategoryOption(
+            lbid=lbid, text=raw, code=code.strip(), name=name.strip(),
+        ))
+    return out
+
+
 __all__ = [
-    "CUSTOMER_FIELDS", "CustomerOption", "HEADER_FIELDS", "NewQuoteForm",
-    "parse_customer_rows", "parse_new_form", "parse_product_controls",
-    "parse_rows_count", "ProductControl", "SELECT_FIELDS",
+    "CUSTOMER_FIELDS", "CategoryOption", "CustomerOption", "HEADER_FIELDS",
+    "NewQuoteForm", "parse_category_tree", "parse_customer_rows", "parse_new_form",
+    "parse_product_controls", "parse_rows_count", "ProductControl", "SELECT_FIELDS",
 ]

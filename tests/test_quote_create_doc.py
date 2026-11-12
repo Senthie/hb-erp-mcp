@@ -14,6 +14,7 @@ from erp_tools.tools.quote_create import (
     CONTROL_MAP,
     PRODUCT_FIELDS,
     REQUIRED_ALIASES,
+    RESERVED_ITEM_KEYS,
     UPLOAD_ALIASES,
     upload_payload_schema,
 )
@@ -37,9 +38,9 @@ def test_doc_example_uses_only_uploadable_fields() -> None:
     for item in payload["products"]:
         for key in item.get("fields") or {}:
             assert key in allowed, f"文档示例里的 {key!r} 不是可上传字段"
-        # 平铺写法也要合法（老写法兼容）
+        # 平铺写法也要合法（老写法兼容）；name/spec/qty/fields/product_category 是保留键
         for key in item:
-            if key in {"name", "spec", "qty", "fields"}:
+            if key in RESERVED_ITEM_KEYS:
                 continue
             assert key in UPLOAD_ALIASES, f"文档示例里平铺的 {key!r} 不是可上传字段"
 

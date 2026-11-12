@@ -286,7 +286,8 @@ def register_tools(mcp: MCPServer, state: ServerState) -> None:
             "只有 uploadable=true（可见且可写，51 个）的字段能通过 erp_quote_create 写入；"
             "折叠面板里的 142 个隐藏字段会被拒绝。"
             "不传 record_id 时返回静态注册表；传 record_id 会打开真实页面，"
-            "带上当前值、真实下拉选项与只读状态。返回里的 upload 含 json_schema + example。"
+            "带上当前值、真实下拉选项与只读状态。返回里的 upload 含 json_schema + example，"
+            "categories 是新产品的产品类别树（code / name / lbid）。"
         ),
     )
     @_tool_errors
@@ -381,11 +382,13 @@ def register_tools(mcp: MCPServer, state: ServerState) -> None:
             "confirm=false（默认）时只做校验并返回 needs_confirmation，不会落库；"
             "传 confirm=true 才会真正保存，成功返回表单编号(BDBH)与记录ID。"
             "产品名称会先在【产品档案】里模糊检索，必须唯一匹配才继续。"
+            "新产品（档案里搜不到）请同时传 products[0].product_category"
+            "（如 \"27.01\" / \"27.01;普通BB书\" / \"普通BB书\"），明细行不要求产品档案存在。"
             "明细字段只接受 DOM 首屏可见的 51 个（见 erp_quote_product_form），"
             "折叠面板里的隐藏字段会被拒绝；键名拼错也会直接报错。"
             "写完后会回读校验（明细行 CPMC + 产品数量）；任一项不符就返回 status=partial，"
             "detail_error 说明卡在哪一步，不会假报成功。"
-            "已知限制：产品类别（树形下拉）与多语言数量明细不落库。"
+            "已知限制：多语言数量明细不落库（只写汇总值 txtCPSL）。"
         ),
     )
     @_tool_errors

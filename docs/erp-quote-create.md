@@ -46,6 +46,7 @@
       "name": "512961503",
       "spec": "75*28*298",
       "qty": 3000,
+      "product_category": "04.01;STD彩盒",
       "fields": {
         "product_name": "512961503  INDIVIDUAL  BOX,SO15631(B),STD",
         "unit": "个",
@@ -143,14 +144,41 @@
 > 客户检索是**本地过滤**（服务端 `txtKey` 不可用，单页最多 500 行）：
 > `erp_quote_customer_search` 的结果可以直接拿来确认 `customer` 写什么。
 
-### 3.2 `products[]` 每个元素（4 个键）
+### 3.2 `products[]` 每个元素（5 个键）
 
 | MCP 字段名 | ERP 字段名 | 中文含义 | 备注 |
 | --- | --- | --- | --- |
-| `name` | 检索用；落库回填 `txtCPID`/`txtCPBH`/`txtCPMC`/`txtGG`/`txtDWMC`/`txtLBID`/`txtLBBM` 等 | 产品名称 | 在【产品档案】里模糊检索，必须**唯一匹配**（精确同名优先）；档案会顺带回填约 35 个控件 |
-| `spec` | —（不直接落库） | 规格 | 只做非空校验（形如 `210*148`）。**实际规格取档案的 `txtGG`**；要改传 `length_mm`/`width_mm`/`height_mm` |
+| `name` | 检索用；落库回填 `txtCPID`/`txtCPBH`/`txtCPMC`/`txtGG`/`txtDWMC`/`txtLBID`/`txtLBBM` 等 | 产品名称 | 在【产品档案】里模糊检索，必须**唯一匹配**（精确同名优先）；档案会顺带回填约 35 个控件。**档案里没有也能建**，见下方「新产品」 |
+| `spec` | —（不直接落库） | 规格 | 只做非空校验（形如 `210*148`）。**实际规格取档案的 `txtGG`**；要改传 `length_mm`/`width_mm`/`height_mm`。无档案时 `spec` 会直接写进 `txtGG` |
 | `qty` | `txtCPSL` + `txtCPSL1` | 产品数量（第 1 档） | 必须是正数；同时写隐藏汇总值与展示框。显式给了 `qty_1` 时以 `qty_1` 为准 |
 | `fields` | —（容器） | 明细字段集合 | 见 3.3。也可以把这 51 个键**直接平铺**在 `products[0]` 上，完全等价 |
+| `product_category` | `txtCPLB_Input` + `txtLBBM` + `txtLBID` | 产品类别 | **只在新产品（档案里搜不到）时需要**。接受 `27.01` / `27.01;普通BB书` / `普通BB书` 三种写法 |
+
+#### 新产品（产品档案里没有）
+
+真实历史单里 `txtCPID`、`txtCPBH` 本来就是**空的**，说明明细行并不要求产品在档案里。
+所以只要给一个产品类别就能建：
+
+```jsonc
+{
+  "name": "冬季找找图画书",
+  "spec": "240*330*0",
+  "qty": 410000,
+  "product_category": "27.01;普通BB书",   // ← 关键
+  "fields": { "unit": "本", "cases": 10, "languages": 10, /* …其余必填 */ }
+}
+```
+
+* 不传 `product_category` 且档案搜不到 → 直接报错，**不会**先建主表再失败（不会留空单）；
+* 传了类别就会一起写 `txtCPLB_Input`（`27.01;普通BB书`）、`txtLBBM`（`27.01`）、
+  `txtLBID`（GUID）—— **这三个都写，产品类别才能真正落库**；只写显示名会被服务端丢掉；
+* 类别树由页面解析（共 **98** 个节点，GUID 与历史单据的 `txtLBID` 一致），
+  清单用 `erp_quote_product_form` 返回的 `categories` 查；
+  ⚠ 树的节点是**按产品大类过滤**的（书版树里没有 `04.x` 彩盒），
+  所以档案产品的类别走“用档案的 `txtLBID` 去命中 → 命中不到就用 `编码;名称` 拼”这条路；
+  同理，`product_category` 如果不在树里、但写成了 `编码;名称`，会**原样提交**
+  （`txtLBID` 取档案的，没有档案就留空），并在返回的 `warnings` 里提示；
+* 此时 `create()` 的 `steps[].save_product.product_source = "free-text"`。
 
 ### 3.3 `fields` 里的 51 个明细字段
 
@@ -327,6 +355,11 @@
       "name": { "type": "string", "title": "产品名称" },
       "spec": { "type": "string", "title": "规格", "examples": ["210*148"] },
       "qty":  { "type": "number", "title": "产品数量", "exclusiveMinimum": 0 },
+      "product_category": {
+        "type": "string", "title": "产品类别",
+        "description": "形如 `27.01;普通BB书`；档案搜不到时必填",
+        "examples": ["27.01;普通BB书", "04.01;STD彩盒"]
+      },
       "fields": {
         "type": "object",
         "additionalProperties": false,
@@ -343,6 +376,7 @@
   },
   "example": {
     "name": "示例产品名称", "spec": "210*148", "qty": 12000,
+    "product_category": "27.01;普通BB书",
     "fields": { "binding": "胶装/PAD书", "packing": "纸箱包装", "unit": "本",
                 "no_pallet": true, "cases": 1, "languages": 1 }
   },
@@ -396,9 +430,16 @@
 
 ### 仍然由产品档案决定的部分
 
-编码、单位、类别、尺寸等默认从产品档案反查回填（先回填、再被你的入参覆盖）。
-唯一例外是 **产品类别 `txtCPLB`**：ComponentArt 树的值只存在前端 JS 里，
-服务端渲染只有占位符，ERP 侧存不住（`txtCPLB_Input` 也是只读）。
+产品档案相当于「在界面上点一次产品名称旁的 `...`」，一次带出约 22 个字段：
+`txtCPID`/`txtCPBH`/`txtCPMC`、类别三元组 `txtLBID`+`txtLBBM`+`txtCPLB`、
+单位 `txtDWMC`、规格 `txtGG`、尺寸 `txtCD/KD/GD`、大类 `txtCPDL`，
+以及每箱数量 `txtMBSL`、客户单号、备注等默认值。
+
+它不是外键：真实业务单里 `txtCPID`/`txtCPBH` 本来就是空的，所以**档案搜不到也能建单**（见 3.2）。
+
+**产品类别**是唯一需要加工的一项：档案只给名称（`STD彩盒`）+ 编码（`04.01`），
+而 ERP 认的是 `04.01;STD彩盒`。`create()` 会用档案的 `txtLBID` 去类别树里换成完整的
+`code;name`，换不到就用 `编码;名称` 拼一个，并把三个字段一起提交。
 
 ## 5. 返回结构与 `status`
 
@@ -439,8 +480,9 @@ erp_quote_customer_search           确认客户唯一命中 + 默认业务员
   保存后回读恒为空（估计由【客户联系人】派生）。`prepare` 会对此给出 warning。
 - **送货地区 `txtSHDQ` 提交后不落库**：服务端渲染时该下拉是空的（靠【送货方式】级联 JS 填充），
   纯 HTTP 写不进，回读为空。
-- **产品类别 `txtCPLB` 能过校验但存不住**：建单时按产品档案把值补进 `txtCPLB_Input` 才过得去
-  「请选择【产品类别】的数据！」，但保存后列表页「产品类别」列仍为空。
+- **产品类别 `txtCPLB`**：建单时把 `code;名称` + `txtLBBM` + `txtLBID` 三个字段一起发，
+  实测能落库（列表页「产品类别」列有值，如 `STD彩盒` / `普通BB书`）。
+  ⚠ 只写名称（如 `STD彩盒`）能过校验但**存不住**——旧版本就是这样静默失败的。
 - `spec` 必填但**不生效**，实际规格来自产品档案——想改规格要改档案或用
   `erp_quote_update_product`；也可以传 `length_mm`/`width_mm`/`height_mm`。
 - `qty` 必须**两个字段一起发**（`txtCPSL1` + `txtCPSL`），只发展示框会一直被挡在
@@ -453,6 +495,9 @@ erp_quote_customer_search           确认客户唯一命中 + 默认业务员
 
 | 日期 | 变更 |
 | --- | --- |
+| 2026-11-12 | **`product_category` 进示例与 schema**：§2 完整示例、`upload.json_schema`、51 字段样例都补上了该键；不在类别树里的 `编码;名称` 允原样提交并给 warning |
+| 2026-11-12 | **产品类别两条路径都能落库**：档案路径用 `txtLBID` 命中类别树（命中不到就 `04.01;STD彩盒` 拼接），无档案路径用 `product_category`；实测列表页「产品类别」列有值。之前只写名称能过校验但存不住 |
+| 2026-11-12 | **支持无档案建单（新产品）**：`products[].product_category` 接受 `27.01` / `27.01;普通BB书` / `普通BB书`；从页面解析出 98 个类别节点（GUID 与历史单据一致），类别现在能真正落库；档案搜不到时**先报错再建主表**，不再留空单 |
 | 2026-11-12 | **补齐必填说明**：新增 3.4「必填字段清单」（协议层 5 项 + ERP 服务端 14 项），3.3 表格里的必填行加 ✅ 标记；`prepare()` 缺必填字段时给 warning（避免留下空单） |
 | 2026-11-12 | **第 3 节改成「完整 JSON 逐字段说明」**：外层 12 个参数 + `products[]` 4 个键 + `fields` 51 个字段，统一用「MCP 字段名 / ERP 字段名 / 中文含义 / 备注」四列表格 |
 | 2026-11-12 | **搞清数量语义**：`txtCPSL1..10` = 报价数量**档位**（列表的 最小值/中间值/最大值），`txtCPMKSL1..10` = 每款数量；已修正字段标签与文案 |

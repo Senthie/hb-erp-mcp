@@ -158,7 +158,8 @@ def test_prepare_fills_header_from_customer(fixture_text) -> None:
     assert header["txtZKL"] == "10"
 
     assert result["products"][0] == {
-        "name": "彩盒", "spec": "210*148", "qty": 5000.0, "fields": {},
+        "name": "彩盒", "spec": "210*148", "qty": 5000.0,
+        "product_category": "", "fields": {},
     }
 
     # 写入已开放（erp_quote_create），但 prepare 本身仍然不落库

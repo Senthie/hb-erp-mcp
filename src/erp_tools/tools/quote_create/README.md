@@ -181,6 +181,18 @@ GET /Admin/BaoJia/BJ_KHBJXQ/Add.aspx?QXID=873&MenuTree=1&LoginUserID=2474
 → 最后补 `txtCPSL`/`txtCPSL1`**。档案回填属于「用户在界面上选产品」的等价行为，
 不算用户输入；用户输入只限那 51 个可见字段。
 
+### 新产品：档案里没有也能建（2026-11-12）
+
+真实历史单里 `txtCPID`、`txtCPBH` 本来就是空的 → 明细行**不要求**产品在档案里。
+所以 `create()` 不再「档案搜不到就报错」，而是：
+
+* 给了 `products[0].product_category`（`27.01` / `27.01;普通BB书` / `普通BB书`）
+  → 走无档案模式，`txtCPMC` / `txtGG` 直接用 `name` / `spec`；
+* 既搜不到档案、又没给类别 → **先报错再建主表**，不会留下空单；
+* 类别树从页面解析（`parse_category_tree`，98 个节点，链接与 JS 两种格式都认），
+  `find_category()` 统一换成 `txtCPLB_Input` + `txtLBBM` + `txtLBID` 三个字段一起发 ——
+  这也是**产品类别能落库**的关键（之前只写显示名，保存后为空）。
+
 
 ## 删除单据（已实现并验证）
 
