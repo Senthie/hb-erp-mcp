@@ -29,6 +29,7 @@ from ...tools.quote_index import QuoteListTool
 from ...tools.quote_index.parser import ACTION_COLUMNS
 from ...tools.quote_request import QuoteRequestTool
 from ..server.state import ServerState
+from .schemas import QuoteProductInput
 
 #: 单次返回的默认条数（LLM 友好）
 DEFAULT_RECORDS = 50
@@ -420,7 +421,7 @@ def register_tools(mcp: MCPServer, state: ServerState) -> None:
         description=(
             "【只读】在客户资料选择页(Base_KHZL_Select.aspx)按名称片段检索客户，"
             "返回 customer_id(GUID)、编码、简称、以及该客户默认的业务员/跟单员/折扣率。"
-            "keyword 留空则返回前若干条。拿到的 customer_id 可直接交给 erp_quote_prepare。"
+            "keyword 留空则返回前若干条。拿到的 customer_id 可直接交给 erp_quote_create。"
         ),
     )
     @_tool_errors
@@ -438,47 +439,12 @@ def register_tools(mcp: MCPServer, state: ServerState) -> None:
         with state.provider.slot():
             return QuoteCreateService(session.auth).search_customers(keyword, limit=limit)
 
-    # ---------- 新增报价需求：提交体预览 ----------
-    @mcp.tool(
-        name="erp_quote_prepare",
-        description=(
-            "【只读，不会落库】校验并组装一条「新增客户报价需求」将要提交的字段："
-            "客户、业务员、至少一条产品明细(name/spec/qty)。"
-            "返回 ok/errors/warnings 与 header 预览。真正落库请接着调 erp_quote_create"
-            "（confirm=true），不要把这个预览当成已创建。"
-        ),
-    )
-    @_tool_errors
-    def erp_quote_prepare(
-        customer: str | None = None,
-        sales: str | None = None,
-        merchandiser: str | None = None,
-        price_system: str | None = None,
-        products: list[dict[str, Any]] | None = None,
-        contact: str | None = None,
-        phone: str | None = None,
-        mobile: str | None = None,
-        fax: str | None = None,
-        discount: str | None = None,
-        remark: str | None = None,
-        product_memo: str | None = None,
-    ) -> dict[str, Any]:
-        session = _session(state)
-        with state.provider.slot():
-            return QuoteCreateService(session.auth).prepare(
-                customer=customer, sales=sales, merchandiser=merchandiser,
-                price_system=price_system, products=products, contact=contact,
-                phone=phone, mobile=mobile, fax=fax, discount=discount,
-                remark=remark, product_memo=product_memo,
-            )
-
-
     # ---------- 新增报价需求：真正写入 ----------
     @mcp.tool(
         name="erp_quote_create",
         description=(
             "【会写入 ERP】新建一条客户报价需求（主表 + 1 条产品明细，含产品数量）。"
-            "confirm=false（默认）时只做校验并返回 needs_confirmation，不会落库；"
+            "confirm=false（默认）只校验并返回预览（ok/errors/warnings/header），不会落库；"
             "传 confirm=true 才会真正保存，成功返回表单编号(BDBH)与记录ID。"
             "产品名称会先在【产品档案】里模糊检索，必须唯一匹配才继续。"
             "新产品（档案里搜不到）请同时传 products[0].product_category"
@@ -492,12 +458,21 @@ def register_tools(mcp: MCPServer, state: ServerState) -> None:
     )
     @_tool_errors
     def erp_quote_create(
+        products: Annotated[
+            list[QuoteProductInput],
+            Field(
+                min_length=1,
+                description=(
+                    "产品明细，当前只支持 1 条。每条要 name/spec/qty，"
+                    "明细字段放在 fields 里（也可平铺在同级）"
+                ),
+            ),
+        ],
         customer: Annotated[
             str | None,
             Field(description="客户名称片段或客户 ID；可先用 erp_quote_customer_search 查",
                   examples=["ADG"]),
         ] = None,
-        products: list[dict[str, Any]] | None = None,
         sales: Annotated[
             str | None,
             Field(description="业务员姓名或 GUID；为空时取客户默认业务员",
@@ -546,10 +521,14 @@ def register_tools(mcp: MCPServer, state: ServerState) -> None:
         ] = False,
     ) -> dict[str, Any]:
         session = _session(state)
+        items = (
+            [item.model_dump(exclude_none=True) for item in products]
+            if products else None
+        )
         with state.provider.slot():
             return QuoteCreateService(session.auth).create(
                 customer=customer, sales=sales, merchandiser=merchandiser,
-                price_system=price_system, products=products, contact=contact,
+                price_system=price_system, products=items, contact=contact,
                 phone=phone, mobile=mobile, fax=fax, discount=discount,
                 remark=remark, product_memo=product_memo, confirm=confirm,
             )
@@ -704,7 +683,8 @@ def build_mcp_server(state: ServerState) -> MCPServer:
             "所有工具都要求 HTTP 头 Authorization: Bearer <api-key>。"
             "先用 erp_capabilities 了解当前账号能访问哪些页面，再调用具体工具。"
             "结果体积有限（默认 50 条，上限 500 条），需要更多请缩小 where 或分页。"
-            "新增报价需求的写入链已开通：erp_quote_prepare 预览 → erp_quote_create 落库"
+            "新增报价需求的写入链：erp_quote_new_form / erp_quote_options 看清可填项"
+            "→ erp_quote_create(confirm=false) 预览 → erp_quote_create(confirm=true) 落库"
             "→ erp_quote_details 拿 cpid → erp_quote_update / erp_quote_update_product 修改"
             "→ erp_quote_delete 删除；所有写入工具都要 confirm=true 才生效。"
         ),

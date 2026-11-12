@@ -107,8 +107,7 @@ VS Code `mcp.json`：
 | `erp_quote_product_form` | — | **产品明细子页字段清单**（205 个控件，其中 51 个可上传）+ `upload` JSON Schema + `categories` 类别树 |
 | `erp_quote_options` | — | 业务员 / 跟单员 / 单价体系选项 + `employees` 合并名单 |
 | `erp_quote_customer_search` | — | 客户检索（返回 `customer_id` 与该客户默认业务员/折扣率） |
-| `erp_quote_prepare` | — | 校验并预览将要提交的字段（不会落库） |
-| `erp_quote_create` | ✅ | 新建单据：主表 + 1 条产品明细（**含产品数量**） |
+| `erp_quote_create` | ✅ | 新建单据：主表 + 1 条产品明细（**含产品数量**）。`confirm=false` 即预览 |
 | `erp_quote_details` | — | 列明细行，拿 `cpid`（改/删该行要用） |
 | `erp_quote_update` | ✅ | 改表头（备注/联系人/电话/手机/传真/折扣率/产品描述/业务员/跟单员） |
 | `erp_quote_update_product` | ✅ | 改产品行（名称/规格/数量） |
@@ -121,12 +120,26 @@ VS Code `mcp.json`：
 
 ```
 erp_quote_product_form       看明细子页能填什么（控件名/别名/下拉值）
-erp_quote_prepare            预览校验
-  → erp_quote_create         落库（回读 CPMC + txtCPSL）
+  → erp_quote_create(confirm=false)   预览校验（返回 ok/errors/warnings/header）
+  → erp_quote_create(confirm=true)    落库（回读 CPMC + txtCPSL）
   → erp_quote_details        拿 cpid
   → erp_quote_update(_product) 改
   → erp_quote_delete         删（回读 lblID 为空）
 ```
+
+### 参数 schema 怎么告诉模型
+
+`tools/list` 的 `inputSchema` 由函数注解推导，所以参数的格式与示例**写在代码里**
+（`apps/mcp/tools.py` 的 `Annotated[..., Field(...)]`），模型看到的就是这些信息。
+
+* `products[]` 不是自由 dict：它引用 `apps/mcp/schemas.py` 里的 `QuoteProductInput`，
+  后者又引用 `QuoteProductFields`——**51 个明细字段的类型/title/示例全部由
+  `quote_create/fields.py` 的注册表生成**，与 `erp_quote_product_form` 返回的
+  `upload.json_schema` 同源，不会两套漂移。
+* 下拉选项写成 `examples` 而不是 `enum`：注册表里的 `options` 只是离线已知值，
+  写死成枚举会把实际能通过的值在客户端判死。
+* `inputSchema` 里会出现 `$defs` / `$ref`（MCP 用 JSON Schema 2020-12，嵌套模型标准写法）。
+  若某个客户端不解析 `$defs`，可在 `register_tools()` 之后把 `$ref` 就地展开。
 
 字段细节与踩坑记录见
 [quote_create/README.md](../src/erp_tools/tools/quote_create/README.md)。

@@ -14,7 +14,7 @@
 | 月度考勤明细 | `erp attendance` | `erp_attendance` | 读 |
 | 新增报价需求（主表 + 产品明细 + 产品数量） | — | `erp_quote_create` | 写 |
 | 改表头 / 改产品行 / 删单据 | — | `erp_quote_update` `erp_quote_update_product` `erp_quote_delete` | 写 |
-| 表单结构 / 下拉选项 / 客户检索 / 提交预览 | — | `erp_quote_new_form` `erp_quote_options` `erp_quote_customer_search` `erp_quote_prepare` | 读 |
+| 表单结构 / 下拉选项 / 客户检索 | — | `erp_quote_new_form` `erp_quote_options` `erp_quote_customer_search` | 读 |
 
 写入类接口**默认只预演**（`confirm=false`），落库时一律**写后回读校验**，不会假报成功。
 

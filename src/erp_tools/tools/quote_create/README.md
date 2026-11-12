@@ -12,7 +12,7 @@
 | `erp_quote_product_form` | 读产品明细子页：**全量 205 个控件的字段清单** + 真实下拉选项/当前值 | 否 |
 | `erp_quote_options` | 单独查下拉选项：业务员 / 跟单员 / 单价体系，另给 `employees` 合并名单 | 否 |
 | `erp_quote_customer_search` | 在客户资料页按名称片段检索，返回 `customer_id` 与该客户默认的业务员/跟单员/折扣率 | 否 |
-| `erp_quote_prepare` | 校验并组装「将要提交的字段」，返回 `ok / errors / warnings / header` | 否 |
+| `erp_quote_prepare` | 已并入 `erp_quote_create`：`confirm=false` 就是预览（`ok / errors / warnings / header`） | 否 |
 | `erp_quote_create` | 新建单据：主表 + 1 条产品明细（含产品数量） | ✅ |
 | `erp_quote_details` | 列明细行，返回 `cpid`（改/删该行要用） | 否 |
 | `erp_quote_update` | 改表头：备注/联系人/电话/手机/传真/折扣率/产品描述/业务员/跟单员 | ✅ |
@@ -294,7 +294,7 @@ POST __EVENTTARGET=btn_SonNew
 2. 生成后各行字段的 `input name`；
 3. `btnSave` 的成功标志与新单号来源。
 
-在上述三点验证之前，本模块**不会调用 `btnSave`**，`erp_quote_prepare` 固定返回
+在上述三点验证之前，本模块**不会调用 `btnSave`**，`prepare()` 固定返回
 `submit_supported: false`，避免把「预览」误当成「已创建」。
 
 > 2026-11-11 更新：上面三点已经全部验证完毕，`btnSave` 链路已开通

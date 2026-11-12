@@ -542,6 +542,15 @@ def _prop(spec: FieldSpec) -> dict:
     return prop
 
 
+def schema_property(spec: FieldSpec) -> dict:
+    """`_prop()` 的公开别名。
+
+    MCP 层要拿同一份 title/description/examples 去生成 pydantic 模型，
+    走这个入口就不会出现「文档一套、inputSchema 另一套」。
+    """
+    return _prop(spec)
+
+
 #: 示例里几个字段给具体值，比笼统的「示例」更好读
 _EXAMPLE_VALUES: dict[str, object] = {
     "unit": "本",
@@ -710,6 +719,7 @@ __all__ = [
     "alias_of",
     "grouped",
     "resolve_control",
+    "schema_property",
     "suggest",
     "upload_payload_schema",
     "visible_of",

@@ -7,12 +7,13 @@
 > 字段清单来自真实页面抓取：`scripts/probe-quote-fields.py`。
 
 **会写入 ERP。** 新建一条「客户报价需求」= 主表 + 1 条产品明细（含产品数量）。
-`confirm=false`（默认）只校验并返回 `needs_confirmation`，不落库。
+`confirm=false`（默认）只校验并返回预览（`status=needs_confirmation`），不落库。
+预览与落库是**同一个工具的两次调用**（原来的 `erp_quote_prepare` 已合并进来）。
 
 | 项目 | 值 |
 | --- | --- |
 | 工具名 | `erp_quote_create` |
-| 写库 | ✅（必须先过 `erp_quote_prepare` 同一套校验） |
+| 写库 | ✅（同一套校验：`confirm=false` 通过后再传 `confirm=true` 即可） |
 | 一次明细数 | **仅 1 条**，多条返回 `status=unsupported` |
 | 必填 | 协议层：`customer` / `sales`（档案可补）/ `products[0].name/spec/qty`；ERP 端另有 **14 个**明细必填字段，见 3.4 |
 | 可上传明细字段 | **51 个**（DOM 首屏可见 且 可写），逐字段见 3.3 |
@@ -153,6 +154,13 @@
 | `qty` | `txtCPSL` + `txtCPSL1` | 产品数量（第 1 档） | 必须是正数；同时写隐藏汇总值与展示框。显式给了 `qty_1` 时以 `qty_1` 为准 |
 | `fields` | —（容器） | 明细字段集合 | 见 3.3。也可以把这 51 个键**直接平铺**在 `products[0]` 上，完全等价 |
 | `product_category` | `txtCPLB_Input` + `txtLBBM` + `txtLBID` | 产品类别 | **只在新产品（档案里搜不到）时需要**。接受 `27.01` / `27.01;普通BB书` / `普通BB书` 三种写法 |
+
+> 这 5 个键与 51 个明细字段现在有**机器可读的 schema**：`tools/list` 里
+> `erp_quote_create.inputSchema.properties.products.items` 指向
+> `apps/mcp/schemas.py` 的 `QuoteProductInput`（其中 `fields` 指向 51 字段的
+> `QuoteProductFields`），类型 / `title` / 示例全部由 `fields.py` 注册表生成，
+> 与 `erp_quote_product_form` 返回的 `upload.json_schema` 同源。
+> `products` 是**必填**参数（`required: ["products"]`，且至少 1 条）。
 
 #### 新产品（产品档案里没有）
 
@@ -462,7 +470,7 @@
 erp_quote_product_form              看明细子页能填什么（控件名/别名/下拉值）
 erp_quote_customer_search           确认客户唯一命中 + 默认业务员
   → erp_quote_options(field="sales")   确认业务员在下拉里
-  → erp_quote_prepare                  预览（不落库）
+  → erp_quote_create(confirm=false)    预览（不落库）
   → erp_quote_create(confirm=true)     落库，回读 CPMC + txtCPSL
   → erp_quote_details                  拿 cpid
   → erp_quote_update / erp_quote_update_product
@@ -490,11 +498,15 @@ erp_quote_customer_search           确认客户唯一命中 + 默认业务员
 - **不能用返回页里的 alert 文案判断成败**：ERP 保存成功后仍可能残留一条提示，
   所以必须以**写后回读**为准（这正是 `partial` / `failed` 存在的原因）。
 - 写完后**不要再拿 `btn_SonNew` 之前的旧快照重发 `btnSave`**——那会把刚写入的明细整行覆盖掉。
+- `inputSchema` 里 `products` 用的是 `$ref` + `$defs`（JSON Schema 2020-12 标准写法）。
+  绝大多数客户端能解析；若遇到不展开 `$defs` 的客户端，把 `$ref` 就地展开即可，
+  不影响服务端校验（校验走的是同一批 pydantic 模型）。
 
 ## 8. 变更记录
 
 | 日期 | 变更 |
 | --- | --- |
+| 2026-11-12 | **`erp_quote_prepare` 并入本工具**：`confirm=false` 就是预览，不再有单独工具；同时 `products[]` 改成 pydantic 模型（`QuoteProductInput` + 51 字段的 `QuoteProductFields`），模型现在能从 `inputSchema` 直接看到每个明细字段的类型 / 中文名 / 示例 |
 | 2026-11-12 | **`product_category` 进示例与 schema**：§2 完整示例、`upload.json_schema`、51 字段样例都补上了该键；不在类别树里的 `编码;名称` 允原样提交并给 warning |
 | 2026-11-12 | **产品类别两条路径都能落库**：档案路径用 `txtLBID` 命中类别树（命中不到就 `04.01;STD彩盒` 拼接），无档案路径用 `product_category`；实测列表页「产品类别」列有值。之前只写名称能过校验但存不住 |
 | 2026-11-12 | **支持无档案建单（新产品）**：`products[].product_category` 接受 `27.01` / `27.01;普通BB书` / `普通BB书`；从页面解析出 98 个类别节点（GUID 与历史单据一致），类别现在能真正落库；档案搜不到时**先报错再建主表**，不再留空单 |

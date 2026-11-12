@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 from pathlib import Path
 
 import pytest
@@ -116,14 +117,47 @@ def test_initialize_and_list_tools(mcp_client) -> None:
             "erp_quote_detail", "erp_attendance",
             "erp_quote_new_form", "erp_quote_product_form", "erp_quote_options",
             "erp_quote_customer_search",
-            "erp_quote_prepare", "erp_quote_create", "erp_quote_delete",
+            "erp_quote_create", "erp_quote_delete",
             "erp_quote_details", "erp_quote_update", "erp_quote_update_product"} <= names
+    # prepare 已并入 create（confirm=false 就是预览），不应再单独暴露
+    assert "erp_quote_prepare" not in names
 
     by_name = {t["name"]: t for t in tools}
     props = by_name["erp_quote_list"]["inputSchema"]["properties"]
     assert {"from_date", "to_date", "where", "customer", "limit"} <= set(props)
+    # 参数要带说明与示例，否则模型只能猜
+    assert props["where"].get("description") and props["where"].get("examples")
     assert by_name["erp_quote_detail"]["inputSchema"]["properties"].keys() >= {"record_id", "bdbh"}
     assert by_name["erp_attendance"]["inputSchema"]["required"] == ["month"]
+
+
+def test_create_tool_declares_product_structure(mcp_client) -> None:
+    """`products[]` 必须是结构化的，否则模型看不到明细字段该填什么。"""
+    client, _state = mcp_client
+    key = get_key(client)
+    initialize(client, key)
+    by_name = {t["name"]: t for t in list_tools(client, key)}
+    schema = by_name["erp_quote_create"]["inputSchema"]
+
+    assert schema["required"] == ["products"]
+    items = schema["properties"]["products"]["items"]
+    assert items.get("$ref", "").endswith("QuoteProductInput")
+    defs = schema.get("$defs") or {}
+    assert set(defs["QuoteProductFields"]["properties"]) >= {"binding", "packing", "pallet"}
+    assert len(defs["QuoteProductFields"]["properties"]) == 51
+    assert defs["QuoteProductFields"]["properties"]["no_pallet"]["anyOf"][0]["type"] == "boolean"
+
+
+def test_tools_list_schema_budget(mcp_client) -> None:
+    """tools/list 每次对话都会全量下发，体积涨上去就是常驻成本。"""
+    client, _state = mcp_client
+    key = get_key(client)
+    initialize(client, key)
+    total = sum(
+        len(json.dumps(t["inputSchema"], ensure_ascii=False))
+        for t in list_tools(client, key)
+    )
+    assert total <= 20_000, f"inputSchema 合计 {total} 字符，超预算 20000"
 
 
 # ══════════════════ 工具调用 ══════════════════
