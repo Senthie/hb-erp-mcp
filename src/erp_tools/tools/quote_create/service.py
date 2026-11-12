@@ -181,6 +181,19 @@ def _fmt_qty(value: Any) -> str:
     return str(int(number)) if number.is_integer() else str(number)
 
 
+def _cell_text(value: Any) -> str:
+    """把任意值转成要提交给 ERP 的文本。
+
+    **数字必须先整数化**：MCP 参数经过 pydantic 后，`3000` 会变成 `3000.0`，
+    直接 `str()` 会提交 `"3000.0"`，ERP 会判为非法数量并报「请输入【产品数量】…」。
+    """
+    if isinstance(value, bool):
+        return _checkbox_value(value)
+    if isinstance(value, (int, float)):
+        return _fmt_qty(value)
+    return str(value)
+
+
 def float_or_none(value: Any) -> float | None:
     """把页面回读的字符串（可能是 `3000` / `3000个`）变成数字，失败返回 None。"""
     text = str(value or "").strip()
@@ -259,7 +272,7 @@ def normalize_product_fields(
         if spec is None:
             # 页面新增了 fields.py 里没有的控件：仍然透传，但提示一下
             warnings.append(f"第 {index} 条明细的控件 {control} 不在已知清单里，已原样透传")
-            out[control] = _checkbox_value(value) if isinstance(value, bool) else str(value)
+            out[control] = _cell_text(value)
             continue
         # ① 可见性是硬约束：折叠面板里的字段不是「高级选项」，是别的分区的数据
         if not spec.visible:
@@ -291,7 +304,7 @@ def normalize_product_fields(
                 )
                 out[control] = text
             continue
-        out[control] = str(value)
+        out[control] = _cell_text(value)
 
     return out, errors, warnings
 
@@ -817,6 +830,14 @@ class QuoteCreateService:
             fields, field_errors, field_warnings = normalize_product_fields(item, index)
             errors.extend(field_errors)
             warnings.extend(field_warnings)
+            # `txtCPSL1`（第 1 档数量）一旦显式给了，落库时它优先于 qty，
+            # 两者不一致会写成 qty_1 的值，所以提前提醒。
+            tier_one = fields.get("txtCPSL1")
+            if tier_one and qty_value and float_or_none(tier_one) != qty_value:
+                warnings.append(
+                    f"第 {index} 条明细的 qty={_fmt_qty(qty_value)} 与 fields.qty_1={tier_one} "
+                    "不一致；落库以 qty_1 为准（因为它直接对应页面上的第 1 档数量输入框）"
+                )
             missing_required = [
                 spec.alias or spec.control
                 for spec in pf.PRODUCT_FIELDS

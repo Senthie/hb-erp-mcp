@@ -100,7 +100,64 @@ def test_unknown_alias_gets_suggestion() -> None:
     assert errors and "相近字段" in errors[0]
 
 
+def test_numbers_are_not_sent_with_dot_zero() -> None:
+    """pydantic 会把数字变成 float，直接 str() 会提交 `3000.0`，ERP 判为非法数量。
+
+    2026-11-12 实测：改成模型后建单一直报「请输入【产品数量】…」，
+    回退到未经过模型的原始 dict 就正常——就是这个格式问题。
+    """
+    item = QuoteProductInput.model_validate(
+        {"name": "A", "spec": "1*1", "qty": 3000,
+         "fields": {"qty_1": 3000, "qty_2": 5000, "cases": 1, "languages": 10,
+                    "length_mm": 210}}
+    )
+    dumped = item.model_dump(exclude_none=True)
+    assert dumped["qty"] == 3000.0  # 模型里确实是 float
+
+    fields, errors, warnings = normalize_product_fields(dumped)
+    assert errors == []
+    assert warnings == []
+    assert fields["txtCPSL1"] == "3000"
+    assert fields["txtCPSL2"] == "5000"
+    assert fields["txtTZS"] == "1"
+    assert fields["txtYYS"] == "10"
+    assert fields["txtCD"] == "210"
+    assert ".0" not in " ".join(fields.values())
+
+
+def test_decimal_values_are_kept() -> None:
+    item = QuoteProductInput.model_validate(
+        {"name": "A", "spec": "1*1", "qty": 1.5, "fields": {"length_mm": 210.5}}
+    )
+    fields, _errors, _warnings = normalize_product_fields(item.model_dump(exclude_none=True))
+    assert fields["txtCD"] == "210.5"
+
+
 def test_fields_model_allows_unlisted_keys() -> None:
     """未声明的键必须还能传：隐藏字段的拒绝理由由服务端给中文说明。"""
     assert QuoteProductFields.model_config.get("extra") == "allow"
     assert QuoteProductInput.model_config.get("extra") == "allow"
+
+
+def test_qty_mismatch_with_qty_1_is_warned(monkeypatch) -> None:
+    """qty_1 优先于 qty，不一致要提前提醒，否则只会得到一个 partial。"""
+    from erp_tools.tools.quote_create import service as svc_mod
+
+    class _FakeForm:
+        fields = {"txtKHID": "", "txtYGXM": ""}
+        selects: dict = {}
+
+        def resolve_select(self, control, label):
+            return "GUID"
+
+    monkeypatch.setattr(svc_mod.QuoteCreateService, "open_form", lambda self: _FakeForm())
+    monkeypatch.setattr(
+        svc_mod.QuoteCreateService, "find_customer",
+        lambda self, keyword: svc_mod.CustomerOption({"customer_id": "C1", "sales": "x"}),
+    )
+    service = svc_mod.QuoteCreateService(auth=None)
+    res = service.prepare(
+        customer="X", sales="Y",
+        products=[{"name": "A", "spec": "1*1", "qty": 4321, "fields": {"qty_1": 3000}}],
+    )
+    assert any("不一致" in w for w in res["warnings"]), res["warnings"]

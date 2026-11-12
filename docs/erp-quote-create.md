@@ -495,6 +495,9 @@ erp_quote_customer_search           确认客户唯一命中 + 默认业务员
   `erp_quote_update_product`；也可以传 `length_mm`/`width_mm`/`height_mm`。
 - `qty` 必须**两个字段一起发**（`txtCPSL1` + `txtCPSL`），只发展示框会一直被挡在
   「【产品数量】不能为空！」。这件事 `create()` 内部已经处理，调用方不用管。
+- **`fields.qty_1` 优先于 `qty`**：显式给了第 1 档数量就按它写，`qty` 只当作
+  未提供 `qty_1` 时的默认值。两者不一致时 `prepare()` 会给 warning，落库后会得到
+  `status=partial`（明细行在、数量回读是 `qty_1`）。只有一个档位时建议只写 `qty`。
 - **不能用返回页里的 alert 文案判断成败**：ERP 保存成功后仍可能残留一条提示，
   所以必须以**写后回读**为准（这正是 `partial` / `failed` 存在的原因）。
 - 写完后**不要再拿 `btn_SonNew` 之前的旧快照重发 `btnSave`**——那会把刚写入的明细整行覆盖掉。
@@ -506,6 +509,7 @@ erp_quote_customer_search           确认客户唯一命中 + 默认业务员
 
 | 日期 | 变更 |
 | --- | --- |
+| 2026-11-12 | **修数字格式回归**：经 pydantic 后 `qty`/`cases`/`qty_1` 等会变成 float，`str()` 提交 `3000.0` 会被 ERP 判为非法数量并报「请输入【产品数量】…」，明细行根本不落库。统一走 `_cell_text()` 整数化；同时给 `qty` 与 `qty_1` 不一致加 warning。实测无档案（free-text）路径与档案路径均能建成 |
 | 2026-11-12 | **`erp_quote_prepare` 并入本工具**：`confirm=false` 就是预览，不再有单独工具；同时 `products[]` 改成 pydantic 模型（`QuoteProductInput` + 51 字段的 `QuoteProductFields`），模型现在能从 `inputSchema` 直接看到每个明细字段的类型 / 中文名 / 示例 |
 | 2026-11-12 | **`product_category` 进示例与 schema**：§2 完整示例、`upload.json_schema`、51 字段样例都补上了该键；不在类别树里的 `编码;名称` 允原样提交并给 warning |
 | 2026-11-12 | **产品类别两条路径都能落库**：档案路径用 `txtLBID` 命中类别树（命中不到就 `04.01;STD彩盒` 拼接），无档案路径用 `product_category`；实测列表页「产品类别」列有值。之前只写名称能过校验但存不住 |
