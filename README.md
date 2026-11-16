@@ -15,6 +15,7 @@
 | 新增报价需求（主表 + 产品明细 + 产品数量） | — | `erp_quote_create` | 写 |
 | 改表头 / 改产品行 / 删单据 | — | `erp_quote_update` `erp_quote_update_product` `erp_quote_delete` | 写 |
 | 表单结构 / 下拉选项 / 客户检索 | — | `erp_quote_new_form` `erp_quote_options` `erp_quote_customer_search` | 读 |
+| 菜单 → 接口对照（哪些菜单页已接入） | `erp menu` | `erp_menu` | 读 |
 
 写入类接口**默认只预演**（`confirm=false`），落库时一律**写后回读校验**，不会假报成功。
 
@@ -90,9 +91,10 @@ Copy-Item packaging\config.example.yaml config.yaml   # 填 ERP 地址 / 工号 
 
 | 文档 | 内容 |
 | --- | --- |
+| [docs/erp-menu.md](docs/erp-menu.md) | **ERP 菜单 → 接口对照**（覆盖率 + 每个按钮能做什么）+ [docs/api/](docs/api/) 单接口文档 |
 | [docs/cli.md](docs/cli.md) | 全部命令的选项与示例、翻页策略、排错、页面协议速查 |
 | [docs/api.md](docs/api.md) | `erp_tools.api` 函数签名、返回结构、异常体系、进阶用法 |
-| [docs/mcp.md](docs/mcp.md) | MCP 服务、api-key、14 个工具、团队模式 TLS、Docker + nginx、错误码 |
+| [docs/mcp.md](docs/mcp.md) | MCP 服务、api-key、18 个工具、团队模式 TLS、Docker + nginx、错误码 |
 | [tools/quote_index](src/erp_tools/tools/quote_index/README.md) | 列表查询字段与 CSV 输出 |
 | [tools/quote_request](src/erp_tools/tools/quote_request/README.md) | 详情字段与解析规则 |
 | [tools/quote_create](src/erp_tools/tools/quote_create/README.md) | 写入协议、必填链、已知限制 |
@@ -125,7 +127,7 @@ Copy-Item packaging\config.example.yaml config.yaml   # 填 ERP 地址 / 工号 
 ## 测试
 
 ```powershell
-.\.venv\Scripts\python.exe -m pytest -q     # 159 项，全部离线（不连真实 ERP）
+.\.venv\Scripts\python.exe -m pytest -q     # 314 项，全部离线（不连真实 ERP）
 ```
 
 | 测试文件 | 覆盖内容 |
@@ -136,6 +138,7 @@ Copy-Item packaging\config.example.yaml config.yaml   # 填 ERP 地址 / 工号 
 | `test_mcp_server` | MCP 握手、工具清单与 inputSchema、身份传递、撤销后 401 |
 | `test_cli_key` / `test_auth_captcha` | 换 key 命令、验证码网络错误的分类 |
 | `test_quote_create_parser` / `_qty` | 页面解析、提交体组装、产品数量回读 |
+| `test_menu_parser` / `test_menu_docs` | 菜单树解析；对照表生成物一致、接口名与文档路径不漂移 |
 | 其余 | 各页面解析器 + CLI 配置 + CSV 输出 |
 
 夹具 `tests/fixtures/` 存真实页面（报价详情 / 列表 / 考勤 / 客户选择 / 菜单响应），

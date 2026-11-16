@@ -1,0 +1,402 @@
+{
+  "captured_at": "2026-11-16 10:41:28",
+  "account": "21146",
+  "login_user": "2474",
+  "source": "GET /Admin/indexAjax.ashx?FunName=GetMenuTree&Value1=2474&Value2=",
+  "note": "菜单按账号权限渲染；换账号/权限变动后请重新 erp menu --capture",
+  "tree": [
+    {
+      "text": "业务报价管理",
+      "children": [
+        {
+          "text": "业务需求",
+          "children": [
+            {
+              "text": "客户报价需求",
+              "children": [
+                {
+                  "text": "新增-客户报价需求",
+                  "url": "BaoJia/BJ_KHBJXQ/Add.aspx?QXID=873&MenuTree=1&LoginUserID=2474",
+                  "parent_name": "客户报价需求",
+                  "parent_id": "471"
+                },
+                {
+                  "text": "列表-客户报价需求",
+                  "url": "BaoJia/BJ_KHBJXQ/Index.aspx?QXID=876&MenuTree=1&LoginUserID=2474",
+                  "parent_name": "客户报价需求",
+                  "parent_id": "471"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "text": "客户报价",
+          "children": [
+            {
+              "text": "客户报价",
+              "children": [
+                {
+                  "text": "新增-客户报价",
+                  "url": "BaoJia/BJ_KHBJ/Add.aspx?QXID=857&MenuTree=1&LoginUserID=2474",
+                  "parent_name": "客户报价",
+                  "parent_id": "464"
+                },
+                {
+                  "text": "列表-客户报价",
+                  "url": "BaoJia/BJ_KHBJ/Index.aspx?QXID=860&MenuTree=1&LoginUserID=2474",
+                  "parent_name": "客户报价",
+                  "parent_id": "464"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "text": "报价其它设置",
+          "children": [
+            {
+              "text": "报价纸张价格设置",
+              "children": [
+                {
+                  "text": "新增-报价纸张价格设置",
+                  "url": "BaoJia/BJ_Base_BJZZDJSZ/Add.aspx?QXID=9461&MenuTree=1&LoginUserID=2474",
+                  "parent_name": "报价纸张价格设置",
+                  "parent_id": "2526"
+                },
+                {
+                  "text": "列表-报价纸张价格设置",
+                  "url": "BaoJia/BJ_Base_BJZZDJSZ/index.aspx?QXID=9464&MenuTree=1&LoginUserID=2474",
+                  "parent_name": "报价纸张价格设置",
+                  "parent_id": "2526"
+                }
+              ]
+            },
+            {
+              "text": "报价辅料价格设置",
+              "children": [
+                {
+                  "text": "新增-报价辅料价格设置",
+                  "url": "BaoJia/BJ_Base_BJCLDJSZ/Add.aspx?QXID=12537&MenuTree=1&LoginUserID=2474",
+                  "parent_name": "报价辅料价格设置",
+                  "parent_id": "3290"
+                },
+                {
+                  "text": "列表-报价辅料价格设置",
+                  "url": "BaoJia/BJ_Base_BJCLDJSZ/Index.aspx?QXID=12540&MenuTree=1&LoginUserID=2474",
+                  "parent_name": "报价辅料价格设置",
+                  "parent_id": "3290"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "text": "客户订单管理",
+      "children": [
+        {
+          "text": "客户订单",
+          "children": [
+            {
+              "text": "新建-客户订单",
+              "url": "DingDan/DD_KHDD/Add.aspx?QXID=684&MenuTree=1&LoginUserID=2474",
+              "parent_name": "客户订单",
+              "parent_id": "392"
+            },
+            {
+              "text": "列表-客户订单",
+              "url": "DingDan/DD_KHDD/Index.aspx?QXID=687&MenuTree=1&LoginUserID=2474",
+              "parent_name": "客户订单",
+              "parent_id": "392"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "text": "生产管理",
+      "children": [
+        {
+          "text": "补数管理",
+          "parent_name": "生产管理",
+          "parent_id": "413"
+        },
+        {
+          "text": "待下工单",
+          "url": "ShengChan/SC_SCTJFX/SC_DXSCSGDFX.aspx?QXID=14484&MenuTree=1&LoginUserID=2474",
+          "parent_name": "生产管理",
+          "parent_id": "413"
+        }
+      ]
+    },
+    {
+      "text": "采购管理",
+      "children": [
+        {
+          "text": "采购申请",
+          "children": [
+            {
+              "text": "新增-采购申请",
+              "url": "KuCun/KC_CLCRKSQ/Add.aspx?QXID=1036&MenuTree=1&LoginUserID=2474",
+              "parent_name": "采购申请",
+              "parent_id": "251"
+            },
+            {
+              "text": "列表-采购申请",
+              "url": "KuCun/KC_CLCRKSQ/Index.aspx?QXID=1039&MenuTree=1&LoginUserID=2474",
+              "parent_name": "采购申请",
+              "parent_id": "251"
+            }
+          ]
+        },
+        {
+          "text": "材料询价",
+          "children": [
+            {
+              "text": "部门材料询价",
+              "children": [
+                {
+                  "text": "新增-部门材料询价",
+                  "url": "CaiGou/CG_BMCLXJ/Add.aspx?QXID=1162&MenuTree=1&LoginUserID=2474",
+                  "parent_name": "部门材料询价",
+                  "parent_id": "572"
+                },
+                {
+                  "text": "列表-部门材料询价",
+                  "url": "CaiGou/CG_BMCLXJ/Index.aspx?QXID=1165&MenuTree=1&LoginUserID=2474",
+                  "parent_name": "部门材料询价",
+                  "parent_id": "572"
+                }
+              ]
+            },
+            {
+              "text": "供应商材料询价",
+              "children": [
+                {
+                  "text": "新增-供应商材料询价",
+                  "url": "CaiGou/CG_GYSCLXJ/Add.aspx?QXID=1171&MenuTree=1&LoginUserID=2474",
+                  "parent_name": "供应商材料询价",
+                  "parent_id": "575"
+                },
+                {
+                  "text": "列表-供应商材料询价",
+                  "url": "CaiGou/CG_GYSCLXJ/Index.aspx?QXID=1174&MenuTree=1&LoginUserID=2474",
+                  "parent_name": "供应商材料询价",
+                  "parent_id": "575"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "text": "仓库管理",
+      "children": [
+        {
+          "text": "材料管理",
+          "children": [
+            {
+              "text": "部门领料",
+              "children": [
+                {
+                  "text": "部门领料申请",
+                  "children": [
+                    {
+                      "text": "新增-部门领料申请",
+                      "url": "KuCun/KC_CLCRKSQ/Add.aspx?QXID=331&MenuTree=1&LoginUserID=2474",
+                      "parent_name": "部门领料申请",
+                      "parent_id": "317"
+                    },
+                    {
+                      "text": "列表-部门领料申请",
+                      "url": "KuCun/KC_CLCRKSQ/Index.aspx?QXID=334&MenuTree=1&LoginUserID=2474",
+                      "parent_name": "部门领料申请",
+                      "parent_id": "317"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "text": "设备管理",
+      "children": [
+        {
+          "text": "设备维修",
+          "children": [
+            {
+              "text": "设备维修通知单",
+              "children": [
+                {
+                  "text": "新增-设备维修通知单",
+                  "url": "SheBei/SB_WXTZD/Add.aspx?QXID=1663&MenuTree=1&LoginUserID=2474",
+                  "parent_name": "设备维修通知单",
+                  "parent_id": "723"
+                },
+                {
+                  "text": "列表-设备维修通知单",
+                  "url": "SheBei/SB_WXTZD/Index.aspx?QXID=1666&MenuTree=1&LoginUserID=2474",
+                  "parent_name": "设备维修通知单",
+                  "parent_id": "723"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "text": "人力资源管理",
+      "children": [
+        {
+          "text": "人事管理",
+          "children": [
+            {
+              "text": "行政管理",
+              "children": [
+                {
+                  "text": "工作联络单",
+                  "children": [
+                    {
+                      "text": "新增-工作联络单",
+                      "url": "RenShi/RS_GZLLD_M/Add.aspx?QXID=8540&MenuTree=1&LoginUserID=2474",
+                      "parent_name": "工作联络单",
+                      "parent_id": "2301"
+                    },
+                    {
+                      "text": "列表-工作联络单",
+                      "url": "RenShi/RS_GZLLD_M/Index.aspx?QXID=8543&MenuTree=1&LoginUserID=2474",
+                      "parent_name": "工作联络单",
+                      "parent_id": "2301"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "text": "考勤管理",
+          "children": [
+            {
+              "text": "考勤档案",
+              "url": "RenShi/RS_KQDA_M/Add.aspx?QXID=2553&MenuTree=1&LoginUserID=2474",
+              "parent_name": "考勤管理",
+              "parent_id": "868"
+            },
+            {
+              "text": "签卡请假",
+              "children": [
+                {
+                  "text": "员工签卡",
+                  "children": [
+                    {
+                      "text": "新增-员工签卡",
+                      "url": "RenShi/RS_YGQK_M/Add.aspx?QXID=2799&MenuTree=1&LoginUserID=2474",
+                      "parent_name": "员工签卡",
+                      "parent_id": "976"
+                    },
+                    {
+                      "text": "列表-员工签卡",
+                      "url": "RenShi/RS_YGQK_M/Index.aspx?QXID=2802&MenuTree=1&LoginUserID=2474",
+                      "parent_name": "员工签卡",
+                      "parent_id": "976"
+                    }
+                  ]
+                },
+                {
+                  "text": "员工请假",
+                  "children": [
+                    {
+                      "text": "列表-员工请假",
+                      "url": "RenShi/RS_YGQJ_M/Index.aspx?QXID=2509&MenuTree=1&LoginUserID=2474",
+                      "parent_name": "员工请假",
+                      "parent_id": "874"
+                    }
+                  ]
+                },
+                {
+                  "text": "员工调休",
+                  "children": [
+                    {
+                      "text": "新增-员工调休",
+                      "url": "RenShi/RS_YGTX_M/Add.aspx?QXID=14247&MenuTree=1&LoginUserID=2474",
+                      "parent_name": "员工调休",
+                      "parent_id": "3758"
+                    },
+                    {
+                      "text": "列表-员工调休",
+                      "url": "RenShi/RS_YGTX_M/Index.aspx?QXID=14250&MenuTree=1&LoginUserID=2474",
+                      "parent_name": "员工调休",
+                      "parent_id": "3758"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "text": "财务管理",
+      "children": [
+        {
+          "text": "员工报销",
+          "children": [
+            {
+              "text": "费用报销申请",
+              "children": [
+                {
+                  "text": "新增-费用报销申请",
+                  "url": "YingShouYingFu/YSYF_FYBXSQ_M/Add.aspx?QXID=2273&MenuTree=1&LoginUserID=2474",
+                  "parent_name": "费用报销申请",
+                  "parent_id": "837"
+                },
+                {
+                  "text": "列表-费用报销申请",
+                  "url": "YingShouYingFu/YSYF_FYBXSQ_M/Index.aspx?QXID=2276&MenuTree=1&LoginUserID=2474",
+                  "parent_name": "费用报销申请",
+                  "parent_id": "837"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "text": "个人信息",
+      "children": [
+        {
+          "text": "查看详细",
+          "url": "Accounts/userinfo.aspx?QXID=1356&MenuTree=1&LoginUserID=2474",
+          "parent_name": "个人信息",
+          "parent_id": "38"
+        },
+        {
+          "text": "修改密码",
+          "url": "Accounts/userpass.ASPX?QXID=1357&MenuTree=1&LoginUserID=2474",
+          "parent_name": "个人信息",
+          "parent_id": "38"
+        },
+        {
+          "text": "修改资料",
+          "url": "Accounts/usermodify.ASPX?QXID=1358&MenuTree=1&LoginUserID=2474",
+          "parent_name": "个人信息",
+          "parent_id": "38"
+        }
+      ]
+    },
+    {
+      "text": "系统管理",
+      "parent_id": "0"
+    }
+  ]
+}

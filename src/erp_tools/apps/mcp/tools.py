@@ -436,6 +436,63 @@ def register_tools(mcp: MCPServer, state: ServerState) -> None:
                                 row.pop("公式", None)
         return result
 
+    # ---------- 菜单 → 接口 对照 ----------
+    @mcp.tool(
+        name="erp_menu",
+        description=(
+            "【只读】返回 ERP 左侧菜单与本工具接口的对照：哪些菜单页已接入、"
+            "各页面上能做什么（增/删/改/查）、对应哪个 MCP 工具与文档。"
+            "等价于 `erp menu --coverage`，明细见 docs/erp-menu.md。"
+            "include_tree=true 时附带完整菜单树（较大）。"
+        ),
+    )
+    @_tool_errors
+    def erp_menu(
+        include_tree: Annotated[
+            bool, Field(description="是否附带完整菜单树（默认 false）")
+        ] = False,
+    ) -> dict[str, Any]:
+        import json as _json
+
+        from erp_tools import menu_catalog as mc
+        from erp_tools.core.menu import duplicate_paths, menu_pages, tree_to_items
+
+        tree_path = mc.menu_tree_path()
+        result: dict[str, Any] = {
+            "menu_doc": mc.MENU_DOC,
+            "tree_file": str(tree_path),
+            "pages": {
+                path: [{"kind": c.kind, "action": c.action, "mcp": c.mcp,
+                        "cli": c.cli, "doc": c.doc} for c in caps]
+                for path, caps in mc.PAGE_CAPABILITIES.items()
+            },
+            "infra": [{"action": c.action, "mcp": c.mcp, "doc": c.doc}
+                      for c in mc.INFRA_CAPABILITIES],
+        }
+        if not tree_path.is_file():
+            result["tree_available"] = False
+            result["note"] = "本机没有 docs/menu.tree.json；在仓库根跑 erp menu --capture 生成"
+            return result
+
+        meta = _json.loads(tree_path.read_text(encoding="utf-8"))
+        tree = tree_to_items(meta.get("tree"))
+        result.update({
+            "tree_available": True,
+            "captured_at": meta.get("captured_at"),
+            "account": meta.get("account"),
+            "login_user": meta.get("login_user"),
+            "coverage": mc.coverage(tree),
+            "duplicate_paths": duplicate_paths(tree),
+        })
+        if include_tree:
+            result["tree"] = [item.to_dict() for item in tree]
+        else:
+            result["unconnected_paths"] = sorted(
+                {item.page_path for _p, item in menu_pages(tree)}
+                - mc.connected_pages()
+            )
+        return result
+
     # ---------- 考勤 ----------
     @mcp.tool(
         name="erp_attendance",

@@ -93,13 +93,17 @@ VS Code `mcp.json`：
 
 ## 4. 工具清单
 
-17 个工具，全部要求 `Authorization: Bearer <api-key>`。
+18 个工具，全部要求 `Authorization: Bearer <api-key>`。
 列表类结果默认 50 条、上限 500 条，超出时 `truncated=true`。
+
+接口与 ERP 菜单的对应关系（哪个菜单页已接入、各页能做什么）见
+[erp-menu.md](erp-menu.md)，单接口细节见 [api/](api/)。
 
 | 工具 | 写库 | 说明 |
 | --- | --- | --- |
 | `erp_whoami` | — | 当前身份 / 会话状态；`erp_alive=false` 表示会话过期 |
 | `erp_capabilities` | — | 当前账号能访问哪些页面（`missing_pages` 为空即齐全） |
+| `erp_menu` | — | **菜单 → 接口对照**：哪些菜单页已接入、各页能做什么、对应哪个工具与文档 |
 | `erp_quote_list` | — | 报价需求列表查询（日期区间 + 一个关键字，其余条件本地过滤） |
 | `erp_price_list` | — | **客户报价列表**（`BJ_KHBJ`，一行=一个报价产品行）：日期区间可选作用于制单/交货/离厂 + 服务端下拉过滤 + 本地 `where` |
 | `erp_price_detail` | — | **客户报价详情**：表头 + 产品字段 + 数量明细 + 选配项目 + 部件明细(材料/尺寸/工序/辅料) + 费用 + 产品描述 + 制单审核 |
@@ -626,7 +630,7 @@ curl --cacert erp-tools.crt -X POST https://erp-tools.lan:8443/mcp \
   -H "content-type: application/json" \
   -H "accept: application/json, text/event-stream" \
   -d '{"jsonrpc":"2.0","id":1,"method":"tools/list"}'
-# → 应返回 15 个工具名
+# → 应返回 18 个工具名
 ```
 
 ### 8. 交给自动部署

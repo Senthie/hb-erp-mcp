@@ -71,13 +71,13 @@ qxid:
 | `erp price-node` | 客户报价【子数据】（数量档 / 部件 / 工序 / 辅料 / 费项 / 面板，共 22 个节点） |
 | `erp quote` | 报价需求【详情】→ ERP 订单需求 JSON |
 | `erp attendance` | 月度考勤明细 → Markdown / JSONL |
+| `erp menu` | 菜单 → 接口对照：抓菜单树 / 覆盖率 / 生成 `docs/erp-menu.md` |
 | `erp key` | 向网关换取 api-key（见 [mcp.md](mcp.md)） |
 | `erp serve` | 启动 api-key 网关 + MCP（见 [mcp.md](mcp.md)） |
 
 ## 4. 命令详解
 
 ### `erp setup` / `erp doctor` / `erp login` / `erp config` / `erp qxid`
-
 ```powershell
 erp setup        # 交互式向导
 erp doctor       # 排障第一条命令，会打印实际 host/账号/验证码识别结果
@@ -293,6 +293,40 @@ erp attendance --month 2026-11 --emp 21146 --out out\att.md
 
 查不到人通常是**账号数据权限**只到本部门，不是工具问题。
 字段说明见 [attendance/README.md](../src/erp_tools/tools/attendance/README.md)。
+
+### `erp menu` — 菜单 → 接口对照
+
+ERP 左侧菜单树（`GET /Admin/indexAjax.ashx?FunName=GetMenuTree`）是**按账号权限**渲染的，
+这里把它抓成快照，再把「每个菜单页上已经实现了哪些操作、对应哪个接口和文档」拼成一张表。
+
+| 选项 | 说明 |
+| --- | --- |
+| `--capture` | 重新抓菜单树 → `docs/menu.tree.json`（需要登录，会记录账号与时间） |
+| `--tree` | 打印树，带 QXID 与 ✅/⬜ 接入标记 |
+| `--coverage` | 覆盖率统计（**默认行为**）：模块 / 菜单页 / 已接入 / 未接入 |
+| `--write` | 生成 `docs/erp-menu.md` |
+| `--check` | 校验生成物与代码一致（CI 用，不一致退出码 1） |
+| `--root` | 仓库根目录（默认自动向上找 `pyproject.toml`） |
+
+```powershell
+erp menu                    # 看覆盖率
+erp menu --capture --write  # 抓菜单 + 重新生成对照表
+erp menu --tree             # 看完整菜单树
+```
+
+产出：
+
+- `docs/erp-menu.md` —— **自动生成，勿手改**。文首是覆盖率表，正文是按菜单层级排的
+  完整树，每个页面后面跟「动作 → 接口 → 文档」，没接入的标 ⬜。
+- `docs/menu.tree.json` —— 菜单树快照（账号 / 时间 / 来源 / 树）。
+
+追加能力的流程：在 `src/erp_tools/menu_catalog.py` 的 `PAGE_CAPABILITIES` 里给对应页面
+加一行（动作 + 接口名 + `docs/api/<接口名>.md`），然后 `erp menu --write`。
+忘了重新生成、或接口名/文档路径写错时，`tests/test_menu_docs.py` 会失败。
+
+菜单树里有三个要注意的地方：`url=''` 的纯分组节点（系统管理）、同一路径挂在多个菜单下
+（`KC_CLCRKSQ` 既是采购申请 1036 又是部门领料申请 331）、以及 `text` 里夹着 ERP 自己
+HTML 换行留下的空格（`业务需 求`），解析后统一去掉。
 
 ## 5. 翻页策略
 

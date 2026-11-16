@@ -165,6 +165,144 @@ def cmd_key(args) -> int:
     return 0
 
 
+# ══════════════════ 菜单 → 接口 对照 ══════════════════
+def _menu_paths(root: str | None) -> tuple[Path, Path]:
+    """返回 (菜单树快照, 生成的对照表) 两个路径。"""
+    from .menu_catalog import MENU_DOC, MENU_TREE_JSON, find_repo_root
+
+    base = Path(root).resolve() if root else find_repo_root()
+    return base / MENU_TREE_JSON, base / MENU_DOC
+
+
+def _load_menu_tree(root: str | None):
+    """读 `docs/menu.tree.json`；没有就报一个能照着做的错。"""
+    import json as _json
+
+    from .core.menu import tree_to_items
+
+    tree_path, _doc = _menu_paths(root)
+    if not tree_path.is_file():
+        raise ErpError(
+            f"找不到菜单树快照 {tree_path}\n"
+            f"  先抓一次：erp menu --capture（会写 {tree_path}）"
+        )
+    data = _json.loads(tree_path.read_text(encoding="utf-8"))
+    return data, tree_to_items(data.get("tree"))
+
+
+def _print_menu_tree(tree) -> None:
+    """缩进打印菜单树，带 QXID 与接入标记。"""
+    from .menu_catalog import PAGE_CAPABILITIES
+
+    connected = {p for p, caps in PAGE_CAPABILITIES.items() if caps}
+    pages = 0
+
+    def render(nodes, prefix: str = "") -> None:
+        nonlocal pages
+        for index, node in enumerate(nodes):
+            last = index == len(nodes) - 1
+            branch = "└─ " if last else "├─ "
+            tail = ""
+            if node.is_page:
+                pages += 1
+                mark = "✅" if node.page_path in connected else "⬜"
+                tail = f"  {node.qxid or '-':>6}  {mark}  {node.page_path}"
+            print(f"{prefix}{branch}{node.label}{tail}")
+            render(node.children, prefix + ("   " if last else "│  "))
+
+    render(tree)
+    print(f"\n菜单页 {pages} 个，已接入 {len(connected)} 个页面")
+
+
+def cmd_menu(args) -> int:
+    """抓菜单树 / 生成「菜单 → 接口」对照表。"""
+    import time
+
+    from . import menu_catalog as mc
+    from .core.auth import MENU_AJAX_PATH
+    from .core.menu import duplicate_paths, menu_pages, parse_menu_tree, qxid_map
+
+    tree_path, doc_path = _menu_paths(args.root)
+
+    # ── 抓快照 ──
+    if args.capture:
+        cfg = _build_config(args)
+        auth = _build_auth(cfg)
+        auth.ensure_login()
+        uid = auth.user_id
+        if not uid:
+            _log("[ERROR] 拿不到用户 ID，无法抓菜单")
+            return 2
+        resp = auth.client.get(
+            f"{MENU_AJAX_PATH}?FunName=GetMenuTree&Value1={uid}&Value2=",
+            headers={"X-Requested-With": "XMLHttpRequest",
+                     "Referer": auth.client.url("/Admin/index.html")},
+        )
+        tree = parse_menu_tree(resp.text)
+        meta = {
+            "captured_at": time.strftime("%Y-%m-%d %H:%M:%S"),
+            "account": cfg.username,
+            "login_user": uid,
+            "source": f"GET {MENU_AJAX_PATH}?FunName=GetMenuTree&Value1={uid}&Value2=",
+            "note": "菜单按账号权限渲染；换账号/权限变动后请重新 erp menu --capture",
+            "tree": [item.to_dict() for item in tree],
+        }
+        tree_path.parent.mkdir(parents=True, exist_ok=True)
+        tree_path.write_text(json.dumps(meta, ensure_ascii=False, indent=2) + "\n",
+                             encoding="utf-8")
+        _log(f"[OK] 菜单树已写入 {tree_path}（{len(menu_pages(tree))} 个菜单页）")
+
+    # ── 读快照 ──
+    if not (args.write or args.check or args.tree or args.coverage):
+        args.coverage = True
+    meta, tree = None, None
+    if args.write or args.check or args.tree or args.coverage:
+        meta, tree = _load_menu_tree(args.root)
+
+    if args.tree:
+        _print_menu_tree(tree)
+
+    if args.write:
+        text = mc.render_markdown(tree, meta or {})
+        doc_path.parent.mkdir(parents=True, exist_ok=True)
+        doc_path.write_text(text, encoding="utf-8")
+        _log(f"[OK] 已生成 {doc_path}")
+        stats = mc.coverage(tree)
+        _log(f"     {stats['modules']} 个模块 / {stats['pages']} 个菜单页 / "
+             f"已接入 {stats['connected_pages']} 个页面 · {stats['capabilities']} 个接口")
+
+    if args.check:
+        text = mc.render_markdown(tree, meta or {})
+        current = doc_path.read_text(encoding="utf-8") if doc_path.is_file() else ""
+        if current != text:
+            _log(f"[DRIFT] {doc_path} 与生成结果不一致，跑 `erp menu --write` 重新生成")
+            return 1
+        _log(f"[OK] {doc_path} 与代码一致")
+
+    if args.coverage:
+        stats = mc.coverage(tree)
+        print(f"模块        {stats['modules']}")
+        print(f"菜单页      {stats['pages']}（唯一路径 {stats['unique_paths']}）")
+        print(f"已接入页面  {stats['connected_pages']}")
+        print(f"未接入页面  {stats['unconnected']}")
+        print(f"已实现接口  {stats['capabilities']}")
+        print()
+        print("按模块：")
+        for row in mc.module_stats(tree):
+            print(f"  {row['module']:<8} 菜单页 {row['pages']:>2}  已接入 {row['connected']:>2}"
+                  f"  未接入 {row['missing']:>2}")
+        dups = duplicate_paths(tree)
+        if dups:
+            print()
+            print("⚠ 同一页面挂在多个菜单下（QXID 按菜单项区分）：")
+            for path, qxids in dups.items():
+                print(f"  {path}  →  {'/'.join(qxids)}")
+        if not args.tree and not args.write:
+            print()
+            print(f"明细见 {doc_path}（跑 erp menu --write 生成）")
+    return 0
+
+
 def cmd_tools(args) -> int:
     for item in describe_tools():
         print(f"{item['name']:<12} {item['summary']}")
@@ -564,6 +702,18 @@ def build_parser() -> argparse.ArgumentParser:
 
     p = sub.add_parser("tools", parents=[common], help="列出可用工具与选项")
     p.set_defaults(func=cmd_tools)
+
+    p = sub.add_parser("menu", parents=[common],
+                       help="抓菜单树 / 生成「菜单 → 接口」对照表")
+    p.add_argument("--capture", action="store_true",
+                   help="重新抓 ERP 左侧菜单树 → docs/menu.tree.json")
+    p.add_argument("--tree", action="store_true", help="打印菜单树（带 QXID 与接入标记）")
+    p.add_argument("--coverage", action="store_true", help="只看覆盖率统计")
+    p.add_argument("--write", action="store_true", help="生成 docs/erp-menu.md")
+    p.add_argument("--check", action="store_true",
+                   help="校验 docs/erp-menu.md 与代码一致（不一致退出码 1）")
+    p.add_argument("--root", default=None, help="仓库根目录（默认当前目录）")
+    p.set_defaults(func=cmd_menu)
 
     p = sub.add_parser("key", help="向网关换取 api-key（密码只用于这一次请求）")
     p.add_argument("--server", required=True,
