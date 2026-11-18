@@ -105,6 +105,10 @@ class ErpConfig:
     qxid_price: str = ""
     qxid_price_index: str = ""
     qxid_attendance: str = ""
+    #: 新增三个模块（列表-产品核价 / 生产施工单 / 采购订单）
+    qxid_costing_index: str = ""
+    qxid_production_index: str = ""
+    qxid_purchase_index: str = ""
 
     #: 单页返回的最大记录数（考勤翻页主策略：调大页大小，一次拿全）
     page_size_max: int = 5000
@@ -193,6 +197,9 @@ class ErpConfig:
             qxid_price=_env_str("ERP_QXID_PRICE"),
             qxid_price_index=_env_str("ERP_QXID_PRICE_INDEX"),
             qxid_attendance=_env_str("ERP_QXID_ATTENDANCE"),
+            qxid_costing_index=_env_str("ERP_QXID_COST_INDEX"),
+            qxid_production_index=_env_str("ERP_QXID_PRODUCTION_INDEX"),
+            qxid_purchase_index=_env_str("ERP_QXID_PURCHASE_INDEX"),
             page_size_max=max(50, _env_int("ERP_PAGE_SIZE_MAX", 5000)),
         )
 

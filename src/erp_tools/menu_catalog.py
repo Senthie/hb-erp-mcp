@@ -82,12 +82,41 @@ PAGE_CAPABILITIES: dict[str, tuple[Capability, ...]] = {
     "baojia/bj_khbj/index.aspx": (
         Capability("查", "列表筛选 + 导出（一行 = 一个报价产品行）", cli="price",
                    mcp="erp_price_list", doc="api/erp_price_list.md"),
+        Capability("查", "产品核价列表（同一页面 QXID=1281，一行 = 一个核价产品行）",
+                   cli="costing-list", mcp="erp_costing_list",
+                   doc="api/erp_costing_list.md",
+                   note="菜单：业务报价管理 › 产品核价 › 列表-产品核价"),
     ),
     "baojia/bj_khbj/add.aspx": (
         Capability("读", "单个报价产品行完整详情", cli="price-detail",
                    mcp="erp_price_detail", doc="api/erp_price_detail.md"),
         Capability("读", "22 个子数据节点（数量档/部件/工序/辅料/费项/折叠面板…）",
                    cli="price-node", mcp="erp_price_node", doc="api/erp_price_node.md"),
+    ),
+    # ── 生产管理 / 生产施工单 ──
+    "shengchan/sc_scsgd/index.aspx": (
+        Capability("查", "列表筛选 + 导出（一行 = 一张施工单）", cli="production-list",
+                   mcp="erp_production_list", doc="api/erp_production_list.md"),
+    ),
+    "shengchan/sc_scsgd/add.aspx": (
+        Capability("读", "施工单详情（字段 + 部件表 + 送货表 + 子页清单）",
+                   cli="production-detail", mcp="erp_production_detail",
+                   doc="api/erp_production_detail.md"),
+        Capability("读", "20 个弹窗子页（产品/部件/工序/辅料/机台/送货/D10/开版…）",
+                   cli="production-node", mcp="erp_production_node",
+                   doc="api/erp_production_node.md"),
+    ),
+    # ── 采购管理 / 采购订单 ──
+    # 采购订单只有「列表-采购订单」一个菜单（没有新增页），详情页 Add.aspx 由列表行双击进入，
+    # 因此详情/子页能力也登记在这个页面上（菜单树里没有 add.aspx 这条路径）。
+    "caigou/cg_cgdd/index.aspx": (
+        Capability("查", "列表筛选 + 导出（一行 = 一条材料明细）", cli="purchase-list",
+                   mcp="erp_purchase_list", doc="api/erp_purchase_list.md"),
+        Capability("读", "采购订单详情（表头 + 材料明细网格）", cli="purchase-detail",
+                   mcp="erp_purchase_detail", doc="api/erp_purchase_detail.md",
+                   note="入口是列表的 记录ID → Add.aspx?id=…&Option=3"),
+        Capability("读", "子页面（供应商档案选择等弹窗）", cli="purchase-node",
+                   mcp="erp_purchase_node", doc="api/erp_purchase_node.md"),
     ),
     # ── 人力资源管理 / 考勤管理 ──
     "renshi/rs_kqda_m/add.aspx": (
@@ -105,6 +134,9 @@ INFRA_CAPABILITIES: tuple[Capability, ...] = (
     Capability("查", "菜单 → 接口对照（哪些菜单页已接入）",
                mcp="erp_menu", doc="api/erp_menu.md",
                note="CLI：erp menu"),
+    Capability("查", "三个模块的**数据页面清单**（列表 / 详情 / 每个弹窗子页）",
+               mcp="erp_page_catalog", doc="api/erp_page_catalog.md",
+               note="CLI：erp pages"),
 )
 
 

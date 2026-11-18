@@ -5,43 +5,165 @@
 >
 > | 项 | 值 |
 > | --- | --- |
-> | 抓取账号 | 21146（ERP UserID 2474）|
-> | 抓取时间 | 2026-11-16 10:41:28 |
-> | 菜单来源 | `GET /Admin/indexAjax.ashx?FunName=GetMenuTree&Value1=2474&Value2=` |
-> | 规模 | 10 个模块 · 34 个菜单页（32 个唯一路径） |
-> | 已接入 | 5 个页面 · 18 个接口 |
+> | 抓取账号 | 2069（ERP UserID 2069）|
+> | 抓取时间 | 2026-11-18 18:18:07 |
+> | 菜单来源 | `GET /Admin/indexAjax.ashx?FunName=GetMenuTree&Value1=2069&Value2=` |
+> | 规模 | 20 个模块 · 381 个菜单页（264 个唯一路径） |
+> | 已接入 | 8 个页面 · 26 个接口 |
 
 ## 覆盖率
 
 | 模块 | 菜单页 | 已接入 | 未接入 |
 | --- | ---: | ---: | ---: |
-| 业务报价管理 | 8 | 4 | 4 |
-| 客户订单管理 | 2 | 0 | 2 |
-| 生产管理 | 1 | 0 | 1 |
-| 采购管理 | 6 | 0 | 6 |
-| 仓库管理 | 2 | 0 | 2 |
-| 设备管理 | 2 | 0 | 2 |
-| 人力资源管理 | 8 | 1 | 7 |
-| 财务管理 | 2 | 0 | 2 |
+| 客户关系管理 | 30 | 0 | 30 |
+| 业务报价管理 | 29 | 4 | 25 |
+| 印前制版管理 | 5 | 1 | 4 |
+| 样板管理 | 10 | 0 | 10 |
+| 客户订单管理 | 46 | 0 | 46 |
+| 生产管理 | 47 | 2 | 45 |
+| 外发管理 | 3 | 0 | 3 |
+| 采购管理 | 14 | 1 | 13 |
+| 仓库管理 | 30 | 0 | 30 |
+| 关务管理 | 2 | 0 | 2 |
+| 品质管理 | 15 | 0 | 15 |
+| 设备管理 | 4 | 0 | 4 |
+| 人力资源管理 | 28 | 1 | 27 |
+| 财务管理 | 11 | 0 | 11 |
+| 成本管理 | 3 | 0 | 3 |
+| 文档管理 | 1 | 0 | 1 |
 | 个人信息 | 3 | 0 | 3 |
-| 系统管理 | 0 | 0 | 0 |
-| **合计** | **34** | **5** | **29** |
+| 基础资料 | 93 | 0 | 93 |
+| 发送信息 | 1 | 0 | 1 |
+| 系统管理 | 6 | 0 | 6 |
+| **合计** | **381** | **8** | **363** |
 
 标记说明：✅ 已接入（后面跟接口名与文档）、⬜ 未接入、⚠ 同一页面挂在多个菜单下。
 
 ## 菜单树与接口
 
+- **客户关系管理**
+  - 客户跟进登记表
+    - `新增-客户跟进登记表` · `CRM/KHGJDJB/add.aspx` · QXID 5300
+      - ⬜ 未接入
+    - `列表-客户跟进登记表` · `CRM/KHGJDJB/Index.aspx` · QXID 5303
+      - ⬜ 未接入
+  - 客户实施日志
+    - `新增-客户实施日志` · `CRM/KHSSRZ/add.aspx` · QXID 6134
+      - ⬜ 未接入
+    - `列表-客户实施日志` · `CRM/KHSSRZ/index.aspx` · QXID 6137
+      - ⬜ 未接入
+  - 工作日志分析
+    - `开发提成统计分析` · `CRM/GZRZFX/KFTCTJFX.aspx` · QXID 11172
+      - ⬜ 未接入
+  - 工作日志
+    - `新增-工作日志` · `CRM/GZRZ/add.aspx` · QXID 6539
+      - ⬜ 未接入
+    - `列表-工作日志` · `CRM/GZRZ/index.aspx` · QXID 6542
+      - ⬜ 未接入
+  - 基础资料
+    - 产品类型
+      - `新增-产品类型` · `Base/Base_Public/Add.aspx` · QXID 5306 · ⚠ 同路径另有 QXID 5312/5318/5324/6170/6182/6188/10836/109/10848/10860/10867/11056/10854/693/882/3908/2865/3392/892/897/907/912/917/927/947/941/104/147
+        - ⬜ 未接入
+      - `列表-产品类型` · `Base/Base_Public/Index.aspx` · QXID 5309 · ⚠ 同路径另有 QXID 5315/5321/5327/6173/6185/6191/127/10839/112/10851/10863/10870/11059/10857/696/885/3911/2868/3395/895/900/910/915/920/930/950/944/107/150
+        - ⬜ 未接入
+    - 跟进状态
+      - `新增-跟进状态` · `Base/Base_Public/Add.aspx` · QXID 5312 · ⚠ 同路径另有 QXID 5306/5318/5324/6170/6182/6188/10836/109/10848/10860/10867/11056/10854/693/882/3908/2865/3392/892/897/907/912/917/927/947/941/104/147
+        - ⬜ 未接入
+      - `列表-跟进状态` · `Base/Base_Public/Index.aspx` · QXID 5315 · ⚠ 同路径另有 QXID 5309/5321/5327/6173/6185/6191/127/10839/112/10851/10863/10870/11059/10857/696/885/3911/2868/3395/895/900/910/915/920/930/950/944/107/150
+        - ⬜ 未接入
+    - 寄出资料
+      - `新增-寄出资料` · `Base/Base_Public/Add.aspx` · QXID 5318 · ⚠ 同路径另有 QXID 5306/5312/5324/6170/6182/6188/10836/109/10848/10860/10867/11056/10854/693/882/3908/2865/3392/892/897/907/912/917/927/947/941/104/147
+        - ⬜ 未接入
+      - `列表-寄出资料` · `Base/Base_Public/Index.aspx` · QXID 5321 · ⚠ 同路径另有 QXID 5309/5315/5327/6173/6185/6191/127/10839/112/10851/10863/10870/11059/10857/696/885/3911/2868/3395/895/900/910/915/920/930/950/944/107/150
+        - ⬜ 未接入
+    - 客户等级
+      - `新增-客户等级` · `Base/Base_Public/Add.aspx` · QXID 5324 · ⚠ 同路径另有 QXID 5306/5312/5318/6170/6182/6188/10836/109/10848/10860/10867/11056/10854/693/882/3908/2865/3392/892/897/907/912/917/927/947/941/104/147
+        - ⬜ 未接入
+      - `列表-客户等级` · `Base/Base_Public/Index.aspx` · QXID 5327 · ⚠ 同路径另有 QXID 5309/5315/5321/6173/6185/6191/127/10839/112/10851/10863/10870/11059/10857/696/885/3911/2868/3395/895/900/910/915/920/930/950/944/107/150
+        - ⬜ 未接入
+    - 业务员资料
+      - `新增-业务员资料` · `CRM/BASE/YWYZL/Add.aspx` · QXID 5703 · ⚠ 同路径另有 QXID 5708
+        - ⬜ 未接入
+      - `列表-业务员资料` · `CRM/BASE/YWYZL/Index.aspx` · QXID 5706 · ⚠ 同路径另有 QXID 5711
+        - ⬜ 未接入
+    - 任务人资料
+      - `新增-任务人资料` · `CRM/BASE/YWYZL/Add.aspx` · QXID 5708 · ⚠ 同路径另有 QXID 5703
+        - ⬜ 未接入
+      - `列表-任务人资料` · `CRM/BASE/YWYZL/Index.aspx` · QXID 5711 · ⚠ 同路径另有 QXID 5706
+        - ⬜ 未接入
+    - `客户资料查看设置` · `CRM/KHZLCKSZ/KHZLCKSZ.aspx` · QXID 5717
+      - ⬜ 未接入
+    - 实施客户资料
+      - `新增-实施客户资料` · `CRM/BASE/KHZL/Add.aspx` · QXID 6141
+        - ⬜ 未接入
+      - `列表-实施客户资料` · `CRM/BASE/KHZL/index.aspx` · QXID 6144
+        - ⬜ 未接入
+    - 实施日志类型
+      - `新增-实施日志类型` · `Base/Base_Public/Add.aspx` · QXID 6170 · ⚠ 同路径另有 QXID 5306/5312/5318/5324/6182/6188/10836/109/10848/10860/10867/11056/10854/693/882/3908/2865/3392/892/897/907/912/917/927/947/941/104/147
+        - ⬜ 未接入
+      - `列表-实施日志类型` · `Base/Base_Public/Index.aspx` · QXID 6173 · ⚠ 同路径另有 QXID 5309/5315/5321/5327/6185/6191/127/10839/112/10851/10863/10870/11059/10857/696/885/3911/2868/3395/895/900/910/915/920/930/950/944/107/150
+        - ⬜ 未接入
+    - 维护模块
+      - `新增-维护模块` · `Base/Base_Public/Add.aspx` · QXID 6182 · ⚠ 同路径另有 QXID 5306/5312/5318/5324/6170/6188/10836/109/10848/10860/10867/11056/10854/693/882/3908/2865/3392/892/897/907/912/917/927/947/941/104/147
+        - ⬜ 未接入
+      - `列表-维护模块` · `Base/Base_Public/Index.aspx` · QXID 6185 · ⚠ 同路径另有 QXID 5309/5315/5321/5327/6173/6191/127/10839/112/10851/10863/10870/11059/10857/696/885/3911/2868/3395/895/900/910/915/920/930/950/944/107/150
+        - ⬜ 未接入
+    - 沟通方式
+      - `新增-沟通方式` · `Base/Base_Public/Add.aspx` · QXID 6188 · ⚠ 同路径另有 QXID 5306/5312/5318/5324/6170/6182/10836/109/10848/10860/10867/11056/10854/693/882/3908/2865/3392/892/897/907/912/917/927/947/941/104/147
+        - ⬜ 未接入
+      - `列表-沟通方式` · `Base/Base_Public/Index.aspx` · QXID 6191 · ⚠ 同路径另有 QXID 5309/5315/5321/5327/6173/6185/127/10839/112/10851/10863/10870/11059/10857/696/885/3911/2868/3395/895/900/910/915/920/930/950/944/107/150
+        - ⬜ 未接入
+    - 工作日志类型
+      - `新增-工作日志类型` · `CRM/BASE/GZRZLX/Add.aspx` · QXID 6533
+        - ⬜ 未接入
+      - `列表-工作日志类型` · `CRM/BASE/GZRZLX/index.aspx` · QXID 6536
+        - ⬜ 未接入
 - **业务报价管理**
   - 业务需求
     - 客户报价需求
-      - `新增-客户报价需求` · `BaoJia/BJ_KHBJXQ/Add.aspx` · QXID 873
+      - `新增-客户报价需求` · `BaoJia/BJ_KHBJXQ/Add.aspx` · QXID 873 · ⚠ 同路径另有 QXID 1531/1541
         - ✅ 增 · 新建报价需求（主表 + 产品明细 + 产品数量） → `erp_quote_create` · [api/erp_quote_create.md](api/erp_quote_create.md)
         - ✅ 查 · 新增页字段结构（能填什么、业务员怎么传） → `erp_quote_new_form` · [api/erp_quote_new_form.md](api/erp_quote_new_form.md)
         - ✅ 查 · 产品明细子页字段清单 + 上传用 JSON Schema → `erp_quote_product_form` · [api/erp_quote_product_form.md](api/erp_quote_product_form.md)
         - ✅ 查 · 业务员 / 跟单员 / 单价体系 下拉选项 → `erp_quote_options` · [api/erp_quote_options.md](api/erp_quote_options.md)
         - ✅ 查 · 客户资料检索（拿 customer_id） → `erp_quote_customer_search` · [api/erp_quote_customer_search.md](api/erp_quote_customer_search.md)
         - ✅ 改 · 改表头（备注 / 联系人 / 折扣率 / 业务员 / 跟单员…） → `erp_quote_update` · [api/erp_quote_update.md](api/erp_quote_update.md)
-      - `列表-客户报价需求` · `BaoJia/BJ_KHBJXQ/Index.aspx` · QXID 876
+      - `列表-客户报价需求` · `BaoJia/BJ_KHBJXQ/Index.aspx` · QXID 876 · ⚠ 同路径另有 QXID 1534/1544/1554
+        - ✅ 查 · 列表筛选 + 导出 CSV → `erp query` · `erp_quote_list` · [api/erp_quote_list.md](api/erp_quote_list.md)
+        - ✅ 查 · 单张单据完整详情（订单需求 JSON） → `erp quote` · `erp_quote_detail` · [api/erp_quote_detail.md](api/erp_quote_detail.md)
+        - ✅ 查 · 列出产品明细行（拿 cpid，供改/删单行） → `erp_quote_details` · [api/erp_quote_details.md](api/erp_quote_details.md)
+        - ✅ 改 · 改单条产品明细（名称 / 规格 / 数量）（入口是 Add.aspx，流程从列表的记录ID 进） → `erp_quote_update_product` · [api/erp_quote_update_product.md](api/erp_quote_update_product.md)
+        - ✅ 删 · 删除整张报价需求单 → `erp_quote_delete` · [api/erp_quote_delete.md](api/erp_quote_delete.md)
+    - 制版需求单
+      - `新增-制版需求单` · `BaoJia/BJ_KHBJXQ/Add.aspx` · QXID 1531 · ⚠ 同路径另有 QXID 873/1541
+        - ✅ 增 · 新建报价需求（主表 + 产品明细 + 产品数量） → `erp_quote_create` · [api/erp_quote_create.md](api/erp_quote_create.md)
+        - ✅ 查 · 新增页字段结构（能填什么、业务员怎么传） → `erp_quote_new_form` · [api/erp_quote_new_form.md](api/erp_quote_new_form.md)
+        - ✅ 查 · 产品明细子页字段清单 + 上传用 JSON Schema → `erp_quote_product_form` · [api/erp_quote_product_form.md](api/erp_quote_product_form.md)
+        - ✅ 查 · 业务员 / 跟单员 / 单价体系 下拉选项 → `erp_quote_options` · [api/erp_quote_options.md](api/erp_quote_options.md)
+        - ✅ 查 · 客户资料检索（拿 customer_id） → `erp_quote_customer_search` · [api/erp_quote_customer_search.md](api/erp_quote_customer_search.md)
+        - ✅ 改 · 改表头（备注 / 联系人 / 折扣率 / 业务员 / 跟单员…） → `erp_quote_update` · [api/erp_quote_update.md](api/erp_quote_update.md)
+      - `列表-制版需求单` · `BaoJia/BJ_KHBJXQ/Index.aspx` · QXID 1534 · ⚠ 同路径另有 QXID 876/1544/1554
+        - ✅ 查 · 列表筛选 + 导出 CSV → `erp query` · `erp_quote_list` · [api/erp_quote_list.md](api/erp_quote_list.md)
+        - ✅ 查 · 单张单据完整详情（订单需求 JSON） → `erp quote` · `erp_quote_detail` · [api/erp_quote_detail.md](api/erp_quote_detail.md)
+        - ✅ 查 · 列出产品明细行（拿 cpid，供改/删单行） → `erp_quote_details` · [api/erp_quote_details.md](api/erp_quote_details.md)
+        - ✅ 改 · 改单条产品明细（名称 / 规格 / 数量）（入口是 Add.aspx，流程从列表的记录ID 进） → `erp_quote_update_product` · [api/erp_quote_update_product.md](api/erp_quote_update_product.md)
+        - ✅ 删 · 删除整张报价需求单 → `erp_quote_delete` · [api/erp_quote_delete.md](api/erp_quote_delete.md)
+    - 合同评审需求单
+      - `新增-合同评审需求单` · `BaoJia/BJ_KHBJXQ/Add.aspx` · QXID 1541 · ⚠ 同路径另有 QXID 873/1531
+        - ✅ 增 · 新建报价需求（主表 + 产品明细 + 产品数量） → `erp_quote_create` · [api/erp_quote_create.md](api/erp_quote_create.md)
+        - ✅ 查 · 新增页字段结构（能填什么、业务员怎么传） → `erp_quote_new_form` · [api/erp_quote_new_form.md](api/erp_quote_new_form.md)
+        - ✅ 查 · 产品明细子页字段清单 + 上传用 JSON Schema → `erp_quote_product_form` · [api/erp_quote_product_form.md](api/erp_quote_product_form.md)
+        - ✅ 查 · 业务员 / 跟单员 / 单价体系 下拉选项 → `erp_quote_options` · [api/erp_quote_options.md](api/erp_quote_options.md)
+        - ✅ 查 · 客户资料检索（拿 customer_id） → `erp_quote_customer_search` · [api/erp_quote_customer_search.md](api/erp_quote_customer_search.md)
+        - ✅ 改 · 改表头（备注 / 联系人 / 折扣率 / 业务员 / 跟单员…） → `erp_quote_update` · [api/erp_quote_update.md](api/erp_quote_update.md)
+      - `列表-合同评审需求单` · `BaoJia/BJ_KHBJXQ/Index.aspx` · QXID 1544 · ⚠ 同路径另有 QXID 876/1534/1554
+        - ✅ 查 · 列表筛选 + 导出 CSV → `erp query` · `erp_quote_list` · [api/erp_quote_list.md](api/erp_quote_list.md)
+        - ✅ 查 · 单张单据完整详情（订单需求 JSON） → `erp quote` · `erp_quote_detail` · [api/erp_quote_detail.md](api/erp_quote_detail.md)
+        - ✅ 查 · 列出产品明细行（拿 cpid，供改/删单行） → `erp_quote_details` · [api/erp_quote_details.md](api/erp_quote_details.md)
+        - ✅ 改 · 改单条产品明细（名称 / 规格 / 数量）（入口是 Add.aspx，流程从列表的记录ID 进） → `erp_quote_update_product` · [api/erp_quote_update_product.md](api/erp_quote_update_product.md)
+        - ✅ 删 · 删除整张报价需求单 → `erp_quote_delete` · [api/erp_quote_delete.md](api/erp_quote_delete.md)
+    - 订单需求单
+      - `列表-订单需求单` · `BaoJia/BJ_KHBJXQ/Index.aspx` · QXID 1554 · ⚠ 同路径另有 QXID 876/1534/1544
         - ✅ 查 · 列表筛选 + 导出 CSV → `erp query` · `erp_quote_list` · [api/erp_quote_list.md](api/erp_quote_list.md)
         - ✅ 查 · 单张单据完整详情（订单需求 JSON） → `erp quote` · `erp_quote_detail` · [api/erp_quote_detail.md](api/erp_quote_detail.md)
         - ✅ 查 · 列出产品明细行（拿 cpid，供改/删单行） → `erp_quote_details` · [api/erp_quote_details.md](api/erp_quote_details.md)
@@ -49,11 +171,40 @@
         - ✅ 删 · 删除整张报价需求单 → `erp_quote_delete` · [api/erp_quote_delete.md](api/erp_quote_delete.md)
   - 客户报价
     - 客户报价
-      - `新增-客户报价` · `BaoJia/BJ_KHBJ/Add.aspx` · QXID 857
+      - `新增-客户报价` · `BaoJia/BJ_KHBJ/Add.aspx` · QXID 857 · ⚠ 同路径另有 QXID 1278
         - ✅ 读 · 单个报价产品行完整详情 → `erp price-detail` · `erp_price_detail` · [api/erp_price_detail.md](api/erp_price_detail.md)
         - ✅ 读 · 22 个子数据节点（数量档/部件/工序/辅料/费项/折叠面板…） → `erp price-node` · `erp_price_node` · [api/erp_price_node.md](api/erp_price_node.md)
-      - `列表-客户报价` · `BaoJia/BJ_KHBJ/Index.aspx` · QXID 860
+      - `列表-客户报价` · `BaoJia/BJ_KHBJ/Index.aspx` · QXID 860 · ⚠ 同路径另有 QXID 889/1281/1439
         - ✅ 查 · 列表筛选 + 导出（一行 = 一个报价产品行） → `erp price` · `erp_price_list` · [api/erp_price_list.md](api/erp_price_list.md)
+        - ✅ 查 · 产品核价列表（同一页面 QXID=1281，一行 = 一个核价产品行）（菜单：业务报价管理 › 产品核价 › 列表-产品核价） → `erp costing-list` · `erp_costing_list` · [api/erp_costing_list.md](api/erp_costing_list.md)
+    - `客户报价审批` · `BaoJia/BJ_KHBJ/Index.aspx` · QXID 889 · ⚠ 同路径另有 QXID 860/1281/1439
+      - ✅ 查 · 列表筛选 + 导出（一行 = 一个报价产品行） → `erp price` · `erp_price_list` · [api/erp_price_list.md](api/erp_price_list.md)
+      - ✅ 查 · 产品核价列表（同一页面 QXID=1281，一行 = 一个核价产品行）（菜单：业务报价管理 › 产品核价 › 列表-产品核价） → `erp costing-list` · `erp_costing_list` · [api/erp_costing_list.md](api/erp_costing_list.md)
+    - 海运费计算
+      - `新增-海运费计算` · `HaiYunFei/HYF_HYFJS/Add.aspx` · QXID 932
+        - ⬜ 未接入
+      - `列表-海运费计算` · `HaiYunFei/HYF_HYFJS/Index.aspx` · QXID 935
+        - ⬜ 未接入
+    - 客户报出单价
+      - `新增-客户报出单价` · `BaoJia/BJ_KHBCDJ_M/Add.html` · QXID 12017
+        - ⬜ 未接入
+      - `列表-客户报出单价` · `BaoJia/BJ_KHBCDJ_M/Index.html` · QXID 12020
+        - ⬜ 未接入
+    - 客户报价价格拆分
+      - `新增-客户报价价格拆分` · `BaoJia/BJ_KHBJCF_M/Add.aspx` · QXID 13357
+        - ⬜ 未接入
+      - `列表-客户报价价格拆分` · `BaoJia/BJ_KHBJCF_M/Index.aspx` · QXID 13360
+        - ⬜ 未接入
+  - 产品核价
+    - `新增-产品核价` · `BaoJia/BJ_KHBJ/Add.aspx` · QXID 1278 · ⚠ 同路径另有 QXID 857
+      - ✅ 读 · 单个报价产品行完整详情 → `erp price-detail` · `erp_price_detail` · [api/erp_price_detail.md](api/erp_price_detail.md)
+      - ✅ 读 · 22 个子数据节点（数量档/部件/工序/辅料/费项/折叠面板…） → `erp price-node` · `erp_price_node` · [api/erp_price_node.md](api/erp_price_node.md)
+    - `列表-产品核价` · `BaoJia/BJ_KHBJ/Index.aspx` · QXID 1281 · ⚠ 同路径另有 QXID 860/889/1439
+      - ✅ 查 · 列表筛选 + 导出（一行 = 一个报价产品行） → `erp price` · `erp_price_list` · [api/erp_price_list.md](api/erp_price_list.md)
+      - ✅ 查 · 产品核价列表（同一页面 QXID=1281，一行 = 一个核价产品行）（菜单：业务报价管理 › 产品核价 › 列表-产品核价） → `erp costing-list` · `erp_costing_list` · [api/erp_costing_list.md](api/erp_costing_list.md)
+  - `重点客户报价跟进表` · `BaoJia/BJ_KHBJ/Index.aspx` · QXID 1439 · ⚠ 同路径另有 QXID 860/889/1281
+    - ✅ 查 · 列表筛选 + 导出（一行 = 一个报价产品行） → `erp price` · `erp_price_list` · [api/erp_price_list.md](api/erp_price_list.md)
+    - ✅ 查 · 产品核价列表（同一页面 QXID=1281，一行 = 一个核价产品行）（菜单：业务报价管理 › 产品核价 › 列表-产品核价） → `erp costing-list` · `erp_costing_list` · [api/erp_costing_list.md](api/erp_costing_list.md)
   - 报价其它设置
     - 报价纸张价格设置
       - `新增-报价纸张价格设置` · `BaoJia/BJ_Base_BJZZDJSZ/Add.aspx` · QXID 9461
@@ -65,56 +216,546 @@
         - ⬜ 未接入
       - `列表-报价辅料价格设置` · `BaoJia/BJ_Base_BJCLDJSZ/Index.aspx` · QXID 12540
         - ⬜ 未接入
+    - `报价材料底价比例` · `BaoJia/BJ_Base_WLDJBL/Index.aspx` · QXID 13248
+      - ⬜ 未接入
+  - 业务报价统计分析
+    - `订单需求分析` · `BaoJia/BJ_BJTJFX/BJ_KHDDXQFX.aspx` · QXID 2306
+      - ⬜ 未接入
+    - `报价员工作分析` · `BaoJia/BJ_BJTJFX/BJ_BJRYGZFX.aspx` · QXID 3050
+      - ⬜ 未接入
+    - `需求员工工作分析` · `BaoJia/BJ_BJTJFX/BJ_XQRYGZFX.aspx` · QXID 3218
+      - ⬜ 未接入
+    - `客户报价金额分析` · `BaoJia/BJ_BJTJFX/BJ_KHBJJEFX.aspx` · QXID 5190
+      - ⬜ 未接入
+    - `客户报价周期分析` · `BaoJia/BJ_BJTJFX/BJ_KHBJZQFX.aspx` · QXID 6525
+      - ⬜ 未接入
+- **印前制版管理**
+  - 制版申请单
+    - `列表-制版申请单` · `ShengChan/SC_SCSGD/Index.aspx` · QXID 983 · ⚠ 同路径另有 QXID 740
+      - ✅ 查 · 列表筛选 + 导出（一行 = 一张施工单） → `erp production-list` · `erp_production_list` · [api/erp_production_list.md](api/erp_production_list.md)
+  - 产品风险评估
+    - `新增-产品风险评估` · `ShengChan/SC_CPFXPG/Add.aspx` · QXID 12118
+      - ⬜ 未接入
+    - `列表-产品风险评估` · `ShengChan/SC_CPFXPG/Index.aspx` · QXID 12121
+      - ⬜ 未接入
+    - `风险评估跟进列表` · `ShengChan/SC_CPFXPG/SC_FXPGGJList.aspx` · QXID 15281
+      - ⬜ 未接入
+    - `风险评估及时性绩效数据分析` · `ShengChan/SC_SCTJFX/SC_FXPGJSXJXSJFX.aspx` · QXID 15439
+      - ⬜ 未接入
+  - 印前制版统计分析 · 无页面
+- **样板管理**
+  - 客供样板
+    - 客供样板管理
+      - `新增-客供样板管理` · `BaoJia/BJ_KHYB/Add.aspx` · QXID 969
+        - ⬜ 未接入
+      - `列表-客供样板管理` · `BaoJia/BJ_KHYB/Index.aspx` · QXID 972
+        - ⬜ 未接入
+    - 客供样板装箱登记表
+      - `新增-客供样板装箱登记表` · `BaoJia/BJ_KHYBZXDJ/Add.aspx` · QXID 1151
+        - ⬜ 未接入
+      - `列表-客供样板装箱登记表` · `BaoJia/BJ_KHYBZXDJ/Index.aspx` · QXID 1154
+        - ⬜ 未接入
+  - 产品样板
+    - 产品样板装箱登记
+      - `新增-产品样板装箱登记` · `ShengChan/SC_CPYBZXJCDJ/Add.aspx` · QXID 1708
+        - ⬜ 未接入
+      - `列表-产品样板装箱登记` · `ShengChan/SC_CPYBZXJCDJ/Index.aspx` · QXID 1711
+        - ⬜ 未接入
+    - 产品样板寄出登记
+      - `列表-产品样板寄出登记` · `ShengChan/SC_YBJCDJ/Index.aspx` · QXID 1131
+        - ⬜ 未接入
+  - 样板分析
+    - `板房色稿借出汇总分析` · `ShengChan/SC_SCTJFX/SC_BFSGJCHZ.aspx` · QXID 12407
+      - ⬜ 未接入
+  - 样板存放位置
+    - `新增-样板存放位置` · `Base/Base_CFWZ/Add.aspx` · QXID 1200
+      - ⬜ 未接入
+    - `列表-样板存放位置` · `Base/Base_CFWZ/Index.aspx` · QXID 1203
+      - ⬜ 未接入
 - **客户订单管理**
+  - 合同评审
+    - `新增-合同评审` · `DingDan/DD_KHDD/Add.aspx` · QXID 1288 · ⚠ 同路径另有 QXID 684
+      - ⬜ 未接入
+    - `列表-合同评审` · `DingDan/DD_KHDD/Index.aspx` · QXID 1291 · ⚠ 同路径另有 QXID 687
+      - ⬜ 未接入
   - 客户订单
-    - `新建-客户订单` · `DingDan/DD_KHDD/Add.aspx` · QXID 684
+    - `新建-客户订单` · `DingDan/DD_KHDD/Add.aspx` · QXID 684 · ⚠ 同路径另有 QXID 1288
       - ⬜ 未接入
-    - `列表-客户订单` · `DingDan/DD_KHDD/Index.aspx` · QXID 687
+    - `列表-客户订单` · `DingDan/DD_KHDD/Index.aspx` · QXID 687 · ⚠ 同路径另有 QXID 1291
       - ⬜ 未接入
+  - 送货通知单
+    - `新增-送货通知单` · `KuCun/KC_CPCRKSQ/Add.aspx` · QXID 727 · ⚠ 同路径另有 QXID 2236
+      - ⬜ 未接入
+    - `列表-送货通知单` · `KuCun/KC_CPCRKSQ/Index.aspx` · QXID 730 · ⚠ 同路径另有 QXID 2239/3424
+      - ⬜ 未接入
+  - 客户其他费用
+    - `新增-客户其他费用` · `DingDan/DD_KHQTFY/Add.aspx` · QXID 6256
+      - ⬜ 未接入
+    - `列表-客户其他费用` · `DingDan/DD_KHQTFY/Index.aspx` · QXID 6259
+      - ⬜ 未接入
+  - 用车需求
+    - 用车需求单
+      - `新增-用车需求单` · `DingDan/DD_PCSQD/Add.aspx` · QXID 7474
+        - ⬜ 未接入
+      - `列表-用车需求单` · `DingDan/DD_PCSQD/Index.aspx` · QXID 7477
+        - ⬜ 未接入
+  - 客户验货
+    - `新增-客户验货` · `DingDan/DD_KHYH/Add.aspx` · QXID 8078
+      - ⬜ 未接入
+    - `列表-客户验货` · `DingDan/DD_KHYH/Index.aspx` · QXID 8081
+      - ⬜ 未接入
+  - 4M变更模块
+    - `新增-4M变更模块` · `PinZhi/PZ_4MBTGZ/Add.aspx` · QXID 13426
+      - ⬜ 未接入
+    - `列表-4M变更模块` · `PinZhi/PZ_4MBTGZ/Index.aspx` · QXID 13429
+      - ⬜ 未接入
+  - 客户销售金额目标
+    - `新增-客户销售金额目标` · `DingDan/DD_KHXSJEMB/Add.aspx` · QXID 12315
+      - ⬜ 未接入
+    - `列表-客户销售金额目标` · `DingDan/DD_KHXSJEMB/Index.aspx` · QXID 12318
+      - ⬜ 未接入
+  - 营销分析版面
+    - `报价统计分析` · `DingDan/DD_DDTJFX/DD_BJBMTJFX.aspx` · QXID 11597
+      - ⬜ 未接入
+    - `接单金额分析` · `DingDan/DD_DDTJFX/DD_DDJDJEFX.aspx` · QXID 11709
+      - ⬜ 未接入
+    - `客户订单计划实际送货对比分析` · `DingDan/DD_DDTJFX/DD_KHDDSHKCFX.aspx` · QXID 12140
+      - ⬜ 未接入
+    - `上周接单金额明细分析` · `DingDan/DD_DDTJFX/DD_SZJDJEMXFX.aspx` · QXID 11767
+      - ⬜ 未接入
+    - `销售金额分析` · `DingDan/DD_DDTJFX/DD_XSJEFX.aspx` · QXID 12041
+      - ⬜ 未接入
+    - `业务员体检中心` · `DingDan/DD_DDTJFX/DD_YWYTJFX.aspx` · QXID 12762
+      - ⬜ 未接入
+    - `核价订单拆分分析` · `DingDan/DD_DDTJFX/DD_HJDDCFFX.aspx` · QXID 13371
+      - ⬜ 未接入
+    - `未建立客户报出统计分析` · `DingDan/DD_DDTJFX/DD_WJBCKHFX.aspx` · QXID 12354
+      - ⬜ 未接入
+  - 客户接单目标
+    - `新增-客户接单目标` · `DingDan/DD_KHJDMB/Add.aspx` · QXID 11969
+      - ⬜ 未接入
+    - `列表-客户接单目标` · `DingDan/DD_KHJDMB/Index.aspx` · QXID 11972
+      - ⬜ 未接入
+  - 产品安全库存设置
+    - `新增-产品安全库存设置` · `DingDan/DD_CPKCSXSSZ/Add.aspx` · QXID 2318
+      - ⬜ 未接入
+    - `列表-产品安全库存设置` · `DingDan/DD_CPKCSXSSZ/Index.aspx` · QXID 2321
+      - ⬜ 未接入
+  - 客户订单统计分析
+    - 日常
+      - `订单进度情况分析` · `DingDan/DD_DDTJFX/DD_KHDDJGQKFX.aspx` · QXID 2346
+        - ⬜ 未接入
+      - `订单产品送货分析` · `DingDan/DD_DDTJFX/DD_KHDDCPSHQKFX.aspx` · QXID 3602
+        - ⬜ 未接入
+      - `订单产品跟单计划` · `DingDan/DD_DDTJFX/DD_KHDDGDJH.aspx` · QXID 7272
+        - ⬜ 未接入
+    - 其它
+      - `客户订单材料分析` · `DingDan/DD_DDTJFX/DD_KHDDCLFX.aspx` · QXID 7780
+        - ⬜ 未接入
+      - `客户订单价格分析` · `DingDan/DD_DDTJFX/DD_KHDDJGFX.aspx` · QXID 1772
+        - ⬜ 未接入
+      - `订单产品计划送货分析` · `DingDan/DD_DDTJFX/DD_KHDDSHFX.aspx` · QXID 2969
+        - ⬜ 未接入
+      - `客户订单金额分析` · `DingDan/DD_DDTJFX/DD_KHDDJEFX.aspx` · QXID 2973
+        - ⬜ 未接入
+      - `客户订单数量金额分析` · `DingDan/DD_DDTJFX/DD_KHDDSLJEFX.aspx` · QXID 3043
+        - ⬜ 未接入
+      - `订单产品送货汇总分析` · `DingDan/DD_DDTJFX/DD_KHDDCPSHQXFX2.aspx` · QXID 4425
+        - ⬜ 未接入
+      - `订单产品送货周期分析` · `DingDan/DD_DDTJFX/DD_KHDDCPSHZQFX.aspx` · QXID 5945
+        - ⬜ 未接入
+      - `未建立客户报出统计` · `DingDan/DD_DDTJFX/DD_BJWJTJFX.aspx` · QXID 12312
+        - ⬜ 未接入
+      - `客户订单销售金额分析` · `DingDan/DD_DDTJFX/DD_KHDDXSJEFX.aspx` · QXID 8473
+        - ⬜ 未接入
+      - `订单生产进度分析` · `DingDan/DD_DDTJFX/DD_KHDDSCJDFX.aspx` · QXID 6076
+        - ⬜ 未接入
+      - `客户订单开单分析` · `DingDan/DD_DDTJFX/DD_KHDDKDFX.aspx` · QXID 5063
+        - ⬜ 未接入
+      - `订单工单周期分析` · `DingDan/DD_DDTJFX/DD_DDGDKDQKFX.aspx` · QXID 7310
+        - ⬜ 未接入
+      - `已核价订单产品计划送货分析` · `DingDan/DD_DDTJFX/DD_YHJDDCPJHSHFX.aspx` · QXID 10380
+        - ⬜ 未接入
+      - `报价订单对比分析` · `DingDan/DD_DDTJFX/DD_BJDDDBFX.aspx` · QXID 10791
+        - ⬜ 未接入
+      - `订单船头办排期分析` · `DingDan/DD_DDTJFX/DD_KHDDCTBPQTJFX.aspx` · QXID 15885
+        - ⬜ 未接入
 - **生产管理**
-  - 补数管理 · 无页面
+  - 生产施工单
+    - `新增-生产施工单` · `ShengChan/SC_SCSGD/Add.aspx` · QXID 737
+      - ✅ 读 · 施工单详情（字段 + 部件表 + 送货表 + 子页清单） → `erp production-detail` · `erp_production_detail` · [api/erp_production_detail.md](api/erp_production_detail.md)
+      - ✅ 读 · 20 个弹窗子页（产品/部件/工序/辅料/机台/送货/D10/开版…） → `erp production-node` · `erp_production_node` · [api/erp_production_node.md](api/erp_production_node.md)
+    - `列表-生产施工单` · `ShengChan/SC_SCSGD/Index.aspx` · QXID 740 · ⚠ 同路径另有 QXID 983
+      - ✅ 查 · 列表筛选 + 导出（一行 = 一张施工单） → `erp production-list` · `erp_production_list` · [api/erp_production_list.md](api/erp_production_list.md)
+  - 补数管理
+    - 补数申请
+      - `新增-补数申请` · `PinZhi/PZ_BSBG_M/Add.aspx` · QXID 6778
+        - ⬜ 未接入
+      - `列表-补数申请` · `PinZhi/PZ_BSBG_M/Index.aspx` · QXID 6781
+        - ⬜ 未接入
+    - 补数费用核算
+      - `新增-补数费用核算` · `ShengChan/SC_BSSSHS/Add.aspx` · QXID 14322
+        - ⬜ 未接入
+      - `列表-补数费用核算` · `ShengChan/SC_BSSSHS/Index.aspx` · QXID 14325
+        - ⬜ 未接入
   - `待下工单` · `ShengChan/SC_SCTJFX/SC_DXSCSGDFX.aspx` · QXID 14484
     - ⬜ 未接入
+  - 生产计划
+    - `订单计划总览表` · `ShengChan/SC_WWKHDDList/Index.aspx` · QXID 3367
+      - ⬜ 未接入
+    - `生产计划安排` · `ShengChan/SC_WWKHDDList_SCJH/Index.aspx` · QXID 3781 · ⚠ 同路径另有 QXID 5171
+      - ⬜ 未接入
+    - 其它
+      - `收纸计划安排` · `ShengChan/SC_WWKHDDList_SCJH/Index.aspx` · QXID 5171 · ⚠ 同路径另有 QXID 3781
+        - ⬜ 未接入
+      - `机台或班组生产明细查询` · `ShengChan/SC_SCJH_CXFX/SC_JTHBZSCMX.aspx` · QXID 3893
+        - ⬜ 未接入
+      - `生产计划安排分组分析` · `ShengChan/SC_SCJH_CXFX/SC_SCJHAPFZFX.aspx` · QXID 5217
+        - ⬜ 未接入
+  - 产品安全库存生产申请
+    - `新增-产品安全库存生产申请` · `KuCun/KC_CPCRKSQ/Add.aspx` · QXID 2236 · ⚠ 同路径另有 QXID 727
+      - ⬜ 未接入
+    - `列表-产品安全库存生产申请` · `KuCun/KC_CPCRKSQ/Index.aspx` · QXID 2239 · ⚠ 同路径另有 QXID 730/3424
+      - ⬜ 未接入
+  - 生产反馈
+    - 印前工序生产反馈
+      - `列表-印前工序生产反馈` · `ShengChan/SC_GXSCFK/Index.aspx` · QXID 2188 · ⚠ 同路径另有 QXID 2199/2210
+        - ⬜ 未接入
+    - 印刷工序生产反馈
+      - `列表-印刷工序生产反馈` · `ShengChan/SC_GXSCFK/Index.aspx` · QXID 2199 · ⚠ 同路径另有 QXID 2188/2210
+        - ⬜ 未接入
+    - 印后工序生产反馈
+      - `列表-印后工序生产反馈` · `ShengChan/SC_GXSCFK/Index.aspx` · QXID 2210 · ⚠ 同路径另有 QXID 2188/2199
+        - ⬜ 未接入
+    - 员工每天加工产值
+      - `新增-员工每天加工产值` · `ShengChan/SC_YGMTJGCZ/Add.aspx` · QXID 14455
+        - ⬜ 未接入
+      - `列表-员工每天加工产值` · `ShengChan/SC_YGMTJGCZ/Index.aspx` · QXID 14458
+        - ⬜ 未接入
+      - `员工每天加工产值分析` · `ShengChan/SC_YGMTJGCZ/SC_YGMTJGCZFX.aspx` · QXID 15434
+        - ⬜ 未接入
+  - 材料清单
+    - 产品临时材料清单
+      - `列表-产品临时材料清单` · `ShengChan/SC_CPCLQD/Index.aspx` · QXID 3029 · ⚠ 同路径另有 QXID 1447
+        - ⬜ 未接入
+    - 产品材料清单
+      - `新增-产品材料清单` · `ShengChan/SC_CPCLQD/Add.aspx` · QXID 1444
+        - ⬜ 未接入
+      - `列表-产品材料清单` · `ShengChan/SC_CPCLQD/Index.aspx` · QXID 1447 · ⚠ 同路径另有 QXID 3029
+        - ⬜ 未接入
+  - 生产材料采购申请
+    - `列表-生产材料采购申请` · `KuCun/KC_CLCRKSQ/Index.aspx` · QXID 1564 · ⚠ 同路径另有 QXID 1457/1497/825/405/1039/1612/334/1525
+      - ⬜ 未接入
+  - 材料领料
+    - 生产领料分切通知单
+      - `列表-生产领料分切通知单` · `KuCun/KC_CLCRKSQ/Index.aspx` · QXID 1457 · ⚠ 同路径另有 QXID 1564/1497/825/405/1039/1612/334/1525
+        - ⬜ 未接入
+    - 生产补料分切通知单
+      - `列表-生产补料分切通知单` · `KuCun/KC_CLCRKSQ/Index.aspx` · QXID 1497 · ⚠ 同路径另有 QXID 1564/1457/825/405/1039/1612/334/1525
+        - ⬜ 未接入
+    - 生产领料通知单
+      - `列表-生产领料通知单` · `KuCun/KC_CLCRKSQ/Index.aspx` · QXID 825 · ⚠ 同路径另有 QXID 1564/1457/1497/405/1039/1612/334/1525
+        - ⬜ 未接入
+    - 生产补料通知单
+      - `列表-生产补料通知单` · `KuCun/KC_CLCRKSQ/Index.aspx` · QXID 405 · ⚠ 同路径另有 QXID 1564/1457/1497/825/1039/1612/334/1525
+        - ⬜ 未接入
+  - 工单阿米巴数据
+    - `新增-工单阿米巴数据` · `ShengChan/SC_GDAMBFX/Add.aspx` · QXID 15206
+      - ⬜ 未接入
+    - `列表-工单阿米巴数据` · `ShengChan/SC_GDAMBFX/Index.aspx` · QXID 15209
+      - ⬜ 未接入
+  - 生产统计分析
+    - 日常
+      - `印前生产日报分析` · `ShengChan/SC_SCTJFX/SC_YSSCRBFX/SC_YSSCRBFX.aspx` · QXID 3990 · ⚠ 同路径另有 QXID 3987/3984
+        - ⬜ 未接入
+      - `印刷生产日报分析` · `ShengChan/SC_SCTJFX/SC_YSSCRBFX/SC_YSSCRBFX.aspx` · QXID 3987 · ⚠ 同路径另有 QXID 3990/3984
+        - ⬜ 未接入
+      - `印后生产日报分析` · `ShengChan/SC_SCTJFX/SC_YSSCRBFX/SC_YSSCRBFX.aspx` · QXID 3984 · ⚠ 同路径另有 QXID 3990/3987
+        - ⬜ 未接入
+      - `工序加工产值` · `ShengChan/SC_SCTJFX/SC_GXJGCZ.aspx` · QXID 14371
+        - ⬜ 未接入
+      - `部门加工产值阿米巴分析` · `ShengChan/SC_SCTJFX/SC_BMJGCZAMBFX.aspx` · QXID 14489
+        - ⬜ 未接入
+    - 其它
+      - `产品材料清单分析` · `ShengChan/SC_SCTJFX/SC_CPCLQDFX/SC_CPCLQDFX.aspx` · QXID 1658
+        - ⬜ 未接入
+      - `产品安全库存申请开单情况表` · `ShengChan/SC_SCTJFX/SC_CPDKCKDQKB.aspx` · QXID 3032
+        - ⬜ 未接入
+      - `生产日报汇总分析` · `ShengChan/SC_SCTJFX/SC_SCRBHZFX.aspx` · QXID 4119
+        - ⬜ 未接入
+      - `日报工单汇总分析` · `ShengChan/SC_SCTJFX/SC_SCRBGDHZFX.aspx` · QXID 5629
+        - ⬜ 未接入
+      - `日报工单分组分析` · `ShengChan/SC_SCTJFX/SC_SCRBGDFZFZ.aspx` · QXID 5610
+        - ⬜ 未接入
+      - `日报产量分组分析` · `ShengChan/SC_SCTJFX/SC_RBCLFZFX.aspx` · QXID 5616
+        - ⬜ 未接入
+      - `生产产量汇总分析` · `ShengChan/SC_SCTJFX/SC_SCCLHZFX.aspx` · QXID 6222
+        - ⬜ 未接入
+      - `施工单开单分析` · `ShengChan/SC_SCTJFX/SC_SCSGDKDFX.aspx` · QXID 5067
+        - ⬜ 未接入
+      - `施工单材料清单分析` · `ShengChan/SC_SCTJFX/SC_SGDCLQDFX.aspx` · QXID 7442
+        - ⬜ 未接入
+      - `订单产品实际单人时产能分析` · `ShengChan/SC_SCTJFX/SC_DDCPSJDRSCLFX.aspx` · QXID 6714
+        - ⬜ 未接入
+      - `生产返工统计分析` · `ShengChan/SC_SCTJFX/SC_FGTJFX.aspx` · QXID 8366
+        - ⬜ 未接入
+      - `订单预计与实际产能对比分析` · `ShengChan/SC_SCTJFX/SC_DDYJYSJCNDBFX.aspx` · QXID 8995
+        - ⬜ 未接入
+- **外发管理**
+  - 工序外发申请
+    - `列表-工序外发申请` · `ShengChan/SC_GXWFSQ/Index.aspx` · QXID 2070
+      - ⬜ 未接入
+  - 工序外发单
+    - `列表-工序外发单` · `ShengChan/SC_GXWFJG/Index.aspx` · QXID 2081
+      - ⬜ 未接入
+  - 工序外发反馈
+    - `列表-工序外发反馈` · `ShengChan/SC_GXWFFK/Index.aspx` · QXID 2092
+      - ⬜ 未接入
 - **采购管理**
   - 采购申请
-    - `新增-采购申请` · `KuCun/KC_CLCRKSQ/Add.aspx` · QXID 1036 · ⚠ 同路径另有 QXID 331
+    - `新增-采购申请` · `KuCun/KC_CLCRKSQ/Add.aspx` · QXID 1036 · ⚠ 同路径另有 QXID 1609/331
       - ⬜ 未接入
-    - `列表-采购申请` · `KuCun/KC_CLCRKSQ/Index.aspx` · QXID 1039 · ⚠ 同路径另有 QXID 334
+    - `列表-采购申请` · `KuCun/KC_CLCRKSQ/Index.aspx` · QXID 1039 · ⚠ 同路径另有 QXID 1564/1457/1497/825/405/1612/334/1525
       - ⬜ 未接入
+  - 采购订单
+    - `列表-采购订单` · `CaiGou/CG_CGDD/Index.aspx` · QXID 266
+      - ✅ 查 · 列表筛选 + 导出（一行 = 一条材料明细） → `erp purchase-list` · `erp_purchase_list` · [api/erp_purchase_list.md](api/erp_purchase_list.md)
+      - ✅ 读 · 采购订单详情（表头 + 材料明细网格）（入口是列表的 记录ID → Add.aspx?id=…&Option=3） → `erp purchase-detail` · `erp_purchase_detail` · [api/erp_purchase_detail.md](api/erp_purchase_detail.md)
+      - ✅ 读 · 子页面（供应商档案选择等弹窗） → `erp purchase-node` · `erp_purchase_node` · [api/erp_purchase_node.md](api/erp_purchase_node.md)
   - 材料询价
     - 部门材料询价
       - `新增-部门材料询价` · `CaiGou/CG_BMCLXJ/Add.aspx` · QXID 1162
         - ⬜ 未接入
       - `列表-部门材料询价` · `CaiGou/CG_BMCLXJ/Index.aspx` · QXID 1165
         - ⬜ 未接入
-    - 供应商材料询价
-      - `新增-供应商材料询价` · `CaiGou/CG_GYSCLXJ/Add.aspx` · QXID 1171
+    - `供应商材料询价反馈` · `CaiGou/CG_GYSCLXJ/Index.aspx` · QXID 1183
+      - ⬜ 未接入
+    - 常规辅料询价
+      - `列表-常规辅料询价` · `CaiGou/CG_CGCLXJ_M/Index.aspx` · QXID 2987
         - ⬜ 未接入
-      - `列表-供应商材料询价` · `CaiGou/CG_GYSCLXJ/Index.aspx` · QXID 1174
+    - 常规纸料询价
+      - `列表-常规纸料询价` · `CaiGou/CG_CGCLXJ_New_M/Index.aspx` · QXID 12617
+        - ⬜ 未接入
+  - 材料安全库存
+    - 安全库存采购申请
+      - `新增-安全库存采购申请` · `KuCun/KC_CLCRKSQ/Add.aspx` · QXID 1609 · ⚠ 同路径另有 QXID 1036/331
+        - ⬜ 未接入
+      - `列表-安全库存采购申请` · `KuCun/KC_CLCRKSQ/Index.aspx` · QXID 1612 · ⚠ 同路径另有 QXID 1564/1457/1497/825/405/1039/334/1525
+        - ⬜ 未接入
+  - 采购统计分析
+    - 日常
+      - `材料采购跟进表` · `CaiGou/CG_CGTJFX/CG_CLCGGJB.aspx` · QXID 1382
+        - ⬜ 未接入
+    - 其它
+      - `采购订单金额分析` · `CaiGou/CG_CGTJFX/CG_CGDDJEFX.aspx` · QXID 3233
+        - ⬜ 未接入
+      - `材料采购跟进汇总表` · `CaiGou/CG_CGTJFX/CG_CLCGGJB2.aspx` · QXID 4420
+        - ⬜ 未接入
+      - `采购送货时间分析` · `CaiGou/CG_CGTJFX/CG_CGSHSJFX.aspx` · QXID 3921
         - ⬜ 未接入
 - **仓库管理**
   - 材料管理
     - 部门领料
       - 部门领料申请
-        - `新增-部门领料申请` · `KuCun/KC_CLCRKSQ/Add.aspx` · QXID 331 · ⚠ 同路径另有 QXID 1036
+        - `新增-部门领料申请` · `KuCun/KC_CLCRKSQ/Add.aspx` · QXID 331 · ⚠ 同路径另有 QXID 1036/1609
           - ⬜ 未接入
-        - `列表-部门领料申请` · `KuCun/KC_CLCRKSQ/Index.aspx` · QXID 334 · ⚠ 同路径另有 QXID 1039
+        - `列表-部门领料申请` · `KuCun/KC_CLCRKSQ/Index.aspx` · QXID 334 · ⚠ 同路径另有 QXID 1564/1457/1497/825/405/1039/1612/1525
           - ⬜ 未接入
+      - 部门领料出库
+        - `新增-部门领料出库` · `KuCun/KC_CLCRK/Add.aspx` · QXID 337 · ⚠ 同路径另有 QXID 1327
+          - ⬜ 未接入
+        - `列表-部门领料出库` · `KuCun/KC_CLCRK/Index.aspx` · QXID 340 · ⚠ 同路径另有 QXID 1330/1467/1506/1477/1487/398/412/419
+          - ⬜ 未接入
+      - 部门领料退库
+        - `新增-部门领料退库` · `KuCun/KC_CLCRK/Add.aspx` · QXID 1327 · ⚠ 同路径另有 QXID 337
+          - ⬜ 未接入
+        - `列表-部门领料退库` · `KuCun/KC_CLCRK/Index.aspx` · QXID 1330 · ⚠ 同路径另有 QXID 340/1467/1506/1477/1487/398/412/419
+          - ⬜ 未接入
+    - 材料分切
+      - 材料分切领料
+        - `列表-材料分切领料` · `KuCun/KC_CLCRK/Index.aspx` · QXID 1467 · ⚠ 同路径另有 QXID 340/1330/1506/1477/1487/398/412/419
+          - ⬜ 未接入
+      - 材料分切补料
+        - `列表-材料分切补料` · `KuCun/KC_CLCRK/Index.aspx` · QXID 1506 · ⚠ 同路径另有 QXID 340/1330/1467/1477/1487/398/412/419
+          - ⬜ 未接入
+      - 新材料分切入库通知单
+        - `列表-新材料分切入库通知单` · `KuCun/KC_CLCRKSQ/Index.aspx` · QXID 1525 · ⚠ 同路径另有 QXID 1564/1457/1497/825/405/1039/1612/334
+          - ⬜ 未接入
+      - 新材料分切入库
+        - `列表-新材料分切入库` · `KuCun/KC_CLCRK/Index.aspx` · QXID 1477 · ⚠ 同路径另有 QXID 340/1330/1467/1506/1487/398/412/419
+          - ⬜ 未接入
+      - 材料分切退库
+        - `列表-材料分切退库` · `KuCun/KC_CLCRK/Index.aspx` · QXID 1487 · ⚠ 同路径另有 QXID 340/1330/1467/1506/1477/398/412/419
+          - ⬜ 未接入
+    - 生产库存
+      - 生产领料
+        - `列表-生产领料` · `KuCun/KC_CLCRK/Index.aspx` · QXID 398 · ⚠ 同路径另有 QXID 340/1330/1467/1506/1477/1487/412/419
+          - ⬜ 未接入
+      - 生产补料
+        - `列表-生产补料` · `KuCun/KC_CLCRK/Index.aspx` · QXID 412 · ⚠ 同路径另有 QXID 340/1330/1467/1506/1477/1487/398/419
+          - ⬜ 未接入
+      - 生产退料
+        - `列表-生产退料` · `KuCun/KC_CLCRK/Index.aspx` · QXID 419 · ⚠ 同路径另有 QXID 340/1330/1467/1506/1477/1487/398/412
+          - ⬜ 未接入
+    - 材料库存统计
+      - 日常
+        - `材料实际库存` · `KuCun/KC_CLTJFX/KC_CLSJKC/KC_CLSJKC.aspx` · QXID 484
+          - ⬜ 未接入
+        - `材料出入库明细` · `KuCun/KC_CLTJFX/KC_CLCRKMX.aspx` · QXID 642
+          - ⬜ 未接入
+  - 产品管理
+    - 产品入库
+      - 产品生产入库
+        - `列表-产品生产入库` · `KuCun/KC_CPCRK/Index.aspx` · QXID 500 · ⚠ 同路径另有 QXID 5386/509/518/528/537/556
+          - ⬜ 未接入
+      - 产品退给生产
+        - `列表-产品退给生产` · `KuCun/KC_CPCRK/Index.aspx` · QXID 5386 · ⚠ 同路径另有 QXID 500/509/518/528/537/556
+          - ⬜ 未接入
+    - 产品送货
+      - 产品送货
+        - `列表-产品送货` · `KuCun/KC_CPCRK/Index.aspx` · QXID 509 · ⚠ 同路径另有 QXID 500/5386/518/528/537/556
+          - ⬜ 未接入
+      - 客户产品退货
+        - `新增-客户产品退货` · `KuCun/KC_CPCRK/Add.aspx` · QXID 515
+          - ⬜ 未接入
+        - `列表-客户产品退货` · `KuCun/KC_CPCRK/Index.aspx` · QXID 518 · ⚠ 同路径另有 QXID 500/5386/509/528/537/556
+          - ⬜ 未接入
+    - 产品调拨
+      - 产品调拨申请
+        - `列表-产品调拨申请` · `KuCun/KC_CPCRKSQ/Index.aspx` · QXID 3424 · ⚠ 同路径另有 QXID 730/2239
+          - ⬜ 未接入
+      - 产品调拨出库
+        - `列表-产品调拨出库` · `KuCun/KC_CPCRK/Index.aspx` · QXID 528 · ⚠ 同路径另有 QXID 500/5386/509/518/537/556
+          - ⬜ 未接入
+      - 产品调拨入库
+        - `列表-产品调拨入库` · `KuCun/KC_CPCRK/Index.aspx` · QXID 537 · ⚠ 同路径另有 QXID 500/5386/509/518/528/556
+          - ⬜ 未接入
+    - 产品其他出入库
+      - 产品其他入库
+        - `列表-产品其他入库` · `KuCun/KC_CPCRK/Index.aspx` · QXID 556 · ⚠ 同路径另有 QXID 500/5386/509/518/528/537
+          - ⬜ 未接入
+    - 产品库存统计
+      - 日常
+        - `产品实际库存` · `KuCun/KC_CPTJFX/KC_CPSJKC.aspx` · QXID 618
+          - ⬜ 未接入
+        - `产品出入库明细` · `KuCun/KC_CPTJFX/KC_CPCRKMX.aspx` · QXID 679
+          - ⬜ 未接入
+      - 其它
+        - `呆滞产品分析` · `KuCun/KC_CPTJFX/KC_DZCPFX/KC_DZCPFX.aspx` · QXID 3914
+          - ⬜ 未接入
+        - `产品存放时间统计` · `KuCun/KC_CPTJFX/KC_CPCFSJTJ.aspx` · QXID 4271
+          - ⬜ 未接入
+        - `产品安全库存分析` · `KuCun/KC_CPTJFX/KC_CPSXXKCFX.aspx` · QXID 2231
+          - ⬜ 未接入
+- **关务管理**
+  - 出口管理
+    - 装柜通知单
+      - `列表-装柜通知单` · `BaoGuanZhuanChang/DD_ZGTZD/Index.aspx` · QXID 5099
+        - ⬜ 未接入
+  - 关务统计分析
+    - `出口费用分析` · `BaoGuanZhuanChang/CWFYFX/BGZC_CWFYFX.aspx` · QXID 5147
+      - ⬜ 未接入
+- **品质管理**
+  - 材料检验
+    - 采购材料入库检验
+      - `列表-采购材料入库检验` · `PinZhi/PZ_CLRKJY/Index.aspx` · QXID 1391 · ⚠ 同路径另有 QXID 2016
+        - ⬜ 未接入
+    - 采购材料品质异常报告
+      - `列表-采购材料品质异常报告` · `PinZhi/PZ_CLBHGBG/Index.aspx` · QXID 1996 · ⚠ 同路径另有 QXID 6905
+        - ⬜ 未接入
+    - 客供材料入库检验
+      - `列表-客供材料入库检验` · `PinZhi/PZ_CLRKJY/Index.aspx` · QXID 2016 · ⚠ 同路径另有 QXID 1391
+        - ⬜ 未接入
+    - 客供材料品质异常报告
+      - `列表-客供材料品质异常报告` · `PinZhi/PZ_CLBHGBG/Index.aspx` · QXID 6905 · ⚠ 同路径另有 QXID 1996
+        - ⬜ 未接入
+  - 外发检验
+    - 工序外发反馈检验
+      - `列表-工序外发反馈检验` · `PinZhi/PZ_GXWFJY/Index.aspx` · QXID 6675
+        - ⬜ 未接入
+    - 外发特采申请单 · 无页面
+    - 工序外发扣款
+      - `列表-工序外发扣款` · `PinZhi/PZ_GXWFKK/Index.aspx` · QXID 6688
+        - ⬜ 未接入
+    - 工序外发不合格报告
+      - `列表-工序外发不合格报告` · `PinZhi/PZ_WFBHGBG/Index.aspx` · QXID 6662
+        - ⬜ 未接入
+    - 外发供应商预防纠正措施
+      - `列表-外发供应商预防纠正措施` · `PinZhi/PZ_GYSYFJZCS_M/Index.aspx` · QXID 6701
+        - ⬜ 未接入
+    - 外发全检申请单
+      - `列表-外发全检申请单` · `PinZhi/PZ_WLFGSQ/Index.aspx` · QXID 12171
+        - ⬜ 未接入
+  - 工序检验
+    - 工序巡视检验
+      - `列表-工序巡视检验` · `PinZhi/PZ_GXZLJY/Index.aspx` · QXID 6472
+        - ⬜ 未接入
+  - 产品检验
+    - 产品入库检验
+      - `列表-产品入库检验` · `PinZhi/PZ_CPCRKJY/Index.aspx` · QXID 2056
+        - ⬜ 未接入
+  - 实验室检验
+    - 实验室检验申请表
+      - `新增-实验室检验申请表` · `PinZhi/PZ_SYSJYSQ/Add.aspx` · QXID 8122
+        - ⬜ 未接入
+      - `列表-实验室检验申请表` · `PinZhi/PZ_SYSJYSQ/Index.aspx` · QXID 8125
+        - ⬜ 未接入
+  - 部门预防
+    - 部门预防纠正措施
+      - `新增-部门预防纠正措施` · `PinZhi/PZ_BMYFJZCS_M/Add.aspx` · QXID 3122
+        - ⬜ 未接入
+      - `列表-部门预防纠正措施` · `PinZhi/PZ_BMYFJZCS_M/Index.aspx` · QXID 3125
+        - ⬜ 未接入
 - **设备管理**
   - 设备维修
     - 设备维修通知单
       - `新增-设备维修通知单` · `SheBei/SB_WXTZD/Add.aspx` · QXID 1663
         - ⬜ 未接入
-      - `列表-设备维修通知单` · `SheBei/SB_WXTZD/Index.aspx` · QXID 1666
+      - `列表-设备维修通知单` · `SheBei/SB_WXTZD/Index.aspx` · QXID 1666 · ⚠ 同路径另有 QXID 1674/1682
         - ⬜ 未接入
+    - `设备维修记录` · `SheBei/SB_WXTZD/Index.aspx` · QXID 1674 · ⚠ 同路径另有 QXID 1666/1682
+      - ⬜ 未接入
+    - `设备维修验收` · `SheBei/SB_WXTZD/Index.aspx` · QXID 1682 · ⚠ 同路径另有 QXID 1666/1674
+      - ⬜ 未接入
 - **人力资源管理**
   - 人事管理
+    - 招聘管理
+      - 用工申请
+        - `新增-用工申请` · `RenShi/RS_YGSQ_M/Add.aspx` · QXID 7534
+          - ⬜ 未接入
+        - `列表-用工申请` · `RenShi/RS_YGSQ_M/Index.aspx` · QXID 7537
+          - ⬜ 未接入
+    - 调岗离职
+      - 离职申请
+        - `新增-离职申请` · `RenShi/RS_YGLZSQ_M/Add.aspx` · QXID 2937
+          - ⬜ 未接入
+        - `列表-离职申请` · `RenShi/RS_YGLZSQ_M/Index.aspx` · QXID 2940
+          - ⬜ 未接入
+      - 员工转正
+        - `新增-员工转正` · `RenShi/RS_YGZZ_M/Add.aspx` · QXID 2451
+          - ⬜ 未接入
+        - `列表-员工转正` · `RenShi/RS_YGZZ_M/Index.aspx` · QXID 2454
+          - ⬜ 未接入
+      - 人事变更
+        - `新增-人事变更` · `RenShi/RS_ZWBG_M/Add.aspx` · QXID 2422
+          - ⬜ 未接入
+        - `列表-人事变更` · `RenShi/RS_ZWBG_M/Index.aspx` · QXID 2425
+          - ⬜ 未接入
+    - 培训管理
+      - 培训记录
+        - `列表-培训记录` · `RenShi/RS_PXJL_M/Index.aspx` · QXID 2629
+          - ⬜ 未接入
     - 行政管理
       - 工作联络单
         - `新增-工作联络单` · `RenShi/RS_GZLLD_M/Add.aspx` · QXID 8540
           - ⬜ 未接入
         - `列表-工作联络单` · `RenShi/RS_GZLLD_M/Index.aspx` · QXID 8543
           - ⬜ 未接入
+    - 人事统计分析 · 无页面
+  - 后勤管理
+    - 饭堂管理
+      - `提前报餐` · `RenShi/RS_TQBC/Add.aspx` · QXID 8868
+        - ⬜ 未接入
   - 考勤管理
     - `考勤档案` · `RenShi/RS_KQDA_M/Add.aspx` · QXID 2553
       - ✅ 查 · 月度考勤明细 → `erp attendance` · `erp_attendance` · [api/erp_attendance.md](api/erp_attendance.md)
@@ -125,20 +766,84 @@
         - `列表-员工签卡` · `RenShi/RS_YGQK_M/Index.aspx` · QXID 2802
           - ⬜ 未接入
       - 员工请假
-        - `列表-员工请假` · `RenShi/RS_YGQJ_M/Index.aspx` · QXID 2509
+        - `列表-员工请假` · `RenShi/RS_YGQJ_M/Index.aspx` · QXID 2509 · ⚠ 同路径另有 QXID 5724/2519
+          - ⬜ 未接入
+      - 请假销假
+        - `新增-请假销假` · `RenShi/RS_YGQJ_M/Add.aspx` · QXID 5721 · ⚠ 同路径另有 QXID 2516
+          - ⬜ 未接入
+        - `列表-请假销假` · `RenShi/RS_YGQJ_M/Index.aspx` · QXID 5724 · ⚠ 同路径另有 QXID 2509/2519
+          - ⬜ 未接入
+      - 员工休假
+        - `新增-员工休假` · `RenShi/RS_YGQJ_M/Add.aspx` · QXID 2516 · ⚠ 同路径另有 QXID 5721
+          - ⬜ 未接入
+        - `列表-员工休假` · `RenShi/RS_YGQJ_M/Index.aspx` · QXID 2519 · ⚠ 同路径另有 QXID 2509/5724
           - ⬜ 未接入
       - 员工调休
         - `新增-员工调休` · `RenShi/RS_YGTX_M/Add.aspx` · QXID 14247
           - ⬜ 未接入
         - `列表-员工调休` · `RenShi/RS_YGTX_M/Index.aspx` · QXID 14250
           - ⬜ 未接入
+    - 人工排班
+      - `列表-人工排班` · `RenShi/RS_RGPB_M/Index.aspx` · QXID 2568
+        - ⬜ 未接入
+    - 考勤统计分析
+      - `员工考勤统计` · `RenShi/RS_RSTJFX/RS_YGKQTJ.aspx` · QXID 3037
+        - ⬜ 未接入
+  - 工资管理
+    - 新入职员工工资确定
+      - `新增-新入职员工工资确定` · `RenShi/RS_XYGGZQD_M/Add.aspx` · QXID 8951
+        - ⬜ 未接入
+      - `列表-新入职员工工资确定` · `RenShi/RS_XYGGZQD_M/Index.aspx` · QXID 8954
+        - ⬜ 未接入
+  - 绩效考核
+    - 绩效指标评价
+      - `新增-绩效指标评价` · `RenShi/RS_JXKH_JXZBPJ_M/Add.aspx` · QXID 13826
+        - ⬜ 未接入
+      - `列表-绩效指标评价` · `RenShi/RS_JXKH_JXZBPJ_M/Index.aspx` · QXID 13829
+        - ⬜ 未接入
 - **财务管理**
+  - 客户应收账款
+    - 客户订单对账单
+      - `新增-客户订单对账单` · `YingShouYingFu/YSYF_KHDDDZ_M/Add.aspx` · QXID 779
+        - ⬜ 未接入
+      - `列表-客户订单对账单` · `YingShouYingFu/YSYF_KHDDDZ_M/Index.aspx` · QXID 782
+        - ⬜ 未接入
+    - 客户订单预收款单
+      - `新增-客户订单预收款单` · `YingShouYingFu/YSYF_KHDDSK_M/Add.aspx` · QXID 3299
+        - ⬜ 未接入
+      - `列表-客户订单预收款单` · `YingShouYingFu/YSYF_KHDDSK_M/Index.aspx` · QXID 3302
+        - ⬜ 未接入
   - 员工报销
+    - 员工借款申请
+      - `新增-员工借款申请` · `YingShouYingFu/YSYF_YGJKSQ_M/Add.aspx` · QXID 2260
+        - ⬜ 未接入
+      - `列表-员工借款申请` · `YingShouYingFu/YSYF_YGJKSQ_M/Index.aspx` · QXID 2263
+        - ⬜ 未接入
     - 费用报销申请
       - `新增-费用报销申请` · `YingShouYingFu/YSYF_FYBXSQ_M/Add.aspx` · QXID 2273
         - ⬜ 未接入
       - `列表-费用报销申请` · `YingShouYingFu/YSYF_FYBXSQ_M/Index.aspx` · QXID 2276
         - ⬜ 未接入
+  - 财务统计分析
+    - 客户应收
+      - `客户订单对账统计` · `YingShouYingFu/YSYF_TJFX/YSYF_KHDDWDZ.aspx` · QXID 7494
+        - ⬜ 未接入
+      - `客户订单开票统计` · `YingShouYingFu/YSYF_TJFX/YSYF_KHDDWKP.aspx` · QXID 8017
+        - ⬜ 未接入
+      - `客户订单应收账款账龄分析` · `YingShouYingFu/YSYF_TJFX/YSYF_KHDDYSZKZLFX.aspx` · QXID 7249
+        - ⬜ 未接入
+- **成本管理**
+  - 销售成本
+    - `列表-销售成本` · `ChengBen/CB_XSCB_M/Index.aspx` · QXID 8690
+      - ⬜ 未接入
+  - 成本统计分析
+    - `客户订单成本分析` · `ChengBen/CB_CBTJFX/CB_KHDDCBFX.aspx` · QXID 8068
+      - ⬜ 未接入
+    - `毛利分析表` · `ChengBen/CB_CBTJFX/CB_MLFX.aspx` · QXID 8795
+      - ⬜ 未接入
+- **文档管理**
+  - `文档资料` · `WenDang/WD_WDZL/Add.aspx` · QXID 4109
+    - ⬜ 未接入
 - **个人信息**
   - `查看详细` · `Accounts/userinfo.aspx` · QXID 1356
     - ⬜ 未接入
@@ -146,13 +851,285 @@
     - ⬜ 未接入
   - `修改资料` · `Accounts/usermodify.ASPX` · QXID 1358
     - ⬜ 未接入
-- **系统管理** · 无页面
+- **基础资料**
+  - 材料资料
+    - 纸料档案
+      - `新增-纸料档案` · `Base/Base_WLZL/Add.aspx` · QXID 132 · ⚠ 同路径另有 QXID 1136
+        - ⬜ 未接入
+      - `列表-纸料档案` · `Base/Base_WLZL/Index.aspx` · QXID 131 · ⚠ 同路径另有 QXID 1139
+        - ⬜ 未接入
+    - 辅料档案
+      - `新增-辅料档案` · `Base/Base_WLZL/Add.aspx` · QXID 1136 · ⚠ 同路径另有 QXID 132
+        - ⬜ 未接入
+      - `列表-辅料档案` · `Base/Base_WLZL/Index.aspx` · QXID 1139 · ⚠ 同路径另有 QXID 131
+        - ⬜ 未接入
+    - 材料类别
+      - `列表-材料类别` · `Base/Base_WLLB/Index.aspx` · QXID 93
+        - ⬜ 未接入
+    - 材料品牌
+      - `列表-材料品牌` · `Base/Base_PP/Index.aspx` · QXID 126
+        - ⬜ 未接入
+    - 材料来源
+      - `列表-材料来源` · `Base/Base_Public/Index.aspx` · QXID 127 · ⚠ 同路径另有 QXID 5309/5315/5321/5327/6173/6185/6191/10839/112/10851/10863/10870/11059/10857/696/885/3911/2868/3395/895/900/910/915/920/930/950/944/107/150
+        - ⬜ 未接入
+  - 产品资料
+    - 产品档案
+      - `新增-产品档案` · `Base/Base_CPZL/Add.aspx` · QXID 673 · ⚠ 同路径另有 QXID 5289
+        - ⬜ 未接入
+      - `列表-产品档案` · `Base/Base_CPZL/Index.aspx` · QXID 676 · ⚠ 同路径另有 QXID 5292
+        - ⬜ 未接入
+    - 产品模板
+      - `新增-产品模板` · `Base/Base_CPZL/Add.aspx` · QXID 5289 · ⚠ 同路径另有 QXID 673
+        - ⬜ 未接入
+      - `列表-产品模板` · `Base/Base_CPZL/Index.aspx` · QXID 5292 · ⚠ 同路径另有 QXID 676
+        - ⬜ 未接入
+    - 产品类别
+      - `新增-产品类别` · `Base/Base_CPLB/Add.aspx` · QXID 667
+        - ⬜ 未接入
+      - `列表-产品类别` · `Base/Base_CPLB/Index.aspx` · QXID 670
+        - ⬜ 未接入
+    - 部件相关资料
+      - 部件类别
+        - `新增-部件类别` · `Base/Base_Public/Add.aspx` · QXID 10836 · ⚠ 同路径另有 QXID 5306/5312/5318/5324/6170/6182/6188/109/10848/10860/10867/11056/10854/693/882/3908/2865/3392/892/897/907/912/917/927/947/941/104/147
+          - ⬜ 未接入
+        - `列表-部件类别` · `Base/Base_Public/Index.aspx` · QXID 10839 · ⚠ 同路径另有 QXID 5309/5315/5321/5327/6173/6185/6191/127/112/10851/10863/10870/11059/10857/696/885/3911/2868/3395/895/900/910/915/920/930/950/944/107/150
+          - ⬜ 未接入
+      - 部件资料
+        - `新增-部件资料` · `Base/Base_Public/Add.aspx` · QXID 109 · ⚠ 同路径另有 QXID 5306/5312/5318/5324/6170/6182/6188/10836/10848/10860/10867/11056/10854/693/882/3908/2865/3392/892/897/907/912/917/927/947/941/104/147
+          - ⬜ 未接入
+        - `列表-部件资料` · `Base/Base_Public/Index.aspx` · QXID 112 · ⚠ 同路径另有 QXID 5309/5315/5321/5327/6173/6185/6191/127/10839/10851/10863/10870/11059/10857/696/885/3911/2868/3395/895/900/910/915/920/930/950/944/107/150
+          - ⬜ 未接入
+      - 颜色资料
+        - `新增-颜色资料` · `Base/Base_YSYS/Add.aspx` · QXID 714
+          - ⬜ 未接入
+        - `列表-颜色资料` · `Base/Base_YSYS/Index.aspx` · QXID 717
+          - ⬜ 未接入
+      - `部件类别分组` · `Base/Base_BJLB_FZ/Index.aspx` · QXID 12448
+        - ⬜ 未接入
+    - 工艺资料设置
+      - 印刷机台
+        - `新增-印刷机台` · `Base/Base_SCJT/Add.aspx` · QXID 848
+          - ⬜ 未接入
+        - `列表-印刷机台` · `Base/Base_SCJT/Index.aspx` · QXID 851
+          - ⬜ 未接入
+      - 工序资料
+        - `列表-工序资料` · `Base/Base_GXZL/Index.aspx` · QXID 710
+          - ⬜ 未接入
+      - 工序生产步骤资料
+        - `新增-工序生产步骤资料` · `Base/Base_GXBZZL/Add.aspx` · QXID 5957
+          - ⬜ 未接入
+        - `列表-工序生产步骤资料` · `Base/Base_GXBZZL/Index.aspx` · QXID 5784
+          - ⬜ 未接入
+      - 工序类别
+        - `新增-工序类别` · `Base/Base_GXLB/Add.aspx` · QXID 700
+          - ⬜ 未接入
+        - `列表-工序类别` · `Base/Base_GXLB/Index.aspx` · QXID 703
+          - ⬜ 未接入
+      - 工艺流程名称
+        - `新增-工艺流程名称` · `ShengChan/SC_Base_GYLC_Name/Add.aspx` · QXID 4899
+          - ⬜ 未接入
+        - `列表-工艺流程名称` · `ShengChan/SC_Base_GYLC_Name/Index.aspx` · QXID 4902
+          - ⬜ 未接入
+      - 工艺流程设置
+        - `新增-工艺流程设置` · `ShengChan/SC_Base_GYLC/Add.aspx` · QXID 1074
+          - ⬜ 未接入
+        - `列表-工艺流程设置` · `ShengChan/SC_Base_GYLC/Index.aspx` · QXID 1077
+          - ⬜ 未接入
+      - 单价体系
+        - `新增-单价体系` · `Base/Base_DJTX/Add.aspx` · QXID 1025
+          - ⬜ 未接入
+        - `列表-单价体系` · `Base/Base_DJTX/Index.aspx` · QXID 1028
+          - ⬜ 未接入
+      - `工艺要求` · `Base/Base_GYYQ/Index.aspx` · QXID 3448
+        - ⬜ 未接入
+    - 展开尺寸设置
+      - 配件类别
+        - `新增-配件类别` · `Base/Base_Public/Add.aspx` · QXID 10848 · ⚠ 同路径另有 QXID 5306/5312/5318/5324/6170/6182/6188/10836/109/10860/10867/11056/10854/693/882/3908/2865/3392/892/897/907/912/917/927/947/941/104/147
+          - ⬜ 未接入
+        - `列表-配件类别` · `Base/Base_Public/Index.aspx` · QXID 10851 · ⚠ 同路径另有 QXID 5309/5315/5321/5327/6173/6185/6191/127/10839/112/10863/10870/11059/10857/696/885/3911/2868/3395/895/900/910/915/920/930/950/944/107/150
+          - ⬜ 未接入
+      - 坑位产品分类
+        - `新增-坑位产品分类` · `Base/Base_Public/Add.aspx` · QXID 10860 · ⚠ 同路径另有 QXID 5306/5312/5318/5324/6170/6182/6188/10836/109/10848/10867/11056/10854/693/882/3908/2865/3392/892/897/907/912/917/927/947/941/104/147
+          - ⬜ 未接入
+        - `列表-坑位产品分类` · `Base/Base_Public/Index.aspx` · QXID 10863 · ⚠ 同路径另有 QXID 5309/5315/5321/5327/6173/6185/6191/127/10839/112/10851/10870/11059/10857/696/885/3911/2868/3395/895/900/910/915/920/930/950/944/107/150
+          - ⬜ 未接入
+      - 灰板坑位设置
+        - `新增-灰板坑位设置` · `Base/Base_Public/Add.aspx` · QXID 10867 · ⚠ 同路径另有 QXID 5306/5312/5318/5324/6170/6182/6188/10836/109/10848/10860/11056/10854/693/882/3908/2865/3392/892/897/907/912/917/927/947/941/104/147
+          - ⬜ 未接入
+        - `列表-灰板坑位设置` · `Base/Base_Public/Index.aspx` · QXID 10870 · ⚠ 同路径另有 QXID 5309/5315/5321/5327/6173/6185/6191/127/10839/112/10851/10863/11059/10857/696/885/3911/2868/3395/895/900/910/915/920/930/950/944/107/150
+          - ⬜ 未接入
+      - 产品包边分类
+        - `新增-产品包边分类` · `Base/Base_Public/Add.aspx` · QXID 11056 · ⚠ 同路径另有 QXID 5306/5312/5318/5324/6170/6182/6188/10836/109/10848/10860/10867/10854/693/882/3908/2865/3392/892/897/907/912/917/927/947/941/104/147
+          - ⬜ 未接入
+        - `列表-产品包边分类` · `Base/Base_Public/Index.aspx` · QXID 11059 · ⚠ 同路径另有 QXID 5309/5315/5321/5327/6173/6185/6191/127/10839/112/10851/10863/10870/10857/696/885/3911/2868/3395/895/900/910/915/920/930/950/944/107/150
+          - ⬜ 未接入
+      - 产品包边位
+        - `新增-产品包边位` · `Base/Base_Public/Add.aspx` · QXID 10854 · ⚠ 同路径另有 QXID 5306/5312/5318/5324/6170/6182/6188/10836/109/10848/10860/10867/11056/693/882/3908/2865/3392/892/897/907/912/917/927/947/941/104/147
+          - ⬜ 未接入
+        - `列表-产品包边位` · `Base/Base_Public/Index.aspx` · QXID 10857 · ⚠ 同路径另有 QXID 5309/5315/5321/5327/6173/6185/6191/127/10839/112/10851/10863/10870/11059/696/885/3911/2868/3395/895/900/910/915/920/930/950/944/107/150
+          - ⬜ 未接入
+      - 展开尺寸公式设置
+        - `新增-展开尺寸公式设置` · `Base/Base_JSGSSZ/Add.aspx` · QXID 4408
+          - ⬜ 未接入
+        - `列表-展开尺寸公式设置` · `Base/Base_JSGSSZ/Index.aspx` · QXID 4411
+          - ⬜ 未接入
+    - 装订方式
+      - `新增-装订方式` · `Base/Base_Public/Add.aspx` · QXID 693 · ⚠ 同路径另有 QXID 5306/5312/5318/5324/6170/6182/6188/10836/109/10848/10860/10867/11056/10854/882/3908/2865/3392/892/897/907/912/917/927/947/941/104/147
+        - ⬜ 未接入
+      - `列表-装订方式` · `Base/Base_Public/Index.aspx` · QXID 696 · ⚠ 同路径另有 QXID 5309/5315/5321/5327/6173/6185/6191/127/10839/112/10851/10863/10870/11059/10857/885/3911/2868/3395/895/900/910/915/920/930/950/944/107/150
+        - ⬜ 未接入
+    - 台板类型
+      - `新增-台板类型` · `Base/Base_Public/Add.aspx` · QXID 882 · ⚠ 同路径另有 QXID 5306/5312/5318/5324/6170/6182/6188/10836/109/10848/10860/10867/11056/10854/693/3908/2865/3392/892/897/907/912/917/927/947/941/104/147
+        - ⬜ 未接入
+      - `列表-台板类型` · `Base/Base_Public/Index.aspx` · QXID 885 · ⚠ 同路径另有 QXID 5309/5315/5321/5327/6173/6185/6191/127/10839/112/10851/10863/10870/11059/10857/696/3911/2868/3395/895/900/910/915/920/930/950/944/107/150
+        - ⬜ 未接入
+    - 开版留位默认值
+      - `新增-开版留位默认值` · `Base/Base_Public/Add.aspx` · QXID 3908 · ⚠ 同路径另有 QXID 5306/5312/5318/5324/6170/6182/6188/10836/109/10848/10860/10867/11056/10854/693/882/2865/3392/892/897/907/912/917/927/947/941/104/147
+        - ⬜ 未接入
+      - `列表-开版留位默认值` · `Base/Base_Public/Index.aspx` · QXID 3911 · ⚠ 同路径另有 QXID 5309/5315/5321/5327/6173/6185/6191/127/10839/112/10851/10863/10870/11059/10857/696/885/2868/3395/895/900/910/915/920/930/950/944/107/150
+        - ⬜ 未接入
+    - 开料留位默认值
+      - `新增-开料留位默认值` · `Base/Base_Public/Add.aspx` · QXID 2865 · ⚠ 同路径另有 QXID 5306/5312/5318/5324/6170/6182/6188/10836/109/10848/10860/10867/11056/10854/693/882/3908/3392/892/897/907/912/917/927/947/941/104/147
+        - ⬜ 未接入
+      - `列表-开料留位默认值` · `Base/Base_Public/Index.aspx` · QXID 2868 · ⚠ 同路径另有 QXID 5309/5315/5321/5327/6173/6185/6191/127/10839/112/10851/10863/10870/11059/10857/696/885/3911/3395/895/900/910/915/920/930/950/944/107/150
+        - ⬜ 未接入
+    - 语言代码表
+      - `列表-语言代码表` · `Base/Base_YYDMB/Index.aspx` · QXID 3642
+        - ⬜ 未接入
+  - 客户资料
+    - 客户档案
+      - `新增-客户档案` · `Base/Base_KHZL/Add.aspx` · QXID 188
+        - ⬜ 未接入
+      - `列表-客户档案` · `Base/Base_KHZL/Index.aspx` · QXID 187
+        - ⬜ 未接入
+    - 客户类别
+      - `新增-客户类别` · `Base/Base_Public_tree/Add.aspx` · QXID 192
+        - ⬜ 未接入
+      - `列表-客户类别` · `Base/Base_Public_tree/Index.aspx` · QXID 191 · ⚠ 同路径另有 QXID 13687
+        - ⬜ 未接入
+    - 客户属性
+      - `新增-客户属性` · `Base/Base_Public/Add.aspx` · QXID 3392 · ⚠ 同路径另有 QXID 5306/5312/5318/5324/6170/6182/6188/10836/109/10848/10860/10867/11056/10854/693/882/3908/2865/892/897/907/912/917/927/947/941/104/147
+        - ⬜ 未接入
+      - `列表-客户属性` · `Base/Base_Public/Index.aspx` · QXID 3395 · ⚠ 同路径另有 QXID 5309/5315/5321/5327/6173/6185/6191/127/10839/112/10851/10863/10870/11059/10857/696/885/3911/2868/895/900/910/915/920/930/950/944/107/150
+        - ⬜ 未接入
+  - 人事资料
+    - 员工档案相关
+      - 员工档案
+        - `列表-员工档案` · `Base/Base_YGDA/Index.aspx` · QXID 174
+          - ⬜ 未接入
+    - 培训相关
+      - 员工考核类型
+        - `列表-员工考核类型` · `Base/Base_YGKH/Index.aspx` · QXID 8926
+          - ⬜ 未接入
+  - 设备资料
+    - 设备档案
+      - `列表-设备档案` · `Base/Base_SBDA/Index.aspx` · QXID 836
+        - ⬜ 未接入
+  - 生产资料
+    - 生产计划
+      - 工序数据拆分原则
+        - `列表-工序数据拆分原则` · `Base/Base_GXSLCFYZ_M/Index.aspx` · QXID 3774
+          - ⬜ 未接入
+  - 海运费资料
+    - 纸板类型
+      - `新增-纸板类型` · `Base/Base_Public/Add.aspx` · QXID 892 · ⚠ 同路径另有 QXID 5306/5312/5318/5324/6170/6182/6188/10836/109/10848/10860/10867/11056/10854/693/882/3908/2865/3392/897/907/912/917/927/947/941/104/147
+        - ⬜ 未接入
+      - `列表-纸板类型` · `Base/Base_Public/Index.aspx` · QXID 895 · ⚠ 同路径另有 QXID 5309/5315/5321/5327/6173/6185/6191/127/10839/112/10851/10863/10870/11059/10857/696/885/3911/2868/3395/900/910/915/920/930/950/944/107/150
+        - ⬜ 未接入
+    - 台板资料表
+      - `新增-台板资料表` · `Base/Base_Public/Add.aspx` · QXID 897 · ⚠ 同路径另有 QXID 5306/5312/5318/5324/6170/6182/6188/10836/109/10848/10860/10867/11056/10854/693/882/3908/2865/3392/892/907/912/917/927/947/941/104/147
+        - ⬜ 未接入
+      - `列表-台板资料表` · `Base/Base_Public/Index.aspx` · QXID 900 · ⚠ 同路径另有 QXID 5309/5315/5321/5327/6173/6185/6191/127/10839/112/10851/10863/10870/11059/10857/696/885/3911/2868/3395/895/910/915/920/930/950/944/107/150
+        - ⬜ 未接入
+    - 集装箱类型
+      - `新增-集装箱类型` · `HaiYunFei/HYF_Base_JZXLX/Add.aspx` · QXID 902
+        - ⬜ 未接入
+      - `列表-集装箱类型` · `HaiYunFei/HYF_Base_JZXLX/Index.aspx` · QXID 905
+        - ⬜ 未接入
+    - 底卡资料
+      - `新增-底卡资料` · `Base/Base_Public/Add.aspx` · QXID 907 · ⚠ 同路径另有 QXID 5306/5312/5318/5324/6170/6182/6188/10836/109/10848/10860/10867/11056/10854/693/882/3908/2865/3392/892/897/912/917/927/947/941/104/147
+        - ⬜ 未接入
+      - `列表-底卡资料` · `Base/Base_Public/Index.aspx` · QXID 910 · ⚠ 同路径另有 QXID 5309/5315/5321/5327/6173/6185/6191/127/10839/112/10851/10863/10870/11059/10857/696/885/3911/2868/3395/895/900/915/920/930/950/944/107/150
+        - ⬜ 未接入
+    - 纸箱入费价格
+      - `新增-纸箱入费价格` · `Base/Base_Public/Add.aspx` · QXID 912 · ⚠ 同路径另有 QXID 5306/5312/5318/5324/6170/6182/6188/10836/109/10848/10860/10867/11056/10854/693/882/3908/2865/3392/892/897/907/917/927/947/941/104/147
+        - ⬜ 未接入
+      - `列表-纸箱入费价格` · `Base/Base_Public/Index.aspx` · QXID 915 · ⚠ 同路径另有 QXID 5309/5315/5321/5327/6173/6185/6191/127/10839/112/10851/10863/10870/11059/10857/696/885/3911/2868/3395/895/900/910/920/930/950/944/107/150
+        - ⬜ 未接入
+    - 台板入费价格
+      - `新增-台板入费价格` · `Base/Base_Public/Add.aspx` · QXID 917 · ⚠ 同路径另有 QXID 5306/5312/5318/5324/6170/6182/6188/10836/109/10848/10860/10867/11056/10854/693/882/3908/2865/3392/892/897/907/912/927/947/941/104/147
+        - ⬜ 未接入
+      - `列表-台板入费价格` · `Base/Base_Public/Index.aspx` · QXID 920 · ⚠ 同路径另有 QXID 5309/5315/5321/5327/6173/6185/6191/127/10839/112/10851/10863/10870/11059/10857/696/885/3911/2868/3395/895/900/910/915/930/950/944/107/150
+        - ⬜ 未接入
+    - 海运地区
+      - `新增-海运地区` · `Base/Base_Public/Add.aspx` · QXID 927 · ⚠ 同路径另有 QXID 5306/5312/5318/5324/6170/6182/6188/10836/109/10848/10860/10867/11056/10854/693/882/3908/2865/3392/892/897/907/912/917/947/941/104/147
+        - ⬜ 未接入
+      - `列表-海运地区` · `Base/Base_Public/Index.aspx` · QXID 930 · ⚠ 同路径另有 QXID 5309/5315/5321/5327/6173/6185/6191/127/10839/112/10851/10863/10870/11059/10857/696/885/3911/2868/3395/895/900/910/915/920/950/944/107/150
+        - ⬜ 未接入
+    - CBM费用级别
+      - `新增-CBM费用级别` · `HaiYunFei/HYF_Base_CBMFYJB/Add.aspx` · QXID 922
+        - ⬜ 未接入
+      - `列表-CBM费用级别` · `HaiYunFei/HYF_Base_CBMFYJB/Index.aspx` · QXID 925
+        - ⬜ 未接入
+    - 运费类型
+      - `新增-运费类型` · `Base/Base_Public/Add.aspx` · QXID 947 · ⚠ 同路径另有 QXID 5306/5312/5318/5324/6170/6182/6188/10836/109/10848/10860/10867/11056/10854/693/882/3908/2865/3392/892/897/907/912/917/927/941/104/147
+        - ⬜ 未接入
+      - `列表-运费类型` · `Base/Base_Public/Index.aspx` · QXID 950 · ⚠ 同路径另有 QXID 5309/5315/5321/5327/6173/6185/6191/127/10839/112/10851/10863/10870/11059/10857/696/885/3911/2868/3395/895/900/910/915/920/930/944/107/150
+        - ⬜ 未接入
+    - 海运费项明细
+      - `新增-海运费项明细` · `HaiYunFei/HYF_Base_FYMX/Add.aspx` · QXID 953
+        - ⬜ 未接入
+      - `列表-海运费项明细` · `HaiYunFei/HYF_Base_FYMX/Index.aspx` · QXID 956
+        - ⬜ 未接入
+    - 海运费计算公式
+      - `新增-海运费计算公式` · `Base/Base_Public/Add.aspx` · QXID 941 · ⚠ 同路径另有 QXID 5306/5312/5318/5324/6170/6182/6188/10836/109/10848/10860/10867/11056/10854/693/882/3908/2865/3392/892/897/907/912/917/927/947/104/147
+        - ⬜ 未接入
+      - `列表-海运费计算公式` · `Base/Base_Public/Index.aspx` · QXID 944 · ⚠ 同路径另有 QXID 5309/5315/5321/5327/6173/6185/6191/127/10839/112/10851/10863/10870/11059/10857/696/885/3911/2868/3395/895/900/910/915/920/930/950/107/150
+        - ⬜ 未接入
+  - 综合资料
+    - 币种
+      - `新增-币种` · `Base/Base_Public/Add.aspx` · QXID 104 · ⚠ 同路径另有 QXID 5306/5312/5318/5324/6170/6182/6188/10836/109/10848/10860/10867/11056/10854/693/882/3908/2865/3392/892/897/907/912/917/927/947/941/147
+        - ⬜ 未接入
+      - `列表-币种` · `Base/Base_Public/Index.aspx` · QXID 107 · ⚠ 同路径另有 QXID 5309/5315/5321/5327/6173/6185/6191/127/10839/112/10851/10863/10870/11059/10857/696/885/3911/2868/3395/895/900/910/915/920/930/950/944/150
+        - ⬜ 未接入
+    - 发票类别
+      - `新增-发票类别` · `Base/Base_Public/Add.aspx` · QXID 147 · ⚠ 同路径另有 QXID 5306/5312/5318/5324/6170/6182/6188/10836/109/10848/10860/10867/11056/10854/693/882/3908/2865/3392/892/897/907/912/917/927/947/941/104
+        - ⬜ 未接入
+      - `列表-发票类别` · `Base/Base_Public/Index.aspx` · QXID 150 · ⚠ 同路径另有 QXID 5309/5315/5321/5327/6173/6185/6191/127/10839/112/10851/10863/10870/11059/10857/696/885/3911/2868/3395/895/900/910/915/920/930/950/944/107
+        - ⬜ 未接入
+  - 阿米巴管理
+    - 工序分组类别
+      - `列表-工序分组类别` · `Base/Base_Public_tree/Index.aspx` · QXID 13687 · ⚠ 同路径另有 QXID 191
+        - ⬜ 未接入
+    - 工序分组
+      - `列表-工序分组` · `AMB/AMB_Base_GXFZ_M/Index.aspx` · QXID 13672
+        - ⬜ 未接入
+- `发送信息` · `SysPublic/SendMessage.aspx` · QXID 1354
+  - ⬜ 未接入
+- **系统管理**
+  - 临时授权
+    - `新增-临时授权` · `Accounts/Accounts_TempPermissions_M/Add.aspx` · QXID 2950
+      - ⬜ 未接入
+    - `列表-临时授权` · `Accounts/Accounts_TempPermissions_M/Index.aspx` · QXID 2953
+      - ⬜ 未接入
+  - 计算公式编辑器
+    - `列表-计算公式编辑器` · `SysPublic/Base_JJGS/Index.aspx` · QXID 749
+      - ⬜ 未接入
+  - `日程管理` · `SysPublic/Sys_RCGL_M/Sys_RCGL.aspx` · QXID 2374
+    - ⬜ 未接入
+  - 系统问题反馈
+    - `列表-系统问题反馈` · `SysPublic/System_WTFK/Index.aspx` · QXID 964
+      - ⬜ 未接入
+  - 系统审批设置
+    - `审批完自动提醒设置` · `SysPublic/Accounts_Check_Message.aspx` · QXID 3743
+      - ⬜ 未接入
 
 ## 基础设施（不挂在菜单上）
 
 - ✅ 查 · 当前 api-key 对应的 ERP 身份与会话状态 → `erp_whoami` · [api/erp_whoami.md](api/erp_whoami.md)
 - ✅ 查 · 当前账号能访问哪些页面（QXID 能否探测到） → `erp_capabilities` · [api/erp_capabilities.md](api/erp_capabilities.md)
 - ✅ 查 · 菜单 → 接口对照（哪些菜单页已接入）（CLI：erp menu） → `erp_menu` · [api/erp_menu.md](api/erp_menu.md)
+- ✅ 查 · 三个模块的**数据页面清单**（列表 / 详情 / 每个弹窗子页）（CLI：erp pages） → `erp_page_catalog` · [api/erp_page_catalog.md](api/erp_page_catalog.md)
 - ✅ 查 · 登录 / 缓 cookie / 探测 QXID → `erp login` `erp doctor` `erp qxid` · [docs/cli.md](cli.md)
 - ✅ 其他 · 起 MCP 网关 / 换 api-key → `erp serve` `erp key` · [docs/mcp.md](mcp.md)
 

@@ -93,7 +93,7 @@ VS Code `mcp.json`：
 
 ## 4. 工具清单
 
-18 个工具，全部要求 `Authorization: Bearer <api-key>`。
+24 个工具，全部要求 `Authorization: Bearer <api-key>`。
 列表类结果默认 50 条、上限 500 条，超出时 `truncated=true`。
 
 接口与 ERP 菜单的对应关系（哪个菜单页已接入、各页能做什么）见
@@ -109,6 +109,14 @@ VS Code `mcp.json`：
 | `erp_price_detail` | — | **客户报价详情**：表头 + 产品字段 + 数量明细 + 选配项目 + 部件明细(材料/尺寸/工序/辅料) + 费用 + 产品描述 + 制单审核 |
 | `erp_price_node` | `record_id` + `node`（可选 `cpid`/`bjid`/`index`/`cpslid`/`include_formula`） | **子数据 22 个节点**：`quantities` 数量档 / `part` 部件 / `part_materials` 部件辅料 / `part_process` 部件工序 / `part_machines` 部件机台 / `product_check` 送货资料 / `fees` 费项明细 / `other_fees` 其他费项 / `cp` 产品资料 / `cp_process` 产品工序 / `cp_materials` 产品辅料 / `feedback` 需求反馈 / `sgkb` 手工开版 / `split_price` 拆分价格；`panel:description`/`material_list`/`freight`/… 8 个折叠面板；`list` 列出节点；`all` 一次取整棵树 |
 | `erp_quote_detail` | — | 单条报价需求详情（ERP 订单需求字段） |
+| `erp_page_catalog` | — | **三个新模块的数据页面清单**：列表页 / 详情页 / 每个弹窗子页（子页名 + 打开按钮 + 说明） |
+| `erp_costing_list` | — | **产品核价列表**（`BJ_KHBJ/Index.aspx`，QXID 1281，一行=一个核价产品行，74 列含核价单价/利润率等成本列）；详情与子数据用 `erp_price_detail` / `erp_price_node` |
+| `erp_production_list` | — | **生产施工单列表**（`SC_SCSGD/Index.aspx`，QXID 740，一行=一张施工单） |
+| `erp_production_detail` | — | 施工单详情：表头字段 + 部件表(17 列) + 送货表(21 列) + 备注文本 + 可点子页清单 |
+| `erp_production_node` | `record_id` + `node` | **施工单 18 个弹窗子页**：`cp` 产品资料 / `cp_process` 产品工序 / `cp_materials` 产品辅料 / `part` 部件 / `part_new` 新增部件 / `part_materials` 部件辅料 / `part_process` 部件工序 / `part_machines` 部件机台 / `product_check` 送货资料 / `part_pick` 部件明细 / `product_bg` 产品变更 / `feedback` 需求反馈 / `sgkb` 手工开版 / `template_product` 产品模板 / `by_template` 按模板 / `binding` 装订D10 / `package_content` 包装内容 / `stock` 生产库存；`list` 列出节点 |
+| `erp_purchase_list` | — | **采购订单列表**（`CG_CGDD/Index.aspx`，QXID 266，一行=一条材料明细） |
+| `erp_purchase_detail` | — | 采购订单详情：表头字段 + 材料明细内联网格（`gridView2` 33 列） |
+| `erp_purchase_node` | `record_id` + `node` | 采购订单子页面（只有供应商档案选择等弹窗；明细在详情页网格里） |
 | `erp_attendance` | — | 月度考勤明细 |
 | `erp_quote_new_form` | — | 空白页结构：表头字段、只读标记、三个下拉、textarea 列表 |
 | `erp_quote_product_form` | — | **产品明细子页字段清单**（205 个控件，其中 51 个可上传）+ `upload` JSON Schema + `categories` 类别树 |
@@ -630,7 +638,7 @@ curl --cacert erp-tools.crt -X POST https://erp-tools.lan:8443/mcp \
   -H "content-type: application/json" \
   -H "accept: application/json, text/event-stream" \
   -d '{"jsonrpc":"2.0","id":1,"method":"tools/list"}'
-# → 应返回 18 个工具名
+# → 应返回 24 个工具名
 ```
 
 ### 8. 交给自动部署

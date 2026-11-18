@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html>
+<head><title>生产施工单</title></head>
+<!--
+  真实页面 ShenChan/SC_SCSGD/Add.aspx 的**结构裁剪版**（2026-11-18，账号 15627）。
+  保留：标签/值行（含全角冒号与换行脏空格）、部件表 17 列、送货表 gridView 21 列、
+        textarea、以及详情页里打开子页用的 Open* 函数（含真实实参）。
+  去掉：菜单栏、ComponentArt 控件、无关弹窗、脚本资源引用。
+-->
+<body>
+<form name="form1" method="post" action="./Add.aspx?id=362a2b46-0bdc-4c80-a6e9-c3c423790b95">
+<input type="hidden" name="__VIEWSTATE" value="VS">
+<input type="hidden" name="__EVENTVALIDATION" value="EV">
+<input type="hidden" name="lblID" value="362a2b46-0bdc-4c80-a6e9-c3c423790b95">
+<input type="hidden" name="lblQXBH" value="740">
+<input type="hidden" name="lblSelectBJZLID" value="">
+<input type="hidden" name="lblSelectBJZLPID" value="">
+<input type="hidden" name="lblSelectCPZLID" value="">
+<input type="hidden" name="lblSelectCPZLPID" value="">
+<input type="hidden" name="txtDJTXID" value="">
+<input type="hidden" name="txtTYSC" value="0">
+<input type="hidden" name="lblZSJID" value="">
+<select name="txtBJBJLB"></select>
+<select name="txtBJZYFS"></select>
+<select name="txtGDLX" disabled="disabled">
+  <option value="-0-" selected="selected">&lt;--请选择--&gt;</option>
+  <option value="017">订料</option>
+</select>
+<input type="submit" name="btn_Search" value="搜索">
+<input type="submit" name="btnSelectBJFL" value="">
+<input type="submit" name="btnSelectBJZL" value="">
+<input type="submit" name="btnSelectBJGXZL" value="">
+<input type="submit" name="btnSelectCPSHZL" value="">
+<input type="submit" name="btnDeleteCPZL" value="">
+<input type="submit" name="btnBrowFXMX" value="">
+
+<table id="Main_Top">
+  <tr>
+    <td>表单编号：</td><td>SGD2611180011</td>
+    <td>生产日期：</td><td>2026-11-18</td>
+    <td>工单类型：</td><td>订料</td>
+  </tr>
+  <tr>
+    <td>产品名称：</td><td><span onclick="OpenInputCPZLData('8a77ad26-2290-46eb-a6a6-02de5b4031ea','362a2b46-0bdc-4c80-a6e9-c3c423790b95','0')">GH20261109001-NG-国家地理-锁线胶装书</span> 【删除】</td>
+    <td>产品编号：</td><td>23.02.00176</td>
+    <td>规格：</td><td>203*203*5</td>
+  </tr>
+  <tr>
+    <td>产品类别：</td><td>锁线胶装书</td>
+    <td>数量：</td><td>80630</td>
+    <td>交货日期：</td><td>2026/12/30 0:00:00</td>
+  </tr>
+  <tr>
+    <td>制单人：</td><td>梁炳</td>
+    <td>制单日期：</td><td>2026/11/18 16:20:22</td>
+    <td>香港单号：</td><td>LG26090102-02</td>
+  </tr>
+</table>
+
+<table>
+  <tr>
+    <td>部件名称</td><td>P数</td><td>色数</td><td>部件尺寸</td><td>开料尺寸</td>
+    <td>单面P数</td><td>帖数</td><td>拼版方式</td><td>版材数量</td><td>材料名称</td>
+    <td>印刷正数</td><td>分纸加放</td><td>放数</td><td>损耗</td><td>用料</td><td>备注</td><td>工序</td>
+  </tr>
+  <tr>
+    <td>内文</td><td>16</td><td>4+4</td><td>203*203</td><td>410*410</td>
+    <td>4</td><td>2</td><td>自翻</td><td>16</td><td>双铜纸157g</td>
+    <td>40000</td><td>200</td><td>0</td><td>0</td><td>0</td><td>.</td><td>印刷</td>
+  </tr>
+  <tr>
+    <td>封面</td><td>4</td><td>4+0</td><td>410*410</td><td>420*420</td>
+    <td>2</td><td>1</td><td>正反</td><td>4</td><td>灰板2.5mm</td>
+    <td>8000</td><td>100</td><td>0</td><td>0</td><td>0</td><td>.</td><td>印后</td>
+  </tr>
+</table>
+
+<table id="gridView">
+  <tr>
+    <td>序号</td><td>产品编号</td><td>产品名称</td><td>发票类别</td><td>客户名称</td>
+    <td>订单编号</td><td>语言</td><td>货名代码</td><td>货名名称</td><td>送货数量</td>
+    <td>留样数量</td><td>附送数量</td><td>船头板数量</td><td>单位</td><td>箱数</td>
+    <td>毛重</td><td>净重</td><td>CBM</td><td>送货日期</td><td>送货地址</td><td>备注</td>
+  </tr>
+  <tr>
+    <td>1</td><td>23.02.00176</td><td>GH20261109001</td><td>增值税(13%)</td><td>GHP26</td>
+    <td>KHDD26110016</td><td>EN</td><td>.</td><td>.</td><td>8000</td>
+    <td>50</td><td>10</td><td>0</td><td>本</td><td>60</td>
+    <td>12.5</td><td>11.8</td><td>0.42</td><td>2026-12-30</td><td>深圳市</td><td>.</td>
+  </tr>
+  <tr>
+    <td></td><td></td><td></td><td></td><td></td>
+    <td></td><td></td><td></td><td>合计</td><td>8000</td>
+    <td>50</td><td>10</td><td>0</td><td></td><td>60</td>
+    <td>12.5</td><td>11.8</td><td>0.42</td><td></td><td></td><td></td>
+  </tr>
+</table>
+
+<table id="RemarkBlock">
+  <tr><td>备注：</td><td><textarea name="txtRemark">请按交期送货</textarea></td></tr>
+  <tr><td>产品描述：</td><td><textarea name="txtCPMX">10本书收缩为一套</textarea></td></tr>
+</table>
+
+<script type="text/javascript">
+    function OpenInputBJFLData(PID, BJID, DJTXID) {
+        DataWaiting();
+        $HB("lblSelectCPZLPID").value = PID;
+        $HB("lblSelectBJZLID").value = BJID;
+        $HB("txtDJTXID").value = DJTXID;
+        $HB("btnSelectBJFL").click();
+    }
+    function OpenInputBJZLData(ID, PID, DJTXID) {
+        DataWaiting();
+        $HB("lblSelectBJZLID").value = ID;
+        $HB("lblSelectBJZLPID").value = PID;
+        $HB("txtDJTXID").value = DJTXID;
+        $HB("btnSelectBJZL").click();
+    }
+    function OpenInputCPSHZLData(ID, CPID, PID) {
+        DataWaiting();
+        $HB("lblSelectBJZLID").value = ID;
+        $HB("lblSelectCPZLID").value = CPID;
+        $HB("lblSelectCPZLPID").value = PID;
+        $HB("btnSelectCPSHZL").click();
+    }
+    function OpenInputBJGXZLData(PID, BJID, GXLB, DJTXID, TYSC, ZSJID) {
+        DataWaiting();
+        $HB("lblSelectCPZLPID").value = PID;
+        $HB("lblSelectBJZLID").value = BJID;
+        $HB("lblSelectBJGXLB").value = GXLB;
+        $HB("txtDJTXID").value = DJTXID;
+        $HB("txtTYSC").value = TYSC;
+        InputData("lblZSJID", ZSJID);
+        $HB("btnSelectBJGXZL").click();
+    }
+    function OpenBrowFXMX(PID, CPID, TZZLID, CPSLID, CPSL) {
+        DataWaiting();
+        $HB("lblSelectCPZLPID").value = PID;
+        $HB("lblSelectCPZLID").value = CPID;
+        $HB("lblSelectTZCPZLID").value = TZZLID;
+        $HB("lblSelectCPSLZL").value = CPSLID;
+        $HB("btnBrowFXMX").click();
+    }
+</script>
+
+<!-- 页面里真实出现过的调用（实参与函数形参同名的那次属于定义，必须被忽略） -->
+<tbody id="PartsBody">
+  <tr>
+    <td><span onclick="OpenInputBJZLData('BD3FAF6C-90A7-46CF-A71B-E5C500FA06C6','8a77ad26-2290-46eb-a6a6-02de5b4031ea','02')">内文</span></td>
+    <td><span onclick="OpenInputBJFLData('8a77ad26-2290-46eb-a6a6-02de5b4031ea','BD3FAF6C-90A7-46CF-A71B-E5C500FA06C6','02')">辅料</span></td>
+    <td><span onclick="OpenInputBJGXZLData('8a77ad26-2290-46eb-a6a6-02de5b4031ea','BD3FAF6C-90A7-46CF-A71B-E5C500FA06C6','1','02','0','')">工序</span></td>
+    <td><span onclick="OpenInputCPSHZLData(&#39;13F184FD-845B-4A09-9332-6694D8991934&#39;,&#39;8a77ad26-2290-46eb-a6a6-02de5b4031ea&#39;,&#39;362a2b46-0bdc-4c80-a6e9-c3c423790b95&#39;)">送货</span></td>
+    <td><span onclick="OpenBrowFXMX('9c904c71-9069-4450-88bd-0f7a431004f8','8a77ad26-2290-46eb-a6a6-02de5b4031ea','-1','-1','3000')">费项</span></td>
+  </tr>
+</tbody>
+</form>
+</body>
+</html>

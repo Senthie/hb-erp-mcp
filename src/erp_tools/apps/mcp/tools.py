@@ -24,6 +24,15 @@ from ...core.errors import ErpError
 from ...runtime.context import require_record
 from ...runtime.sessions import SessionExpired, UserSession
 from ...tools.attendance import AttendanceTool
+from ...tools.grid_module import (
+    CostingListTool,
+    ProductionDetailTool,
+    ProductionListTool,
+    ProductionNodeTool,
+    PurchaseDetailTool,
+    PurchaseListTool,
+    PurchaseNodeTool,
+)
 from ...tools.quote_create import QuoteCreateService
 from ...tools.quote_index import QuoteListTool
 from ...tools.quote_index.parser import ACTION_COLUMNS
@@ -45,6 +54,56 @@ PAGE_KEYS = {
     "price": "BaoJia/BJ_KHBJ/Add.aspx",
     "attendance": "RenShi/RS_KQDA_M/Add.aspx",
 }
+
+
+def _module_capabilities(pages: dict[str, str]) -> dict[str, dict[str, Any]]:
+    """三个新模块的页面权限。
+
+    ⚠ **不能直接用菜单探测值**：同一路径挂在多个菜单下（`BJ_KHBJ/Index.aspx` 既是
+    客户报价 860 又是产品核价 1281；`SC_SCSGD/Index.aspx` 既是 740 又是 983），
+    `parse_menu_urls` 用 setdefault 只留第一个 → 会报出**别的菜单**的 QXID。
+    所以这里只判断「菜单里有没有这个路径」，QXID 用 `ModuleSpec` 里的实测值。
+
+    采购订单的详情页没有独立菜单（从列表行双击进 `Add.aspx`），
+    因此它的可用性跟列表页一致。
+    """
+    from erp_tools.tools.grid_module import MODULES
+
+    out: dict[str, dict[str, Any]] = {}
+    for spec in MODULES.values():
+        list_ok = normalize_page_path(spec.list_path) in pages
+        out[spec.key] = {
+            "label": spec.label,
+            "list_path": spec.list_path,
+            "list_qxid": spec.fallback_qxid,
+            "list_available": list_ok,
+            "detail_path": spec.detail_path or None,
+            "detail_reached_from": "list_row" if spec.detail_path else None,
+            "note": (
+                "QXID 为实测值（菜单里同路径可能对应多个菜单，探测值不可用）"
+                if list_ok else "菜单里没有这个页面，当前账号可能无权限"
+            ),
+        }
+    return out
+
+
+def _grid_response(rows: list[dict], headers: list[str], page, note: str,
+                   columns: str | None = None) -> dict[str, Any]:
+    """列表类工具的统一返回形状（与 erp_price_list 保持一致）。"""
+    available = [h for h in headers if h not in ACTION_COLUMNS]
+    if "记录ID" not in available:
+        available.append("记录ID")
+    picked, unknown = _pick_columns(columns, available)
+    return {
+        "columns": picked,
+        "unknown_columns": unknown,
+        "records": [{c: row.get(c) for c in picked} for row in rows],
+        "count": len(rows),
+        "total": getattr(page, "total", 0),
+        "pages": getattr(page, "pages", 1),
+        "truncated": bool(getattr(page, "total", 0) and len(rows) < getattr(page, "total", 0)),
+        "note": note,
+    }
 
 
 # ══════════════════ 内部工具 ══════════════════
@@ -133,8 +192,9 @@ def register_tools(mcp: MCPServer, state: ServerState) -> None:
     @mcp.tool(
         name="erp_capabilities",
         description=(
-            "返回当前账号在 ERP 里能访问哪些页面（QXID 能否从菜单探测到）。"
-            "missing_pages 为空说明这些页面都可访问；字段级缺失记录在每条数据的 _diagnostics 里。"
+            "返回当前账号能访问哪些页面：pages=基础模块（报价需求/客户报价/考勤）的菜单 QXID；"
+            "modules=产品核价/生产施工单/采购订单三个模块的**实测** QXID 与可用性。"
+            "missing_pages 为空说明基础页面齐全。"
         ),
     )
     @_tool_errors
@@ -143,13 +203,16 @@ def register_tools(mcp: MCPServer, state: ServerState) -> None:
         pages = {normalize_page_path(k): str(v) for k, v in (session.pages or {}).items()}
         available = {name: pages.get(normalize_page_path(path)) for name, path in PAGE_KEYS.items()}
         missing = [name for name, qxid in available.items() if not qxid]
+        modules = _module_capabilities(pages)
         return {
             "username": session.username,
             "pages": available,
             "missing_pages": missing,
+            "modules": modules,
+            "module_missing": [k for k, v in modules.items() if not v["list_available"]],
             "note": (
-                "missing_pages 非空通常意味着当前账号没有该页面权限；"
-                "此时调用对应工具会失败，请改用能访问的页面。"
+                "modules 里的 QXID 是实测值：同一 aspx 常挂在多个菜单下"
+                "（BJ_KHBJ/Index.aspx = 客户报价 860 + 产品核价 1281），菜单探测只留第一个，不可用。"
             ),
         }
 
@@ -435,6 +498,274 @@ def register_tools(mcp: MCPServer, state: ServerState) -> None:
                             for row in rows:
                                 row.pop("公式", None)
         return result
+
+    # ---------- 数据页面清单（三个新模块） ----------
+    @mcp.tool(
+        name="erp_page_catalog",
+        description=(
+            "【只读】列出「列表-产品核价 / 列表-生产施工单 / 列表-采购订单」三个模块"
+            "以及它们全部数据页面的实测清单：列表页、详情页、每个弹窗子页"
+            "（子页文件名 + 打开它的按钮 + 中文说明），并标注哪些页已接入哪个 MCP 工具。"
+            "module 留空返回全部三个模块。"
+        ),
+    )
+    @_tool_errors
+    def erp_page_catalog(
+        module: Annotated[
+            str,
+            Field(description="模块：costing / production / purchase；留空=全部"),
+        ] = "",
+    ) -> dict[str, Any]:
+        from erp_tools.tools.grid_module import MODULES, get_module
+
+        specs = [get_module(module)] if module.strip() else list(MODULES.values())
+        tools = {
+            "costing": {"list": "erp_costing_list", "detail": "erp_price_detail",
+                        "node": "erp_price_node"},
+            "production": {"list": "erp_production_list", "detail": "erp_production_detail",
+                           "node": "erp_production_node"},
+            "purchase": {"list": "erp_purchase_list", "detail": "erp_purchase_detail",
+                         "node": "erp_purchase_node"},
+        }
+        out = []
+        for spec in specs:
+            out.append({
+                "module": spec.key,
+                "label": spec.label,
+                "row_note": spec.row_note,
+                "pages": {
+                    "list": {"path": spec.list_path, "qxid": spec.fallback_qxid,
+                             "mcp": tools[spec.key]["list"]},
+                    "detail": {"path": spec.detail_path or None,
+                               "mcp": tools[spec.key]["detail"]},
+                },
+                "filters": spec.filter_controls,
+                "date_fields": spec.date_fields,
+                "nodes": [
+                    {"node": node, "page": page, "button": button,
+                     "label": label, "mcp": tools[spec.key]["node"]}
+                    for node, (page, button, label) in spec.nodes.items()
+                ] or "该模块的详情页没有弹窗数据子页（数据在页面内联网格里）",
+            })
+        return {"modules": out, "count": len(out)}
+
+    # ---------- 产品核价：列表 ----------
+    @mcp.tool(
+        name="erp_costing_list",
+        description=(
+            "查询产品核价【列表】（BaoJia/BJ_KHBJ/Index.aspx，QXID=1281）。"
+            "⚠ 一行=一个核价产品行（表单编号 CPHJ 开头），同一单号可能多行，用 记录ID 定位单行；"
+            "详情与子数据用 erp_price_detail / erp_price_node（同一套页面）。"
+            f"默认 {DEFAULT_RECORDS} 行，上限 {MAX_RECORDS}。"
+        ),
+    )
+    @_tool_errors
+    def erp_costing_list(
+        from_date: Annotated[str | None, Field(description="起 YYYY-MM-DD")] = None,
+        to_date: Annotated[str | None, Field(description="止 YYYY-MM-DD")] = None,
+        date_type: Annotated[str, Field(description="制单日期 / 交货日期 / 离厂日期")] = "制单日期",
+        where: Annotated[
+            str | None,
+            Field(description="本地过滤，逗号分隔；操作符 = != ~ > < >= <=（~ 为包含）"),
+        ] = None,
+        filters: Annotated[
+            dict[str, str] | None,
+            Field(description="服务端下拉过滤，值可写中文：审批情况/报废状态/确认情况/"
+                              "签订单/客户属性/模板/报价分类/查询方式"),
+        ] = None,
+        key: Annotated[str, Field(description="服务端关键字（配合 field）")] = "",
+        field: Annotated[str, Field(description="关键字字段：表单编号/客户名称/产品名称…")] = "",
+        key1: Annotated[str, Field(description="第二个服务端关键字")] = "",
+        field1: Annotated[str, Field(description="第二个关键字字段")] = "",
+        columns: Annotated[str | None, Field(description="只返回这些列，逗号分隔")] = None,
+        limit: Annotated[int, Field(description=f"1~{MAX_RECORDS}，超出截断")] = DEFAULT_RECORDS,
+    ) -> dict[str, Any]:
+        session = _session(state)
+        size = _clamp(limit)
+        with state.provider.slot():
+            rows, headers, page = CostingListTool(session.auth).collect(
+                from_date=from_date, to_date=to_date, date_type=date_type,
+                key=key or "", field=field or "", key1=key1 or "", field1=field1 or "",
+                where=where, filters=filters, limit=size,
+            )
+        return _grid_response(rows, headers, page,
+                              "一行 = 一个核价产品行；同一表单编号可能多行，用 记录ID 定位单行；"
+                              "详情/子数据用 erp_price_detail / erp_price_node",
+                              columns=columns)
+
+    # ---------- 生产施工单 ----------
+    @mcp.tool(
+        name="erp_production_list",
+        description=(
+            "查询生产施工单【列表】（ShengChan/SC_SCSGD/Index.aspx，QXID=740）。"
+            "一行=一张施工单（生产单号 SGD…）。服务端只支持日期区间+关键字，"
+            "其余用 filters（服务端下拉）或 where（本地过滤）。"
+            f"默认 {DEFAULT_RECORDS} 行，上限 {MAX_RECORDS}。"
+        ),
+    )
+    @_tool_errors
+    def erp_production_list(
+        from_date: Annotated[str | None, Field(description="起 YYYY-MM-DD")] = None,
+        to_date: Annotated[str | None, Field(description="止 YYYY-MM-DD")] = None,
+        date_type: Annotated[str, Field(description="制单日期 / 交货日期 / 审批日期")] = "制单日期",
+        where: Annotated[
+            str | None,
+            Field(description="本地过滤，逗号分隔：生产单号~SGD2611,工单状态=已审批"),
+        ] = None,
+        filters: Annotated[
+            dict[str, str] | None,
+            Field(description="服务端下拉过滤，值可写中文：工单状态/审批情况/报废状态/"
+                              "工单类型/文件状态/推送状态/客户属性/模板…"),
+        ] = None,
+        key: Annotated[str, Field(description="服务端关键字（配合 field）")] = "",
+        field: Annotated[str, Field(description="关键字字段：生产单号/订单编号/产品名称/客户名称…")] = "",
+        key1: Annotated[str, Field(description="第二个服务端关键字")] = "",
+        field1: Annotated[str, Field(description="第二个关键字字段")] = "",
+        columns: Annotated[str | None, Field(description="只返回这些列，逗号分隔")] = None,
+        limit: Annotated[int, Field(description=f"1~{MAX_RECORDS}，超出截断")] = DEFAULT_RECORDS,
+    ) -> dict[str, Any]:
+        session = _session(state)
+        size = _clamp(limit)
+        with state.provider.slot():
+            rows, headers, page = ProductionListTool(session.auth).collect(
+                from_date=from_date, to_date=to_date, date_type=date_type,
+                key=key or "", field=field or "", key1=key1 or "", field1=field1 or "",
+                where=where, filters=filters, limit=size,
+            )
+        return _grid_response(rows, headers, page,
+                              "一行 = 一张生产施工单；详情用 erp_production_detail",
+                              columns=columns)
+
+    @mcp.tool(
+        name="erp_production_detail",
+        description=(
+            "生产施工单【详情】（SC_SCSGD/Add.aspx，Option=3 只读）："
+            "表头字段（表单编号/产品名称/数量/交货日期…）+ 内联网格（部件表 17 列、"
+            "送货表 21 列）+ 备注文本 + 这一单能点开的子页清单（nodes）。"
+            "record_id 与 number 至少给一个。"
+        ),
+    )
+    @_tool_errors
+    def erp_production_detail(
+        record_id: Annotated[str | None,
+                              Field(description="记录 ID（erp_production_list 的 记录ID）")] = None,
+        number: Annotated[str | None,
+                          Field(description="生产单号，如 SGD2611180011")] = None,
+        include_texts: Annotated[bool, Field(description="是否返回备注类文本域")] = True,
+    ) -> dict[str, Any]:
+        session = _session(state)
+        tool = ProductionDetailTool(session.auth)
+        with state.provider.slot():
+            rows = tool.resolve_records(record_id=record_id or "", number=number or "")
+            return tool.fetch_one(rows[0]["记录ID"], include_texts=include_texts)
+
+    @mcp.tool(
+        name="erp_production_node",
+        description=(
+            "生产施工单里「点开才有的子数据」（每个节点一次 POST+GET，1-2 秒）。"
+            "node=list 列出全部节点（会标出这一单哪些能点开）；"
+            "可用：cp=产品资料、cp_process=产品工序、cp_materials=产品辅料、"
+            "part=部件资料、part_materials=部件辅料、part_process=部件工序、"
+            "part_machines=部件机台、product_check=送货/审核资料、part_pick=部件明细、"
+            "product_bg=产品资料变更、feedback=生产需求反馈、sgkb=手工开版、"
+            "template_product=产品模板、by_template=按模板新建、binding=装订D10、"
+            "package_content=包装内容D9、stock=生产库存明细、other_fees=其他费用、"
+            "freight=费项明细。"
+        ),
+    )
+    @_tool_errors
+    def erp_production_node(
+        record_id: Annotated[str, Field(description="记录 ID（列表的 记录ID）")],
+        node: Annotated[str, Field(description="节点名；list 查看全部")],
+    ) -> dict[str, Any]:
+        session = _session(state)
+        tool = ProductionNodeTool(session.auth)
+        with state.provider.slot():
+            if node.strip().lower() in ("list", "ls", "nodes"):
+                return {"nodes": tool.catalog(record_id)}
+            return tool.fetch(record_id, tool.resolve_node(node))
+
+    # ---------- 采购订单 ----------
+    @mcp.tool(
+        name="erp_purchase_list",
+        description=(
+            "查询采购订单【列表】（CaiGou/CG_CGDD/Index.aspx，QXID=266）。"
+            "⚠ 一行=一条采购订单**材料明细**：同一表单编号会有多行（一单多料），"
+            "记录ID 是订单主记录，同一 ID 可能重复出现。"
+            f"默认 {DEFAULT_RECORDS} 行，上限 {MAX_RECORDS}。"
+        ),
+    )
+    @_tool_errors
+    def erp_purchase_list(
+        from_date: Annotated[str | None, Field(description="制单起 YYYY-MM-DD")] = None,
+        to_date: Annotated[str | None, Field(description="制单止 YYYY-MM-DD")] = None,
+        where: Annotated[
+            str | None,
+            Field(description="本地过滤，逗号分隔：表单编号=CGDD261118031,核实状态=…"),
+        ] = None,
+        filters: Annotated[
+            dict[str, str] | None,
+            Field(description="服务端下拉过滤，值可写中文：审批情况/表单状态/数据粒度/"
+                              "材料类别/供货方式/入库情况/是否不入库…"),
+        ] = None,
+        key: Annotated[str, Field(description="服务端关键字（配合 field）")] = "",
+        field: Annotated[str, Field(description="关键字字段：表单编号/订单编号/材料名称/供应商名称…")] = "",
+        key1: Annotated[str, Field(description="第二个服务端关键字")] = "",
+        field1: Annotated[str, Field(description="第二个关键字字段")] = "",
+        columns: Annotated[str | None, Field(description="只返回这些列，逗号分隔")] = None,
+        limit: Annotated[int, Field(description=f"1~{MAX_RECORDS}，超出截断")] = DEFAULT_RECORDS,
+    ) -> dict[str, Any]:
+        session = _session(state)
+        size = _clamp(limit)
+        with state.provider.slot():
+            rows, headers, page = PurchaseListTool(session.auth).collect(
+                from_date=from_date, to_date=to_date,
+                key=key or "", field=field or "", key1=key1 or "", field1=field1 or "",
+                where=where, filters=filters, limit=size,
+            )
+        return _grid_response(rows, headers, page,
+                              "一行 = 一条采购材料明细；同一 表单编号 可能多行",
+                              columns=columns)
+
+    @mcp.tool(
+        name="erp_purchase_detail",
+        description=(
+            "采购订单【详情】（CG_CGDD/Add.aspx，Option=3 只读）：表头字段"
+            "（表单编号/供应商/联系人/付款方式/送货地址…）+ 材料明细内联网格（gridView2，33 列）。"
+        ),
+    )
+    @_tool_errors
+    def erp_purchase_detail(
+        record_id: Annotated[str | None,
+                              Field(description="记录 ID（erp_purchase_list 的 记录ID）")] = None,
+        number: Annotated[str | None, Field(description="表单编号，如 CGDD261118031")] = None,
+        include_texts: Annotated[bool, Field(description="是否返回备注类文本域")] = True,
+    ) -> dict[str, Any]:
+        session = _session(state)
+        tool = PurchaseDetailTool(session.auth)
+        with state.provider.slot():
+            rows = tool.resolve_records(record_id=record_id or "", number=number or "")
+            return tool.fetch_one(rows[0]["记录ID"], include_texts=include_texts)
+
+    @mcp.tool(
+        name="erp_purchase_node",
+        description=(
+            "采购订单的子页面（node=list 列出全部）。采购订单详情**没有**弹窗数据子页"
+            "——材料明细已在 erp_purchase_detail 的 grids 里；这里能打开的是"
+            "supplier=供应商档案选择页等「选择/编辑」弹窗。"
+        ),
+    )
+    @_tool_errors
+    def erp_purchase_node(
+        record_id: Annotated[str, Field(description="记录 ID")],
+        node: Annotated[str, Field(description="节点名；list 查看全部")],
+    ) -> dict[str, Any]:
+        session = _session(state)
+        tool = PurchaseNodeTool(session.auth)
+        with state.provider.slot():
+            if node.strip().lower() in ("list", "ls", "nodes"):
+                return {"nodes": tool.catalog(record_id)}
+            return tool.fetch(record_id, tool.resolve_node(node))
 
     # ---------- 菜单 → 接口 对照 ----------
     @mcp.tool(

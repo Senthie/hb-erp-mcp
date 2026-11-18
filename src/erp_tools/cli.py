@@ -623,6 +623,109 @@ def cmd_attendance(args) -> int:
     return 0
 
 
+# ══════════════════ 三个模块（施工单 / 采购订单 / 产品核价） ══════════════════
+def cmd_pages(args) -> int:
+    """打印「数据页面清单」：列表页 / 详情页 / 每个弹窗子页。"""
+    from .tools.grid_module import MODULES, get_module
+
+    specs = [get_module(args.module)] if args.module else list(MODULES.values())
+    for spec in specs:
+        print(f"\n=== {spec.label}（{spec.key}）")
+        print(f"  列表 {spec.list_path}  QXID={spec.fallback_qxid}")
+        print(f"  详情 {spec.detail_path or '(无)'}")
+        print(f"  一行 = {spec.row_note}")
+        if spec.filter_controls:
+            print("  服务端过滤：" + "、".join(
+                f"{v}({k})" for k, v in spec.filter_controls.items()))
+        if spec.date_fields:
+            print("  日期字段：" + "、".join(
+                f"{k}={v}" for k, v in spec.date_fields.items()))
+        if spec.nodes:
+            print(f"  弹窗子页 {len(spec.nodes)} 个：")
+            for node, (page, button, label) in spec.nodes.items():
+                print(f"    {node:18s} {page:28s} {button:18s} {label}")
+        else:
+            print("  弹窗子页：无（数据在详情页的内联网格里）")
+    return 0
+
+
+def cmd_grid_list(args) -> int:
+    cfg = _build_config(args)
+    auth = ensure_authenticated(cfg, interactive=sys.stdin.isatty())
+    tool = build_tool(args.command, auth)
+
+    count = 0
+    for _row in tool.run(
+        from_date=args.from_date,
+        to_date=args.to_date,
+        date_type=getattr(args, "date_type", "") or "",
+        key=args.key or "",
+        field=args.field or "",
+        key1=getattr(args, "key1", "") or "",
+        field1=getattr(args, "field1", "") or "",
+        where=args.where,
+        filters=args.filter,
+        columns=args.columns,
+        out=args.out,
+        jsonl=getattr(args, "jsonl", None),
+        limit=args.limit,
+        page_size=args.page_size,
+        max_pages=args.max_pages,
+        dry_run=args.dry_run,
+    ):
+        count += 1
+    _log(f"[DONE] 返回 {count} 行")
+    return 0
+
+
+def _write_json(path_str: str, data) -> None:
+    """写 JSON（.jsonl 结尾写单行）。"""
+    import json as _json
+    from pathlib import Path
+
+    path = Path(path_str)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    if path.suffix.lower() in (".jsonl", ".ndjson"):
+        path.write_text(_json.dumps(data, ensure_ascii=False) + "\n", encoding="utf-8")
+    else:
+        path.write_text(_json.dumps(data, ensure_ascii=False, indent=2, default=str),
+                        encoding="utf-8")
+
+
+def cmd_grid_detail(args) -> int:
+    cfg = _build_config(args)
+    auth = ensure_authenticated(cfg, interactive=sys.stdin.isatty())
+    tool = build_tool(args.command, auth)
+
+    rows = tool.resolve_records(record_id=args.id or "", number=args.no or "")
+    data = tool.fetch_one(rows[0]["记录ID"], include_texts=not args.no_texts,
+                          raw=args.raw)
+    if args.out:
+        _write_json(args.out, data)
+        _log(f"[DONE] → {args.out}")
+    else:
+        print(json.dumps(data, ensure_ascii=False, indent=2, default=str))
+    return 0
+
+
+def cmd_grid_node(args) -> int:
+    cfg = _build_config(args)
+    auth = ensure_authenticated(cfg, interactive=sys.stdin.isatty())
+    tool = build_tool(args.command, auth)
+
+    if args.node.lower() in ("list", "ls", "nodes"):
+        nodes = tool.catalog(args.id)
+        print(json.dumps({"nodes": nodes}, ensure_ascii=False, indent=2, default=str))
+        return 0
+    data = tool.fetch(args.id, tool.resolve_node(args.node))
+    if args.out:
+        _write_json(args.out, data)
+        _log(f"[DONE] → {args.out}")
+    else:
+        print(json.dumps(data, ensure_ascii=False, indent=2, default=str))
+    return 0
+
+
 # ══════════════════ 服务模式 ══════════════════
 def cmd_serve(args) -> int:
     """启动 api-key 网关（认证 + 未来的 MCP Streamable HTTP 挂载点）。"""
@@ -821,6 +924,65 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--cpslid", help="数量档 ID（默认 fees=-1 汇总、other_fees=第一档）")
     p.add_argument("--out", help="输出 JSON 路径")
     p.set_defaults(func=cmd_price_node)
+
+    # ---------- 三个新模块：产品核价 / 生产施工单 / 采购订单 ----------
+    p = sub.add_parser("pages", parents=[common],
+                       help="打印数据页面清单（列表/详情/弹窗子页）")
+    p.add_argument("--module", default=None,
+                   help="模块：costing / production / purchase；留空=全部")
+    p.set_defaults(func=cmd_pages)
+
+    def _add_list_args(parser, *, date_type: str | None) -> None:
+        parser.add_argument("--from", dest="from_date", help="日期区间起 YYYY-MM-DD（默认本月1号）")
+        parser.add_argument("--to", dest="to_date", help="日期区间止 YYYY-MM-DD（默认今天）")
+        if date_type is not None:
+            parser.add_argument("--date-type", dest="date_type", default=date_type,
+                                help=f"日期区间作用于：{date_type}（默认）等")
+        parser.add_argument("--key", help="服务端关键字")
+        parser.add_argument("--field", help="关键字字段中文名")
+        parser.add_argument("--key1", help="第二个服务端关键字")
+        parser.add_argument("--field1", help="第二个关键字字段中文名")
+        parser.add_argument("--where", help="本地过滤：生产单号~SGD2611,工单状态=已审批")
+        parser.add_argument("--filter", action="append",
+                            help="服务端下拉过滤，如 工单状态=已审批（可重复）")
+        parser.add_argument("--columns", help="只导出这些列，逗号分隔")
+        parser.add_argument("--out", help="导出 CSV（.jsonl 结尾则写 JSONL）")
+        parser.add_argument("--jsonl", help="额外写一份 JSONL")
+        parser.add_argument("--limit", type=int, help="最多返回多少条")
+        parser.add_argument("--page-size", type=int, dest="page_size")
+        parser.add_argument("--max-pages", type=int, default=200, dest="max_pages")
+        parser.add_argument("--dry-run", action="store_true", dest="dry_run")
+        parser.set_defaults(func=cmd_grid_list)
+
+    p = sub.add_parser("costing-list", parents=[common],
+                       help="查询产品核价列表（BJ_KHBJ，QXID=1281；一行=一个核价产品行）")
+    _add_list_args(p, date_type="制单日期")
+
+    p = sub.add_parser("production-list", parents=[common],
+                       help="查询生产施工单列表（SC_SCSGD/Index.aspx）")
+    _add_list_args(p, date_type="制单日期")
+
+    p = sub.add_parser("purchase-list", parents=[common],
+                       help="查询采购订单列表（CG_CGDD/Index.aspx；一行=一条材料明细）")
+    _add_list_args(p, date_type=None)
+
+    for name, label in (("production", "生产施工单"), ("purchase", "采购订单")):
+        p = sub.add_parser(f"{name}-detail", parents=[common],
+                           help=f"{label}【详情】→ JSON")
+        p.add_argument("--id", dest="id", help="记录 ID（列表的 记录ID）")
+        p.add_argument("--no", dest="no", help="单号（生产单号 / 表单编号）")
+        p.add_argument("--out", help="输出 JSON 路径")
+        p.add_argument("--no-texts", action="store_true", dest="no_texts",
+                       help="不返回备注类文本域")
+        p.add_argument("--raw", action="store_true", help="附加原始 HTML（调试用）")
+        p.set_defaults(func=cmd_grid_detail)
+
+        p = sub.add_parser(f"{name}-node", parents=[common],
+                           help=f"{label}子数据（弹窗子页）→ JSON")
+        p.add_argument("--id", dest="id", required=True, help="记录 ID")
+        p.add_argument("--node", required=True, help="节点名；list=列出全部节点")
+        p.add_argument("--out", help="输出 JSON 路径")
+        p.set_defaults(func=cmd_grid_node)
 
     p = sub.add_parser("attendance", parents=[common], help="查询月度考勤")
     p.add_argument("--month", "-m", required=True, help="月份，如 2026-11")

@@ -119,6 +119,10 @@ def test_initialize_and_list_tools(mcp_client) -> None:
             "erp_quote_customer_search",
             "erp_quote_create", "erp_quote_delete",
             "erp_quote_details", "erp_quote_update", "erp_quote_update_product"} <= names
+    # 三个新模块（列表-产品核价 / 生产施工单 / 采购订单）
+    assert {"erp_costing_list", "erp_production_list", "erp_production_detail",
+            "erp_production_node", "erp_purchase_list", "erp_purchase_detail",
+            "erp_purchase_node", "erp_page_catalog"} <= names
     # prepare 已并入 create（confirm=false 就是预览），不应再单独暴露
     assert "erp_quote_prepare" not in names
 
@@ -136,8 +140,32 @@ def test_initialize_and_list_tools(mcp_client) -> None:
     assert by_name["erp_attendance"]["inputSchema"]["required"] == ["month"]
 
 
+def test_page_catalog_lists_all_three_modules(mcp_client) -> None:
+    """数据页面清单必须能离线返回（不访问 ERP），并列出全部子页。"""
+    client, _state = mcp_client
+    key = get_key(client)
+    initialize(client, key)
+
+    body = call_tool(client, key, "erp_page_catalog")
+    assert "error" not in body, body
+    payload = json.loads(body["result"]["content"][0]["text"])
+    modules = {m["module"]: m for m in payload["modules"]}
+    assert set(modules) == {"production", "purchase", "costing"}
+    assert modules["production"]["pages"]["list"]["qxid"] == "740"
+    assert modules["purchase"]["pages"]["list"]["qxid"] == "266"
+    assert modules["costing"]["pages"]["list"]["qxid"] == "1281"
+    production_nodes = {n["node"] for n in modules["production"]["nodes"]}
+    assert {"part_materials", "part_process", "product_check", "sgkb"} <= production_nodes
+    # 采购订单没有弹窗数据子页
+    assert [n["node"] for n in modules["purchase"]["nodes"]] == ["supplier"]
+
+    only = call_tool(client, key, "erp_page_catalog", {"module": "生产施工单"})
+    assert "error" not in only, only
+    single = json.loads(only["result"]["content"][0]["text"])
+    assert single["count"] == 1
+
+
 def test_create_tool_declares_product_structure(mcp_client) -> None:
-    """`products[]` 必须是结构化的，否则模型看不到明细字段该填什么。"""
     client, _state = mcp_client
     key = get_key(client)
     initialize(client, key)
@@ -156,8 +184,10 @@ def test_create_tool_declares_product_structure(mcp_client) -> None:
 def test_tools_list_schema_budget(mcp_client) -> None:
     """tools/list 每次对话都会全量下发，体积涨上去就是常驻成本。
 
-    预算 22000（2026-11 从 20000 上调）：16 个工具里 `erp_quote_create` 一个就占
-    11209 字符（51 个产品字段的结构化 schema，是它存在的理由）；其余工具合计约 9.2K。
+    预算 30000（2026-11 从 22000 上调）：24 个工具里 `erp_quote_create` 一个就占
+    11209 字符（51 个产品字段的结构化 schema，是它存在的理由）；本次新增的三个模块
+    （`erp_costing_list` / `erp_production_*` / `erp_purchase_*` / `erp_page_catalog`）
+    合计约 5.7K，都是「参数即文档」的扁平列表工具。
     再加工具前先看 `tmp/schema-size.py` 的分布，别让列表类工具把余量吃掉。
     """
     client, _state = mcp_client
@@ -167,7 +197,7 @@ def test_tools_list_schema_budget(mcp_client) -> None:
         len(json.dumps(t["inputSchema"], ensure_ascii=False))
         for t in list_tools(client, key)
     )
-    assert total <= 22_000, f"inputSchema 合计 {total} 字符，超预算 22000"
+    assert total <= 30_000, f"inputSchema 合计 {total} 字符，超预算 30000"
 
 
 # ══════════════════ 工具调用 ══════════════════
@@ -194,6 +224,25 @@ def test_capabilities_reports_missing_pages(mcp_client) -> None:
     assert "quote_index" in text
     assert "attendance" in text          # fake session 没有考勤页 → 出现在 missing
     assert "missing_pages" in text
+
+
+def test_capabilities_uses_verified_module_qxids(mcp_client) -> None:
+    """三个新模块的 QXID 必须用实测值，不能用菜单探测值。
+
+    fake session 里有 `BaoJia/BJ_KHBJXQ/Index.aspx` 但没有 `BJ_KHBJ/Index.aspx`，
+    所以模块应为不可用；关键是**返回里不能出现 860/983** 这类「同路径第一个菜单」的 QXID。
+    """
+    client, _state = mcp_client
+    key = get_key(client)
+    initialize(client, key)
+
+    payload = json.loads(call_tool(client, key, "erp_capabilities")["result"]["content"][0]["text"])
+    modules = payload["modules"]
+    assert modules["costing"]["list_qxid"] == "1281"
+    assert modules["production"]["list_qxid"] == "740"
+    assert modules["purchase"]["list_qxid"] == "266"
+    assert modules["costing"]["list_available"] is False
+    assert set(payload["module_missing"]) == {"costing", "production", "purchase"}
 
 
 def test_quote_detail_requires_an_argument(mcp_client) -> None:

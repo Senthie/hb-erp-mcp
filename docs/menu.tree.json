@@ -1,10 +1,275 @@
 {
-  "captured_at": "2026-11-16 10:41:28",
-  "account": "21146",
-  "login_user": "2474",
-  "source": "GET /Admin/indexAjax.ashx?FunName=GetMenuTree&Value1=2474&Value2=",
+  "captured_at": "2026-11-18 18:18:07",
+  "account": "2069",
+  "login_user": "2069",
+  "source": "GET /Admin/indexAjax.ashx?FunName=GetMenuTree&Value1=2069&Value2=",
   "note": "菜单按账号权限渲染；换账号/权限变动后请重新 erp menu --capture",
   "tree": [
+    {
+      "text": "客户关系管理",
+      "children": [
+        {
+          "text": "客户跟进登记表",
+          "children": [
+            {
+              "text": "新增-客户跟进登记表",
+              "url": "CRM/KHGJDJB/add.aspx?QXID=5300&MenuTree=1&LoginUserID=2069",
+              "parent_name": "客户跟进登记表",
+              "parent_id": "1494"
+            },
+            {
+              "text": "列表-客户跟进登记表",
+              "url": "CRM/KHGJDJB/Index.aspx?QXID=5303&MenuTree=1&LoginUserID=2069",
+              "parent_name": "客户跟进登记表",
+              "parent_id": "1494"
+            }
+          ]
+        },
+        {
+          "text": "客户实施日志",
+          "children": [
+            {
+              "text": "新增-客户实施日志",
+              "url": "CRM/KHSSRZ/add.aspx?QXID=6134&MenuTree=1&LoginUserID=2069",
+              "parent_name": "客户实施日志",
+              "parent_id": "1730"
+            },
+            {
+              "text": "列表-客户实施日志",
+              "url": "CRM/KHSSRZ/index.aspx?QXID=6137&MenuTree=1&LoginUserID=2069",
+              "parent_name": "客户实施日志",
+              "parent_id": "1730"
+            }
+          ]
+        },
+        {
+          "text": "工作日志分析",
+          "children": [
+            {
+              "text": "开发提成统计分析",
+              "url": "CRM/GZRZFX/KFTCTJFX.aspx?QXID=11172&MenuTree=1&LoginUserID=2069",
+              "parent_name": "工作日志分析",
+              "parent_id": "2952"
+            }
+          ]
+        },
+        {
+          "text": "工作日志",
+          "children": [
+            {
+              "text": "新增-工作日志",
+              "url": "CRM/GZRZ/add.aspx?QXID=6539&MenuTree=1&LoginUserID=2069",
+              "parent_name": "工作日志",
+              "parent_id": "1861"
+            },
+            {
+              "text": "列表-工作日志",
+              "url": "CRM/GZRZ/index.aspx?QXID=6542&MenuTree=1&LoginUserID=2069",
+              "parent_name": "工作日志",
+              "parent_id": "1861"
+            }
+          ]
+        },
+        {
+          "text": "基础资料",
+          "children": [
+            {
+              "text": "产品类型",
+              "children": [
+                {
+                  "text": "新增-产品类型",
+                  "url": "Base/Base_Public/Add.aspx?QXID=5306&MenuTree=1&LoginUserID=2069",
+                  "parent_name": "产品类型",
+                  "parent_id": "1498"
+                },
+                {
+                  "text": "列表-产品类型",
+                  "url": "Base/Base_Public/Index.aspx?QXID=5309&MenuTree=1&LoginUserID=2069",
+                  "parent_name": "产品类型",
+                  "parent_id": "1498"
+                }
+              ]
+            },
+            {
+              "text": "跟进状态",
+              "children": [
+                {
+                  "text": "新增-跟进状态",
+                  "url": "Base/Base_Public/Add.aspx?QXID=5312&MenuTree=1&LoginUserID=2069",
+                  "parent_name": "跟进状态",
+                  "parent_id": "1499"
+                },
+                {
+                  "text": "列表-跟进状态",
+                  "url": "Base/Base_Public/Index.aspx?QXID=5315&MenuTree=1&LoginUserID=2069",
+                  "parent_name": "跟进状态",
+                  "parent_id": "1499"
+                }
+              ]
+            },
+            {
+              "text": "寄出资料",
+              "children": [
+                {
+                  "text": "新增-寄出资料",
+                  "url": "Base/Base_Public/Add.aspx?QXID=5318&MenuTree=1&LoginUserID=2069",
+                  "parent_name": "寄出资料",
+                  "parent_id": "1500"
+                },
+                {
+                  "text": "列表-寄出资料",
+                  "url": "Base/Base_Public/Index.aspx?QXID=5321&MenuTree=1&LoginUserID=2069",
+                  "parent_name": "寄出资料",
+                  "parent_id": "1500"
+                }
+              ]
+            },
+            {
+              "text": "客户等级",
+              "children": [
+                {
+                  "text": "新增-客户等级",
+                  "url": "Base/Base_Public/Add.aspx?QXID=5324&MenuTree=1&LoginUserID=2069",
+                  "parent_name": "客户等级",
+                  "parent_id": "1583"
+                },
+                {
+                  "text": "列表-客户等级",
+                  "url": "Base/Base_Public/Index.aspx?QXID=5327&MenuTree=1&LoginUserID=2069",
+                  "parent_name": "客户等级",
+                  "parent_id": "1583"
+                }
+              ]
+            },
+            {
+              "text": "业务员资料",
+              "children": [
+                {
+                  "text": "新增-业务员资料",
+                  "url": "CRM/BASE/YWYZL/Add.aspx?QXID=5703&MenuTree=1&LoginUserID=2069",
+                  "parent_name": "业务员资料",
+                  "parent_id": "1605"
+                },
+                {
+                  "text": "列表-业务员资料",
+                  "url": "CRM/BASE/YWYZL/Index.aspx?QXID=5706&MenuTree=1&LoginUserID=2069",
+                  "parent_name": "业务员资料",
+                  "parent_id": "1605"
+                }
+              ]
+            },
+            {
+              "text": "任务人资料",
+              "children": [
+                {
+                  "text": "新增-任务人资料",
+                  "url": "CRM/BASE/YWYZL/Add.aspx?QXID=5708&MenuTree=1&LoginUserID=2069",
+                  "parent_name": "任务人资料",
+                  "parent_id": "1606"
+                },
+                {
+                  "text": "列表-任务人资料",
+                  "url": "CRM/BASE/YWYZL/Index.aspx?QXID=5711&MenuTree=1&LoginUserID=2069",
+                  "parent_name": "任务人资料",
+                  "parent_id": "1606"
+                }
+              ]
+            },
+            {
+              "text": "客户资料查看设置",
+              "url": "CRM/KHZLCKSZ/KHZLCKSZ.aspx?QXID=5717&MenuTree=1&LoginUserID=2069",
+              "parent_name": "基础资料",
+              "parent_id": "1495"
+            },
+            {
+              "text": "实施客户资料",
+              "children": [
+                {
+                  "text": "新增-实施客户资料",
+                  "url": "CRM/BASE/KHZL/Add.aspx?QXID=6141&MenuTree=1&LoginUserID=2069",
+                  "parent_name": "实施客户资料",
+                  "parent_id": "1733"
+                },
+                {
+                  "text": "列表-实施客户资料",
+                  "url": "CRM/BASE/KHZL/index.aspx?QXID=6144&MenuTree=1&LoginUserID=2069",
+                  "parent_name": "实施客户资料",
+                  "parent_id": "1733"
+                }
+              ]
+            },
+            {
+              "text": "实施日志类型",
+              "children": [
+                {
+                  "text": "新增-实施日志类型",
+                  "url": "Base/Base_Public/Add.aspx?QXID=6170&MenuTree=1&LoginUserID=2069",
+                  "parent_name": "实施日志类型",
+                  "parent_id": "1735"
+                },
+                {
+                  "text": "列表-实施日志类型",
+                  "url": "Base/Base_Public/Index.aspx?QXID=6173&MenuTree=1&LoginUserID=2069",
+                  "parent_name": "实施日志类型",
+                  "parent_id": "1735"
+                }
+              ]
+            },
+            {
+              "text": "维护模块",
+              "children": [
+                {
+                  "text": "新增-维护模块",
+                  "url": "Base/Base_Public/Add.aspx?QXID=6182&MenuTree=1&LoginUserID=2069",
+                  "parent_name": "维护模块",
+                  "parent_id": "1736"
+                },
+                {
+                  "text": "列表-维护模块",
+                  "url": "Base/Base_Public/Index.aspx?QXID=6185&MenuTree=1&LoginUserID=2069",
+                  "parent_name": "维护模块",
+                  "parent_id": "1736"
+                }
+              ]
+            },
+            {
+              "text": "沟通方式",
+              "children": [
+                {
+                  "text": "新增-沟通方式",
+                  "url": "Base/Base_Public/Add.aspx?QXID=6188&MenuTree=1&LoginUserID=2069",
+                  "parent_name": "沟通方式",
+                  "parent_id": "1737"
+                },
+                {
+                  "text": "列表-沟通方式",
+                  "url": "Base/Base_Public/Index.aspx?QXID=6191&MenuTree=1&LoginUserID=2069",
+                  "parent_name": "沟通方式",
+                  "parent_id": "1737"
+                }
+              ]
+            },
+            {
+              "text": "工作日志类型",
+              "children": [
+                {
+                  "text": "新增-工作日志类型",
+                  "url": "CRM/BASE/GZRZLX/Add.aspx?QXID=6533&MenuTree=1&LoginUserID=2069",
+                  "parent_name": "工作日志类型",
+                  "parent_id": "1858"
+                },
+                {
+                  "text": "列表-工作日志类型",
+                  "url": "CRM/BASE/GZRZLX/index.aspx?QXID=6536&MenuTree=1&LoginUserID=2069",
+                  "parent_name": "工作日志类型",
+                  "parent_id": "1858"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
     {
       "text": "业务报价管理",
       "children": [
@@ -16,15 +281,60 @@
               "children": [
                 {
                   "text": "新增-客户报价需求",
-                  "url": "BaoJia/BJ_KHBJXQ/Add.aspx?QXID=873&MenuTree=1&LoginUserID=2474",
+                  "url": "BaoJia/BJ_KHBJXQ/Add.aspx?QXID=873&MenuTree=1&LoginUserID=2069",
                   "parent_name": "客户报价需求",
                   "parent_id": "471"
                 },
                 {
                   "text": "列表-客户报价需求",
-                  "url": "BaoJia/BJ_KHBJXQ/Index.aspx?QXID=876&MenuTree=1&LoginUserID=2474",
+                  "url": "BaoJia/BJ_KHBJXQ/Index.aspx?QXID=876&MenuTree=1&LoginUserID=2069",
                   "parent_name": "客户报价需求",
                   "parent_id": "471"
+                }
+              ]
+            },
+            {
+              "text": "制版需求单",
+              "children": [
+                {
+                  "text": "新增-制版需求单",
+                  "url": "BaoJia/BJ_KHBJXQ/Add.aspx?QXID=1531&MenuTree=1&LoginUserID=2069",
+                  "parent_name": "制版需求单",
+                  "parent_id": "686"
+                },
+                {
+                  "text": "列表-制版需求单",
+                  "url": "BaoJia/BJ_KHBJXQ/Index.aspx?QXID=1534&MenuTree=1&LoginUserID=2069",
+                  "parent_name": "制版需求单",
+                  "parent_id": "686"
+                }
+              ]
+            },
+            {
+              "text": "合同评审需求单",
+              "children": [
+                {
+                  "text": "新增-合同评审需求单",
+                  "url": "BaoJia/BJ_KHBJXQ/Add.aspx?QXID=1541&MenuTree=1&LoginUserID=2069",
+                  "parent_name": "合同评审需求单",
+                  "parent_id": "687"
+                },
+                {
+                  "text": "列表-合同评审需求单",
+                  "url": "BaoJia/BJ_KHBJXQ/Index.aspx?QXID=1544&MenuTree=1&LoginUserID=2069",
+                  "parent_name": "合同评审需求单",
+                  "parent_id": "687"
+                }
+              ]
+            },
+            {
+              "text": "订单需求单",
+              "children": [
+                {
+                  "text": "列表-订单需求单",
+                  "url": "BaoJia/BJ_KHBJXQ/Index.aspx?QXID=1554&MenuTree=1&LoginUserID=2069",
+                  "parent_name": "订单需求单",
+                  "parent_id": "688"
                 }
               ]
             }
@@ -38,19 +348,99 @@
               "children": [
                 {
                   "text": "新增-客户报价",
-                  "url": "BaoJia/BJ_KHBJ/Add.aspx?QXID=857&MenuTree=1&LoginUserID=2474",
+                  "url": "BaoJia/BJ_KHBJ/Add.aspx?QXID=857&MenuTree=1&LoginUserID=2069",
                   "parent_name": "客户报价",
                   "parent_id": "464"
                 },
                 {
                   "text": "列表-客户报价",
-                  "url": "BaoJia/BJ_KHBJ/Index.aspx?QXID=860&MenuTree=1&LoginUserID=2474",
+                  "url": "BaoJia/BJ_KHBJ/Index.aspx?QXID=860&MenuTree=1&LoginUserID=2069",
                   "parent_name": "客户报价",
                   "parent_id": "464"
                 }
               ]
+            },
+            {
+              "text": "客户报价审批",
+              "url": "BaoJia/BJ_KHBJ/Index.aspx?QXID=889&MenuTree=1&LoginUserID=2069",
+              "parent_name": "客户报价",
+              "parent_id": "2166"
+            },
+            {
+              "text": "海运费计算",
+              "children": [
+                {
+                  "text": "新增-海运费计算",
+                  "url": "HaiYunFei/HYF_HYFJS/Add.aspx?QXID=932&MenuTree=1&LoginUserID=2069",
+                  "parent_name": "海运费计算",
+                  "parent_id": "503"
+                },
+                {
+                  "text": "列表-海运费计算",
+                  "url": "HaiYunFei/HYF_HYFJS/Index.aspx?QXID=935&MenuTree=1&LoginUserID=2069",
+                  "parent_name": "海运费计算",
+                  "parent_id": "503"
+                }
+              ]
+            },
+            {
+              "text": "客户报出单价",
+              "children": [
+                {
+                  "text": "新增-客户报出单价",
+                  "url": "BaoJia/BJ_KHBCDJ_M/Add.html?QXID=12017&MenuTree=1&LoginUserID=2069",
+                  "parent_name": "客户报出单价",
+                  "parent_id": "3145"
+                },
+                {
+                  "text": "列表-客户报出单价",
+                  "url": "BaoJia/BJ_KHBCDJ_M/Index.html?QXID=12020&MenuTree=1&LoginUserID=2069",
+                  "parent_name": "客户报出单价",
+                  "parent_id": "3145"
+                }
+              ]
+            },
+            {
+              "text": "客户报价价格拆分",
+              "children": [
+                {
+                  "text": "新增-客户报价价格拆分",
+                  "url": "BaoJia/BJ_KHBJCF_M/Add.aspx?QXID=13357&MenuTree=1&LoginUserID=2069",
+                  "parent_name": "客户报价价格拆分",
+                  "parent_id": "3508"
+                },
+                {
+                  "text": "列表-客户报价价格拆分",
+                  "url": "BaoJia/BJ_KHBJCF_M/Index.aspx?QXID=13360&MenuTree=1&LoginUserID=2069",
+                  "parent_name": "客户报价价格拆分",
+                  "parent_id": "3508"
+                }
+              ]
             }
           ]
+        },
+        {
+          "text": "产品核价",
+          "children": [
+            {
+              "text": "新增-产品核价",
+              "url": "BaoJia/BJ_KHBJ/Add.aspx?QXID=1278&MenuTree=1&LoginUserID=2069",
+              "parent_name": "产品核价",
+              "parent_id": "610"
+            },
+            {
+              "text": "列表-产品核价",
+              "url": "BaoJia/BJ_KHBJ/Index.aspx?QXID=1281&MenuTree=1&LoginUserID=2069",
+              "parent_name": "产品核价",
+              "parent_id": "610"
+            }
+          ]
+        },
+        {
+          "text": "重点客户报价跟进表",
+          "url": "BaoJia/BJ_KHBJ/Index.aspx?QXID=1439&MenuTree=1&LoginUserID=2069",
+          "parent_name": "业务报价管理",
+          "parent_id": "463"
         },
         {
           "text": "报价其它设置",
@@ -60,13 +450,13 @@
               "children": [
                 {
                   "text": "新增-报价纸张价格设置",
-                  "url": "BaoJia/BJ_Base_BJZZDJSZ/Add.aspx?QXID=9461&MenuTree=1&LoginUserID=2474",
+                  "url": "BaoJia/BJ_Base_BJZZDJSZ/Add.aspx?QXID=9461&MenuTree=1&LoginUserID=2069",
                   "parent_name": "报价纸张价格设置",
                   "parent_id": "2526"
                 },
                 {
                   "text": "列表-报价纸张价格设置",
-                  "url": "BaoJia/BJ_Base_BJZZDJSZ/index.aspx?QXID=9464&MenuTree=1&LoginUserID=2474",
+                  "url": "BaoJia/BJ_Base_BJZZDJSZ/index.aspx?QXID=9464&MenuTree=1&LoginUserID=2069",
                   "parent_name": "报价纸张价格设置",
                   "parent_id": "2526"
                 }
@@ -77,17 +467,213 @@
               "children": [
                 {
                   "text": "新增-报价辅料价格设置",
-                  "url": "BaoJia/BJ_Base_BJCLDJSZ/Add.aspx?QXID=12537&MenuTree=1&LoginUserID=2474",
+                  "url": "BaoJia/BJ_Base_BJCLDJSZ/Add.aspx?QXID=12537&MenuTree=1&LoginUserID=2069",
                   "parent_name": "报价辅料价格设置",
                   "parent_id": "3290"
                 },
                 {
                   "text": "列表-报价辅料价格设置",
-                  "url": "BaoJia/BJ_Base_BJCLDJSZ/Index.aspx?QXID=12540&MenuTree=1&LoginUserID=2474",
+                  "url": "BaoJia/BJ_Base_BJCLDJSZ/Index.aspx?QXID=12540&MenuTree=1&LoginUserID=2069",
                   "parent_name": "报价辅料价格设置",
                   "parent_id": "3290"
                 }
               ]
+            },
+            {
+              "text": "报价材料底价比例",
+              "url": "BaoJia/BJ_Base_WLDJBL/Index.aspx?QXID=13248&MenuTree=1&LoginUserID=2069",
+              "parent_name": "报价其它设置",
+              "parent_id": "2167"
+            }
+          ]
+        },
+        {
+          "text": "业务报价统计分析",
+          "children": [
+            {
+              "text": "订单需求分析",
+              "url": "BaoJia/BJ_BJTJFX/BJ_KHDDXQFX.aspx?QXID=2306&MenuTree=1&LoginUserID=2069",
+              "parent_name": "业务报价统计分析",
+              "parent_id": "844"
+            },
+            {
+              "text": "报价员工作分析",
+              "url": "BaoJia/BJ_BJTJFX/BJ_BJRYGZFX.aspx?QXID=3050&MenuTree=1&LoginUserID=2069",
+              "parent_name": "业务报价统计分析",
+              "parent_id": "844"
+            },
+            {
+              "text": "需求员工工作分析",
+              "url": "BaoJia/BJ_BJTJFX/BJ_XQRYGZFX.aspx?QXID=3218&MenuTree=1&LoginUserID=2069",
+              "parent_name": "业务报价统计分析",
+              "parent_id": "844"
+            },
+            {
+              "text": "客户报价金额分析",
+              "url": "BaoJia/BJ_BJTJFX/BJ_KHBJJEFX.aspx?QXID=5190&MenuTree=1&LoginUserID=2069",
+              "parent_name": "业务报价统计分析",
+              "parent_id": "844"
+            },
+            {
+              "text": "客户报价周期分析",
+              "url": "BaoJia/BJ_BJTJFX/BJ_KHBJZQFX.aspx?QXID=6525&MenuTree=1&LoginUserID=2069",
+              "parent_name": "业务报价统计分析",
+              "parent_id": "844"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "text": "印前制版管理",
+      "children": [
+        {
+          "text": "制版申请单",
+          "children": [
+            {
+              "text": "列表-制版申请单",
+              "url": "ShengChan/SC_SCSGD/Index.aspx?QXID=983&MenuTree=1&LoginUserID=2069",
+              "parent_name": "制版申请单",
+              "parent_id": "522"
+            }
+          ]
+        },
+        {
+          "text": "产品风险评估",
+          "children": [
+            {
+              "text": "新增-产品风险评估",
+              "url": "ShengChan/SC_CPFXPG/Add.aspx?QXID=12118&MenuTree=1&LoginUserID=2069",
+              "parent_name": "产品风险评估",
+              "parent_id": "3179"
+            },
+            {
+              "text": "列表-产品风险评估",
+              "url": "ShengChan/SC_CPFXPG/Index.aspx?QXID=12121&MenuTree=1&LoginUserID=2069",
+              "parent_name": "产品风险评估",
+              "parent_id": "3179"
+            },
+            {
+              "text": "风险评估跟进列表",
+              "url": "ShengChan/SC_CPFXPG/SC_FXPGGJList.aspx?QXID=15281&MenuTree=1&LoginUserID=2069",
+              "parent_name": "产品风险评估",
+              "parent_id": "3179"
+            },
+            {
+              "text": "风险评估及时性绩效数据分析",
+              "url": "ShengChan/SC_SCTJFX/SC_FXPGJSXJXSJFX.aspx?QXID=15439&MenuTree=1&LoginUserID=2069",
+              "parent_name": "产品风险评估",
+              "parent_id": "3179"
+            }
+          ]
+        },
+        {
+          "text": "印前制版统计分析",
+          "parent_name": "印前制版管理",
+          "parent_id": "521"
+        }
+      ]
+    },
+    {
+      "text": "样板管理",
+      "children": [
+        {
+          "text": "客供样板",
+          "children": [
+            {
+              "text": "客供样板管理",
+              "children": [
+                {
+                  "text": "新增-客供样板管理",
+                  "url": "BaoJia/BJ_KHYB/Add.aspx?QXID=969&MenuTree=1&LoginUserID=2069",
+                  "parent_name": "客供样板管理",
+                  "parent_id": "518"
+                },
+                {
+                  "text": "列表-客供样板管理",
+                  "url": "BaoJia/BJ_KHYB/Index.aspx?QXID=972&MenuTree=1&LoginUserID=2069",
+                  "parent_name": "客供样板管理",
+                  "parent_id": "518"
+                }
+              ]
+            },
+            {
+              "text": "客供样板装箱登记表",
+              "children": [
+                {
+                  "text": "新增-客供样板装箱登记表",
+                  "url": "BaoJia/BJ_KHYBZXDJ/Add.aspx?QXID=1151&MenuTree=1&LoginUserID=2069",
+                  "parent_name": "客供样板装箱登记表",
+                  "parent_id": "567"
+                },
+                {
+                  "text": "列表-客供样板装箱登记表",
+                  "url": "BaoJia/BJ_KHYBZXDJ/Index.aspx?QXID=1154&MenuTree=1&LoginUserID=2069",
+                  "parent_name": "客供样板装箱登记表",
+                  "parent_id": "567"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "text": "产品样板",
+          "children": [
+            {
+              "text": "产品样板装箱登记",
+              "children": [
+                {
+                  "text": "新增-产品样板装箱登记",
+                  "url": "ShengChan/SC_CPYBZXJCDJ/Add.aspx?QXID=1708&MenuTree=1&LoginUserID=2069",
+                  "parent_name": "产品样板装箱登记",
+                  "parent_id": "734"
+                },
+                {
+                  "text": "列表-产品样板装箱登记",
+                  "url": "ShengChan/SC_CPYBZXJCDJ/Index.aspx?QXID=1711&MenuTree=1&LoginUserID=2069",
+                  "parent_name": "产品样板装箱登记",
+                  "parent_id": "734"
+                }
+              ]
+            },
+            {
+              "text": "产品样板寄出登记",
+              "children": [
+                {
+                  "text": "列表-产品样板寄出登记",
+                  "url": "ShengChan/SC_YBJCDJ/Index.aspx?QXID=1131&MenuTree=1&LoginUserID=2069",
+                  "parent_name": "产品样板寄出登记",
+                  "parent_id": "3921"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "text": "样板分析",
+          "children": [
+            {
+              "text": "板房色稿借出汇总分析",
+              "url": "ShengChan/SC_SCTJFX/SC_BFSGJCHZ.aspx?QXID=12407&MenuTree=1&LoginUserID=2069",
+              "parent_name": "样板分析",
+              "parent_id": "3253"
+            }
+          ]
+        },
+        {
+          "text": "样板存放位置",
+          "children": [
+            {
+              "text": "新增-样板存放位置",
+              "url": "Base/Base_CFWZ/Add.aspx?QXID=1200&MenuTree=1&LoginUserID=2069",
+              "parent_name": "样板存放位置",
+              "parent_id": "581"
+            },
+            {
+              "text": "列表-样板存放位置",
+              "url": "Base/Base_CFWZ/Index.aspx?QXID=1203&MenuTree=1&LoginUserID=2069",
+              "parent_name": "样板存放位置",
+              "parent_id": "581"
             }
           ]
         }
@@ -97,19 +683,353 @@
       "text": "客户订单管理",
       "children": [
         {
+          "text": "合同评审",
+          "children": [
+            {
+              "text": "新增-合同评审",
+              "url": "DingDan/DD_KHDD/Add.aspx?QXID=1288&MenuTree=1&LoginUserID=2069",
+              "parent_name": "合同评审",
+              "parent_id": "613"
+            },
+            {
+              "text": "列表-合同评审",
+              "url": "DingDan/DD_KHDD/Index.aspx?QXID=1291&MenuTree=1&LoginUserID=2069",
+              "parent_name": "合同评审",
+              "parent_id": "613"
+            }
+          ]
+        },
+        {
           "text": "客户订单",
           "children": [
             {
               "text": "新建-客户订单",
-              "url": "DingDan/DD_KHDD/Add.aspx?QXID=684&MenuTree=1&LoginUserID=2474",
+              "url": "DingDan/DD_KHDD/Add.aspx?QXID=684&MenuTree=1&LoginUserID=2069",
               "parent_name": "客户订单",
               "parent_id": "392"
             },
             {
               "text": "列表-客户订单",
-              "url": "DingDan/DD_KHDD/Index.aspx?QXID=687&MenuTree=1&LoginUserID=2474",
+              "url": "DingDan/DD_KHDD/Index.aspx?QXID=687&MenuTree=1&LoginUserID=2069",
               "parent_name": "客户订单",
               "parent_id": "392"
+            }
+          ]
+        },
+        {
+          "text": "送货通知单",
+          "children": [
+            {
+              "text": "新增-送货通知单",
+              "url": "KuCun/KC_CPCRKSQ/Add.aspx?QXID=727&MenuTree=1&LoginUserID=2069",
+              "parent_name": "送货通知单",
+              "parent_id": "410"
+            },
+            {
+              "text": "列表-送货通知单",
+              "url": "KuCun/KC_CPCRKSQ/Index.aspx?QXID=730&MenuTree=1&LoginUserID=2069",
+              "parent_name": "送货通知单",
+              "parent_id": "410"
+            }
+          ]
+        },
+        {
+          "text": "客户其他费用",
+          "children": [
+            {
+              "text": "新增-客户其他费用",
+              "url": "DingDan/DD_KHQTFY/Add.aspx?QXID=6256&MenuTree=1&LoginUserID=2069",
+              "parent_name": "客户其他费用",
+              "parent_id": "1760"
+            },
+            {
+              "text": "列表-客户其他费用",
+              "url": "DingDan/DD_KHQTFY/Index.aspx?QXID=6259&MenuTree=1&LoginUserID=2069",
+              "parent_name": "客户其他费用",
+              "parent_id": "1760"
+            }
+          ]
+        },
+        {
+          "text": "用车需求",
+          "children": [
+            {
+              "text": "用车需求单",
+              "children": [
+                {
+                  "text": "新增-用车需求单",
+                  "url": "DingDan/DD_PCSQD/Add.aspx?QXID=7474&MenuTree=1&LoginUserID=2069",
+                  "parent_name": "用车需求单",
+                  "parent_id": "2060"
+                },
+                {
+                  "text": "列表-用车需求单",
+                  "url": "DingDan/DD_PCSQD/Index.aspx?QXID=7477&MenuTree=1&LoginUserID=2069",
+                  "parent_name": "用车需求单",
+                  "parent_id": "2060"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "text": "客户验货",
+          "children": [
+            {
+              "text": "新增-客户验货",
+              "url": "DingDan/DD_KHYH/Add.aspx?QXID=8078&MenuTree=1&LoginUserID=2069",
+              "parent_name": "客户验货",
+              "parent_id": "2228"
+            },
+            {
+              "text": "列表-客户验货",
+              "url": "DingDan/DD_KHYH/Index.aspx?QXID=8081&MenuTree=1&LoginUserID=2069",
+              "parent_name": "客户验货",
+              "parent_id": "2228"
+            }
+          ]
+        },
+        {
+          "text": "4M变更模块",
+          "children": [
+            {
+              "text": "新增-4M变更模块",
+              "url": "PinZhi/PZ_4MBTGZ/Add.aspx?QXID=13426&MenuTree=1&LoginUserID=2069",
+              "parent_name": "4M变更模块",
+              "parent_id": "3531"
+            },
+            {
+              "text": "列表-4M变更模块",
+              "url": "PinZhi/PZ_4MBTGZ/Index.aspx?QXID=13429&MenuTree=1&LoginUserID=2069",
+              "parent_name": "4M变更模块",
+              "parent_id": "3531"
+            }
+          ]
+        },
+        {
+          "text": "客户销售金额目标",
+          "children": [
+            {
+              "text": "新增-客户销售金额目标",
+              "url": "DingDan/DD_KHXSJEMB/Add.aspx?QXID=12315&MenuTree=1&LoginUserID=2069",
+              "parent_name": "客户销售金额目标",
+              "parent_id": "3225"
+            },
+            {
+              "text": "列表-客户销售金额目标",
+              "url": "DingDan/DD_KHXSJEMB/Index.aspx?QXID=12318&MenuTree=1&LoginUserID=2069",
+              "parent_name": "客户销售金额目标",
+              "parent_id": "3225"
+            }
+          ]
+        },
+        {
+          "text": "营销分析版面",
+          "children": [
+            {
+              "text": "报价统计分析",
+              "url": "DingDan/DD_DDTJFX/DD_BJBMTJFX.aspx?QXID=11597&MenuTree=1&LoginUserID=2069",
+              "parent_name": "营销分析版面",
+              "parent_id": "3051"
+            },
+            {
+              "text": "接单金额分析",
+              "url": "DingDan/DD_DDTJFX/DD_DDJDJEFX.aspx?QXID=11709&MenuTree=1&LoginUserID=2069",
+              "parent_name": "营销分析版面",
+              "parent_id": "3051"
+            },
+            {
+              "text": "客户订单计划实际送货对比分析",
+              "url": "DingDan/DD_DDTJFX/DD_KHDDSHKCFX.aspx?QXID=12140&MenuTree=1&LoginUserID=2069",
+              "parent_name": "营销分析版面",
+              "parent_id": "3051"
+            },
+            {
+              "text": "上周接单金额明细分析",
+              "url": "DingDan/DD_DDTJFX/DD_SZJDJEMXFX.aspx?QXID=11767&MenuTree=1&LoginUserID=2069",
+              "parent_name": "营销分析版面",
+              "parent_id": "3051"
+            },
+            {
+              "text": "销售金额分析",
+              "url": "DingDan/DD_DDTJFX/DD_XSJEFX.aspx?QXID=12041&MenuTree=1&LoginUserID=2069",
+              "parent_name": "营销分析版面",
+              "parent_id": "3051"
+            },
+            {
+              "text": "业务员体检中心",
+              "url": "DingDan/DD_DDTJFX/DD_YWYTJFX.aspx?QXID=12762&MenuTree=1&LoginUserID=2069",
+              "parent_name": "营销分析版面",
+              "parent_id": "3051"
+            },
+            {
+              "text": "核价订单拆分分析",
+              "url": "DingDan/DD_DDTJFX/DD_HJDDCFFX.aspx?QXID=13371&MenuTree=1&LoginUserID=2069",
+              "parent_name": "营销分析版面",
+              "parent_id": "3051"
+            },
+            {
+              "text": "未建立客户报出统计分析",
+              "url": "DingDan/DD_DDTJFX/DD_WJBCKHFX.aspx?QXID=12354&MenuTree=1&LoginUserID=2069",
+              "parent_name": "营销分析版面",
+              "parent_id": "3051"
+            }
+          ]
+        },
+        {
+          "text": "客户接单目标",
+          "children": [
+            {
+              "text": "新增-客户接单目标",
+              "url": "DingDan/DD_KHJDMB/Add.aspx?QXID=11969&MenuTree=1&LoginUserID=2069",
+              "parent_name": "客户接单目标",
+              "parent_id": "3131"
+            },
+            {
+              "text": "列表-客户接单目标",
+              "url": "DingDan/DD_KHJDMB/Index.aspx?QXID=11972&MenuTree=1&LoginUserID=2069",
+              "parent_name": "客户接单目标",
+              "parent_id": "3131"
+            }
+          ]
+        },
+        {
+          "text": "产品安全库存设置",
+          "children": [
+            {
+              "text": "新增-产品安全库存设置",
+              "url": "DingDan/DD_CPKCSXSSZ/Add.aspx?QXID=2318&MenuTree=1&LoginUserID=2069",
+              "parent_name": "产品安全库存设置",
+              "parent_id": "846"
+            },
+            {
+              "text": "列表-产品安全库存设置",
+              "url": "DingDan/DD_CPKCSXSSZ/Index.aspx?QXID=2321&MenuTree=1&LoginUserID=2069",
+              "parent_name": "产品安全库存设置",
+              "parent_id": "846"
+            }
+          ]
+        },
+        {
+          "text": "客户订单统计分析",
+          "children": [
+            {
+              "text": "日常",
+              "children": [
+                {
+                  "text": "订单进度情况分析",
+                  "url": "DingDan/DD_DDTJFX/DD_KHDDJGQKFX.aspx?QXID=2346&MenuTree=1&LoginUserID=2069",
+                  "parent_name": "日常",
+                  "parent_id": "3549"
+                },
+                {
+                  "text": "订单产品送货分析",
+                  "url": "DingDan/DD_DDTJFX/DD_KHDDCPSHQKFX.aspx?QXID=3602&MenuTree=1&LoginUserID=2069",
+                  "parent_name": "日常",
+                  "parent_id": "3549"
+                },
+                {
+                  "text": "订单产品跟单计划",
+                  "url": "DingDan/DD_DDTJFX/DD_KHDDGDJH.aspx?QXID=7272&MenuTree=1&LoginUserID=2069",
+                  "parent_name": "日常",
+                  "parent_id": "3549"
+                }
+              ]
+            },
+            {
+              "text": "其它",
+              "children": [
+                {
+                  "text": "客户订单材料分析",
+                  "url": "DingDan/DD_DDTJFX/DD_KHDDCLFX.aspx?QXID=7780&MenuTree=1&LoginUserID=2069",
+                  "parent_name": "其它",
+                  "parent_id": "3550"
+                },
+                {
+                  "text": "客户订单价格分析",
+                  "url": "DingDan/DD_DDTJFX/DD_KHDDJGFX.aspx?QXID=1772&MenuTree=1&LoginUserID=2069",
+                  "parent_name": "其它",
+                  "parent_id": "3550"
+                },
+                {
+                  "text": "订单产品计划送货分析",
+                  "url": "DingDan/DD_DDTJFX/DD_KHDDSHFX.aspx?QXID=2969&MenuTree=1&LoginUserID=2069",
+                  "parent_name": "其它",
+                  "parent_id": "3550"
+                },
+                {
+                  "text": "客户订单金额分析",
+                  "url": "DingDan/DD_DDTJFX/DD_KHDDJEFX.aspx?QXID=2973&MenuTree=1&LoginUserID=2069",
+                  "parent_name": "其它",
+                  "parent_id": "3550"
+                },
+                {
+                  "text": "客户订单数量金额分析",
+                  "url": "DingDan/DD_DDTJFX/DD_KHDDSLJEFX.aspx?QXID=3043&MenuTree=1&LoginUserID=2069",
+                  "parent_name": "其它",
+                  "parent_id": "3550"
+                },
+                {
+                  "text": "订单产品送货汇总分析",
+                  "url": "DingDan/DD_DDTJFX/DD_KHDDCPSHQXFX2.aspx?QXID=4425&MenuTree=1&LoginUserID=2069",
+                  "parent_name": "其它",
+                  "parent_id": "3550"
+                },
+                {
+                  "text": "订单产品送货周期分析",
+                  "url": "DingDan/DD_DDTJFX/DD_KHDDCPSHZQFX.aspx?QXID=5945&MenuTree=1&LoginUserID=2069",
+                  "parent_name": "其它",
+                  "parent_id": "3550"
+                },
+                {
+                  "text": "未建立客户报出统计",
+                  "url": "DingDan/DD_DDTJFX/DD_BJWJTJFX.aspx?QXID=12312&MenuTree=1&LoginUserID=2069",
+                  "parent_name": "其它",
+                  "parent_id": "3550"
+                },
+                {
+                  "text": "客户订单销售金额分析",
+                  "url": "DingDan/DD_DDTJFX/DD_KHDDXSJEFX.aspx?QXID=8473&MenuTree=1&LoginUserID=2069",
+                  "parent_name": "其它",
+                  "parent_id": "3550"
+                },
+                {
+                  "text": "订单生产进度分析",
+                  "url": "DingDan/DD_DDTJFX/DD_KHDDSCJDFX.aspx?QXID=6076&MenuTree=1&LoginUserID=2069",
+                  "parent_name": "其它",
+                  "parent_id": "3550"
+                },
+                {
+                  "text": "客户订单开单分析",
+                  "url": "DingDan/DD_DDTJFX/DD_KHDDKDFX.aspx?QXID=5063&MenuTree=1&LoginUserID=2069",
+                  "parent_name": "其它",
+                  "parent_id": "3550"
+                },
+                {
+                  "text": "订单工单周期分析",
+                  "url": "DingDan/DD_DDTJFX/DD_DDGDKDQKFX.aspx?QXID=7310&MenuTree=1&LoginUserID=2069",
+                  "parent_name": "其它",
+                  "parent_id": "3550"
+                },
+                {
+                  "text": "已核价订单产品计划送货分析",
+                  "url": "DingDan/DD_DDTJFX/DD_YHJDDCPJHSHFX.aspx?QXID=10380&MenuTree=1&LoginUserID=2069",
+                  "parent_name": "其它",
+                  "parent_id": "3550"
+                },
+                {
+                  "text": "报价订单对比分析",
+                  "url": "DingDan/DD_DDTJFX/DD_BJDDDBFX.aspx?QXID=10791&MenuTree=1&LoginUserID=2069",
+                  "parent_name": "其它",
+                  "parent_id": "3550"
+                },
+                {
+                  "text": "订单船头办排期分析",
+                  "url": "DingDan/DD_DDTJFX/DD_KHDDCTBPQTJFX.aspx?QXID=15885&MenuTree=1&LoginUserID=2069",
+                  "parent_name": "其它",
+                  "parent_id": "3550"
+                }
+              ]
             }
           ]
         }
@@ -119,15 +1039,449 @@
       "text": "生产管理",
       "children": [
         {
+          "text": "生产施工单",
+          "children": [
+            {
+              "text": "新增-生产施工单",
+              "url": "ShengChan/SC_SCSGD/Add.aspx?QXID=737&MenuTree=1&LoginUserID=2069",
+              "parent_name": "生产施工单",
+              "parent_id": "414"
+            },
+            {
+              "text": "列表-生产施工单",
+              "url": "ShengChan/SC_SCSGD/Index.aspx?QXID=740&MenuTree=1&LoginUserID=2069",
+              "parent_name": "生产施工单",
+              "parent_id": "414"
+            }
+          ]
+        },
+        {
           "text": "补数管理",
+          "children": [
+            {
+              "text": "补数申请",
+              "children": [
+                {
+                  "text": "新增-补数申请",
+                  "url": "PinZhi/PZ_BSBG_M/Add.aspx?QXID=6778&MenuTree=1&LoginUserID=2069",
+                  "parent_name": "补数申请",
+                  "parent_id": "1907"
+                },
+                {
+                  "text": "列表-补数申请",
+                  "url": "PinZhi/PZ_BSBG_M/Index.aspx?QXID=6781&MenuTree=1&LoginUserID=2069",
+                  "parent_name": "补数申请",
+                  "parent_id": "1907"
+                }
+              ]
+            },
+            {
+              "text": "补数费用核算",
+              "children": [
+                {
+                  "text": "新增-补数费用核算",
+                  "url": "ShengChan/SC_BSSSHS/Add.aspx?QXID=14322&MenuTree=1&LoginUserID=2069",
+                  "parent_name": "补数费用核算",
+                  "parent_id": "3781"
+                },
+                {
+                  "text": "列表-补数费用核算",
+                  "url": "ShengChan/SC_BSSSHS/Index.aspx?QXID=14325&MenuTree=1&LoginUserID=2069",
+                  "parent_name": "补数费用核算",
+                  "parent_id": "3781"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "text": "待下工单",
+          "url": "ShengChan/SC_SCTJFX/SC_DXSCSGDFX.aspx?QXID=14484&MenuTree=1&LoginUserID=2069",
           "parent_name": "生产管理",
           "parent_id": "413"
         },
         {
-          "text": "待下工单",
-          "url": "ShengChan/SC_SCTJFX/SC_DXSCSGDFX.aspx?QXID=14484&MenuTree=1&LoginUserID=2474",
-          "parent_name": "生产管理",
-          "parent_id": "413"
+          "text": "生产计划",
+          "children": [
+            {
+              "text": "订单计划总览表",
+              "url": "ShengChan/SC_WWKHDDList/Index.aspx?QXID=3367&MenuTree=1&LoginUserID=2069",
+              "parent_name": "生产计划",
+              "parent_id": "1127"
+            },
+            {
+              "text": "生产计划安排",
+              "url": "ShengChan/SC_WWKHDDList_SCJH/Index.aspx?QXID=3781&MenuTree=1&LoginUserID=2069",
+              "parent_name": "生产计划",
+              "parent_id": "1127"
+            },
+            {
+              "text": "其它",
+              "children": [
+                {
+                  "text": "收纸计划安排",
+                  "url": "ShengChan/SC_WWKHDDList_SCJH/Index.aspx?QXID=5171&MenuTree=1&LoginUserID=2069",
+                  "parent_name": "其它",
+                  "parent_id": "3553"
+                },
+                {
+                  "text": "机台或班组生产明细查询",
+                  "url": "ShengChan/SC_SCJH_CXFX/SC_JTHBZSCMX.aspx?QXID=3893&MenuTree=1&LoginUserID=2069",
+                  "parent_name": "其它",
+                  "parent_id": "3553"
+                },
+                {
+                  "text": "生产计划安排分组分析",
+                  "url": "ShengChan/SC_SCJH_CXFX/SC_SCJHAPFZFX.aspx?QXID=5217&MenuTree=1&LoginUserID=2069",
+                  "parent_name": "其它",
+                  "parent_id": "3553"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "text": "产品安全库存生产申请",
+          "children": [
+            {
+              "text": "新增-产品安全库存生产申请",
+              "url": "KuCun/KC_CPCRKSQ/Add.aspx?QXID=2236&MenuTree=1&LoginUserID=2069",
+              "parent_name": "产品安全库存生产申请",
+              "parent_id": "829"
+            },
+            {
+              "text": "列表-产品安全库存生产申请",
+              "url": "KuCun/KC_CPCRKSQ/Index.aspx?QXID=2239&MenuTree=1&LoginUserID=2069",
+              "parent_name": "产品安全库存生产申请",
+              "parent_id": "829"
+            }
+          ]
+        },
+        {
+          "text": "生产反馈",
+          "children": [
+            {
+              "text": "印前工序生产反馈",
+              "children": [
+                {
+                  "text": "列表-印前工序生产反馈",
+                  "url": "ShengChan/SC_GXSCFK/Index.aspx?QXID=2188&MenuTree=1&LoginUserID=2069",
+                  "parent_name": "印前工序生产反馈",
+                  "parent_id": "816"
+                }
+              ]
+            },
+            {
+              "text": "印刷工序生产反馈",
+              "children": [
+                {
+                  "text": "列表-印刷工序生产反馈",
+                  "url": "ShengChan/SC_GXSCFK/Index.aspx?QXID=2199&MenuTree=1&LoginUserID=2069",
+                  "parent_name": "印刷工序生产反馈",
+                  "parent_id": "817"
+                }
+              ]
+            },
+            {
+              "text": "印后工序生产反馈",
+              "children": [
+                {
+                  "text": "列表-印后工序生产反馈",
+                  "url": "ShengChan/SC_GXSCFK/Index.aspx?QXID=2210&MenuTree=1&LoginUserID=2069",
+                  "parent_name": "印后工序生产反馈",
+                  "parent_id": "818"
+                }
+              ]
+            },
+            {
+              "text": "员工每天加工产值",
+              "children": [
+                {
+                  "text": "新增-员工每天加工产值",
+                  "url": "ShengChan/SC_YGMTJGCZ/Add.aspx?QXID=14455&MenuTree=1&LoginUserID=2069",
+                  "parent_name": "员工每天加工产值",
+                  "parent_id": "3813"
+                },
+                {
+                  "text": "列表-员工每天加工产值",
+                  "url": "ShengChan/SC_YGMTJGCZ/Index.aspx?QXID=14458&MenuTree=1&LoginUserID=2069",
+                  "parent_name": "员工每天加工产值",
+                  "parent_id": "3813"
+                },
+                {
+                  "text": "员工每天加工产值分析",
+                  "url": "ShengChan/SC_YGMTJGCZ/SC_YGMTJGCZFX.aspx?QXID=15434&MenuTree=1&LoginUserID=2069",
+                  "parent_name": "员工每天加工产值",
+                  "parent_id": "3813"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "text": "材料清单",
+          "children": [
+            {
+              "text": "产品临时材料清单",
+              "children": [
+                {
+                  "text": "列表-产品临时材料清单",
+                  "url": "ShengChan/SC_CPCLQD/Index.aspx?QXID=3029&MenuTree=1&LoginUserID=2069",
+                  "parent_name": "产品临时材料清单",
+                  "parent_id": "1038"
+                }
+              ]
+            },
+            {
+              "text": "产品材料清单",
+              "children": [
+                {
+                  "text": "新增-产品材料清单",
+                  "url": "ShengChan/SC_CPCLQD/Add.aspx?QXID=1444&MenuTree=1&LoginUserID=2069",
+                  "parent_name": "产品材料清单",
+                  "parent_id": "656"
+                },
+                {
+                  "text": "列表-产品材料清单",
+                  "url": "ShengChan/SC_CPCLQD/Index.aspx?QXID=1447&MenuTree=1&LoginUserID=2069",
+                  "parent_name": "产品材料清单",
+                  "parent_id": "656"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "text": "生产材料采购申请",
+          "children": [
+            {
+              "text": "列表-生产材料采购申请",
+              "url": "KuCun/KC_CLCRKSQ/Index.aspx?QXID=1564&MenuTree=1&LoginUserID=2069",
+              "parent_name": "生产材料采购申请",
+              "parent_id": "695"
+            }
+          ]
+        },
+        {
+          "text": "材料领料",
+          "children": [
+            {
+              "text": "生产领料分切通知单",
+              "children": [
+                {
+                  "text": "列表-生产领料分切通知单",
+                  "url": "KuCun/KC_CLCRKSQ/Index.aspx?QXID=1457&MenuTree=1&LoginUserID=2069",
+                  "parent_name": "生产领料分切通知单",
+                  "parent_id": "659"
+                }
+              ]
+            },
+            {
+              "text": "生产补料分切通知单",
+              "children": [
+                {
+                  "text": "列表-生产补料分切通知单",
+                  "url": "KuCun/KC_CLCRKSQ/Index.aspx?QXID=1497&MenuTree=1&LoginUserID=2069",
+                  "parent_name": "生产补料分切通知单",
+                  "parent_id": "676"
+                }
+              ]
+            },
+            {
+              "text": "生产领料通知单",
+              "children": [
+                {
+                  "text": "列表-生产领料通知单",
+                  "url": "KuCun/KC_CLCRKSQ/Index.aspx?QXID=825&MenuTree=1&LoginUserID=2069",
+                  "parent_name": "生产领料通知单",
+                  "parent_id": "448"
+                }
+              ]
+            },
+            {
+              "text": "生产补料通知单",
+              "children": [
+                {
+                  "text": "列表-生产补料通知单",
+                  "url": "KuCun/KC_CLCRKSQ/Index.aspx?QXID=405&MenuTree=1&LoginUserID=2069",
+                  "parent_name": "生产补料通知单",
+                  "parent_id": "294"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "text": "工单阿米巴数据",
+          "children": [
+            {
+              "text": "新增-工单阿米巴数据",
+              "url": "ShengChan/SC_GDAMBFX/Add.aspx?QXID=15206&MenuTree=1&LoginUserID=2069",
+              "parent_name": "工单阿米巴数据",
+              "parent_id": "3888"
+            },
+            {
+              "text": "列表-工单阿米巴数据",
+              "url": "ShengChan/SC_GDAMBFX/Index.aspx?QXID=15209&MenuTree=1&LoginUserID=2069",
+              "parent_name": "工单阿米巴数据",
+              "parent_id": "3888"
+            }
+          ]
+        },
+        {
+          "text": "生产统计分析",
+          "children": [
+            {
+              "text": "日常",
+              "children": [
+                {
+                  "text": "印前生产日报分析",
+                  "url": "ShengChan/SC_SCTJFX/SC_YSSCRBFX/SC_YSSCRBFX.aspx?QXID=3990&MenuTree=1&LoginUserID=2069",
+                  "parent_name": "日常",
+                  "parent_id": "3551"
+                },
+                {
+                  "text": "印刷生产日报分析",
+                  "url": "ShengChan/SC_SCTJFX/SC_YSSCRBFX/SC_YSSCRBFX.aspx?QXID=3987&MenuTree=1&LoginUserID=2069",
+                  "parent_name": "日常",
+                  "parent_id": "3551"
+                },
+                {
+                  "text": "印后生产日报分析",
+                  "url": "ShengChan/SC_SCTJFX/SC_YSSCRBFX/SC_YSSCRBFX.aspx?QXID=3984&MenuTree=1&LoginUserID=2069",
+                  "parent_name": "日常",
+                  "parent_id": "3551"
+                },
+                {
+                  "text": "工序加工产值",
+                  "url": "ShengChan/SC_SCTJFX/SC_GXJGCZ.aspx?QXID=14371&MenuTree=1&LoginUserID=2069",
+                  "parent_name": "日常",
+                  "parent_id": "3551"
+                },
+                {
+                  "text": "部门加工产值阿米巴分析",
+                  "url": "ShengChan/SC_SCTJFX/SC_BMJGCZAMBFX.aspx?QXID=14489&MenuTree=1&LoginUserID=2069",
+                  "parent_name": "日常",
+                  "parent_id": "3551"
+                }
+              ]
+            },
+            {
+              "text": "其它",
+              "children": [
+                {
+                  "text": "产品材料清单分析",
+                  "url": "ShengChan/SC_SCTJFX/SC_CPCLQDFX/SC_CPCLQDFX.aspx?QXID=1658&MenuTree=1&LoginUserID=2069",
+                  "parent_name": "其它",
+                  "parent_id": "3552"
+                },
+                {
+                  "text": "产品安全库存申请开单情况表",
+                  "url": "ShengChan/SC_SCTJFX/SC_CPDKCKDQKB.aspx?QXID=3032&MenuTree=1&LoginUserID=2069",
+                  "parent_name": "其它",
+                  "parent_id": "3552"
+                },
+                {
+                  "text": "生产日报汇总分析",
+                  "url": "ShengChan/SC_SCTJFX/SC_SCRBHZFX.aspx?QXID=4119&MenuTree=1&LoginUserID=2069",
+                  "parent_name": "其它",
+                  "parent_id": "3552"
+                },
+                {
+                  "text": "日报工单汇总分析",
+                  "url": "ShengChan/SC_SCTJFX/SC_SCRBGDHZFX.aspx?QXID=5629&MenuTree=1&LoginUserID=2069",
+                  "parent_name": "其它",
+                  "parent_id": "3552"
+                },
+                {
+                  "text": "日报工单分组分析",
+                  "url": "ShengChan/SC_SCTJFX/SC_SCRBGDFZFZ.aspx?QXID=5610&MenuTree=1&LoginUserID=2069",
+                  "parent_name": "其它",
+                  "parent_id": "3552"
+                },
+                {
+                  "text": "日报产量分组分析",
+                  "url": "ShengChan/SC_SCTJFX/SC_RBCLFZFX.aspx?QXID=5616&MenuTree=1&LoginUserID=2069",
+                  "parent_name": "其它",
+                  "parent_id": "3552"
+                },
+                {
+                  "text": "生产产量汇总分析",
+                  "url": "ShengChan/SC_SCTJFX/SC_SCCLHZFX.aspx?QXID=6222&MenuTree=1&LoginUserID=2069",
+                  "parent_name": "其它",
+                  "parent_id": "3552"
+                },
+                {
+                  "text": "施工单开单分析",
+                  "url": "ShengChan/SC_SCTJFX/SC_SCSGDKDFX.aspx?QXID=5067&MenuTree=1&LoginUserID=2069",
+                  "parent_name": "其它",
+                  "parent_id": "3552"
+                },
+                {
+                  "text": "施工单材料清单分析",
+                  "url": "ShengChan/SC_SCTJFX/SC_SGDCLQDFX.aspx?QXID=7442&MenuTree=1&LoginUserID=2069",
+                  "parent_name": "其它",
+                  "parent_id": "3552"
+                },
+                {
+                  "text": "订单产品实际单人时产能分析",
+                  "url": "ShengChan/SC_SCTJFX/SC_DDCPSJDRSCLFX.aspx?QXID=6714&MenuTree=1&LoginUserID=2069",
+                  "parent_name": "其它",
+                  "parent_id": "3552"
+                },
+                {
+                  "text": "生产返工统计分析",
+                  "url": "ShengChan/SC_SCTJFX/SC_FGTJFX.aspx?QXID=8366&MenuTree=1&LoginUserID=2069",
+                  "parent_name": "其它",
+                  "parent_id": "3552"
+                },
+                {
+                  "text": "订单预计与实际产能对比分析",
+                  "url": "ShengChan/SC_SCTJFX/SC_DDYJYSJCNDBFX.aspx?QXID=8995&MenuTree=1&LoginUserID=2069",
+                  "parent_name": "其它",
+                  "parent_id": "3552"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "text": "外发管理",
+      "children": [
+        {
+          "text": "工序外发申请",
+          "children": [
+            {
+              "text": "列表-工序外发申请",
+              "url": "ShengChan/SC_GXWFSQ/Index.aspx?QXID=2070&MenuTree=1&LoginUserID=2069",
+              "parent_name": "工序外发申请",
+              "parent_id": "789"
+            }
+          ]
+        },
+        {
+          "text": "工序外发单",
+          "children": [
+            {
+              "text": "列表-工序外发单",
+              "url": "ShengChan/SC_GXWFJG/Index.aspx?QXID=2081&MenuTree=1&LoginUserID=2069",
+              "parent_name": "工序外发单",
+              "parent_id": "790"
+            }
+          ]
+        },
+        {
+          "text": "工序外发反馈",
+          "children": [
+            {
+              "text": "列表-工序外发反馈",
+              "url": "ShengChan/SC_GXWFFK/Index.aspx?QXID=2092&MenuTree=1&LoginUserID=2069",
+              "parent_name": "工序外发反馈",
+              "parent_id": "791"
+            }
+          ]
         }
       ]
     },
@@ -139,15 +1493,26 @@
           "children": [
             {
               "text": "新增-采购申请",
-              "url": "KuCun/KC_CLCRKSQ/Add.aspx?QXID=1036&MenuTree=1&LoginUserID=2474",
+              "url": "KuCun/KC_CLCRKSQ/Add.aspx?QXID=1036&MenuTree=1&LoginUserID=2069",
               "parent_name": "采购申请",
               "parent_id": "251"
             },
             {
               "text": "列表-采购申请",
-              "url": "KuCun/KC_CLCRKSQ/Index.aspx?QXID=1039&MenuTree=1&LoginUserID=2474",
+              "url": "KuCun/KC_CLCRKSQ/Index.aspx?QXID=1039&MenuTree=1&LoginUserID=2069",
               "parent_name": "采购申请",
               "parent_id": "251"
+            }
+          ]
+        },
+        {
+          "text": "采购订单",
+          "children": [
+            {
+              "text": "列表-采购订单",
+              "url": "CaiGou/CG_CGDD/Index.aspx?QXID=266&MenuTree=1&LoginUserID=2069",
+              "parent_name": "采购订单",
+              "parent_id": "253"
             }
           ]
         },
@@ -159,32 +1524,104 @@
               "children": [
                 {
                   "text": "新增-部门材料询价",
-                  "url": "CaiGou/CG_BMCLXJ/Add.aspx?QXID=1162&MenuTree=1&LoginUserID=2474",
+                  "url": "CaiGou/CG_BMCLXJ/Add.aspx?QXID=1162&MenuTree=1&LoginUserID=2069",
                   "parent_name": "部门材料询价",
                   "parent_id": "572"
                 },
                 {
                   "text": "列表-部门材料询价",
-                  "url": "CaiGou/CG_BMCLXJ/Index.aspx?QXID=1165&MenuTree=1&LoginUserID=2474",
+                  "url": "CaiGou/CG_BMCLXJ/Index.aspx?QXID=1165&MenuTree=1&LoginUserID=2069",
                   "parent_name": "部门材料询价",
                   "parent_id": "572"
                 }
               ]
             },
             {
-              "text": "供应商材料询价",
+              "text": "供应商材料询价反馈",
+              "url": "CaiGou/CG_GYSCLXJ/Index.aspx?QXID=1183&MenuTree=1&LoginUserID=2069",
+              "parent_name": "材料询价",
+              "parent_id": "2157"
+            },
+            {
+              "text": "常规辅料询价",
               "children": [
                 {
-                  "text": "新增-供应商材料询价",
-                  "url": "CaiGou/CG_GYSCLXJ/Add.aspx?QXID=1171&MenuTree=1&LoginUserID=2474",
-                  "parent_name": "供应商材料询价",
-                  "parent_id": "575"
+                  "text": "列表-常规辅料询价",
+                  "url": "CaiGou/CG_CGCLXJ_M/Index.aspx?QXID=2987&MenuTree=1&LoginUserID=2069",
+                  "parent_name": "常规辅料询价",
+                  "parent_id": "1024"
+                }
+              ]
+            },
+            {
+              "text": "常规纸料询价",
+              "children": [
+                {
+                  "text": "列表-常规纸料询价",
+                  "url": "CaiGou/CG_CGCLXJ_New_M/Index.aspx?QXID=12617&MenuTree=1&LoginUserID=2069",
+                  "parent_name": "常规纸料询价",
+                  "parent_id": "3313"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "text": "材料安全库存",
+          "children": [
+            {
+              "text": "安全库存采购申请",
+              "children": [
+                {
+                  "text": "新增-安全库存采购申请",
+                  "url": "KuCun/KC_CLCRKSQ/Add.aspx?QXID=1609&MenuTree=1&LoginUserID=2069",
+                  "parent_name": "安全库存采购申请",
+                  "parent_id": "711"
                 },
                 {
-                  "text": "列表-供应商材料询价",
-                  "url": "CaiGou/CG_GYSCLXJ/Index.aspx?QXID=1174&MenuTree=1&LoginUserID=2474",
-                  "parent_name": "供应商材料询价",
-                  "parent_id": "575"
+                  "text": "列表-安全库存采购申请",
+                  "url": "KuCun/KC_CLCRKSQ/Index.aspx?QXID=1612&MenuTree=1&LoginUserID=2069",
+                  "parent_name": "安全库存采购申请",
+                  "parent_id": "711"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "text": "采购统计分析",
+          "children": [
+            {
+              "text": "日常",
+              "children": [
+                {
+                  "text": "材料采购跟进表",
+                  "url": "CaiGou/CG_CGTJFX/CG_CLCGGJB.aspx?QXID=1382&MenuTree=1&LoginUserID=2069",
+                  "parent_name": "日常",
+                  "parent_id": "3560"
+                }
+              ]
+            },
+            {
+              "text": "其它",
+              "children": [
+                {
+                  "text": "采购订单金额分析",
+                  "url": "CaiGou/CG_CGTJFX/CG_CGDDJEFX.aspx?QXID=3233&MenuTree=1&LoginUserID=2069",
+                  "parent_name": "其它",
+                  "parent_id": "3561"
+                },
+                {
+                  "text": "材料采购跟进汇总表",
+                  "url": "CaiGou/CG_CGTJFX/CG_CLCGGJB2.aspx?QXID=4420&MenuTree=1&LoginUserID=2069",
+                  "parent_name": "其它",
+                  "parent_id": "3561"
+                },
+                {
+                  "text": "采购送货时间分析",
+                  "url": "CaiGou/CG_CGTJFX/CG_CGSHSJFX.aspx?QXID=3921&MenuTree=1&LoginUserID=2069",
+                  "parent_name": "其它",
+                  "parent_id": "3561"
                 }
               ]
             }
@@ -206,17 +1643,562 @@
                   "children": [
                     {
                       "text": "新增-部门领料申请",
-                      "url": "KuCun/KC_CLCRKSQ/Add.aspx?QXID=331&MenuTree=1&LoginUserID=2474",
+                      "url": "KuCun/KC_CLCRKSQ/Add.aspx?QXID=331&MenuTree=1&LoginUserID=2069",
                       "parent_name": "部门领料申请",
                       "parent_id": "317"
                     },
                     {
                       "text": "列表-部门领料申请",
-                      "url": "KuCun/KC_CLCRKSQ/Index.aspx?QXID=334&MenuTree=1&LoginUserID=2474",
+                      "url": "KuCun/KC_CLCRKSQ/Index.aspx?QXID=334&MenuTree=1&LoginUserID=2069",
                       "parent_name": "部门领料申请",
                       "parent_id": "317"
                     }
                   ]
+                },
+                {
+                  "text": "部门领料出库",
+                  "children": [
+                    {
+                      "text": "新增-部门领料出库",
+                      "url": "KuCun/KC_CLCRK/Add.aspx?QXID=337&MenuTree=1&LoginUserID=2069",
+                      "parent_name": "部门领料出库",
+                      "parent_id": "318"
+                    },
+                    {
+                      "text": "列表-部门领料出库",
+                      "url": "KuCun/KC_CLCRK/Index.aspx?QXID=340&MenuTree=1&LoginUserID=2069",
+                      "parent_name": "部门领料出库",
+                      "parent_id": "318"
+                    }
+                  ]
+                },
+                {
+                  "text": "部门领料退库",
+                  "children": [
+                    {
+                      "text": "新增-部门领料退库",
+                      "url": "KuCun/KC_CLCRK/Add.aspx?QXID=1327&MenuTree=1&LoginUserID=2069",
+                      "parent_name": "部门领料退库",
+                      "parent_id": "621"
+                    },
+                    {
+                      "text": "列表-部门领料退库",
+                      "url": "KuCun/KC_CLCRK/Index.aspx?QXID=1330&MenuTree=1&LoginUserID=2069",
+                      "parent_name": "部门领料退库",
+                      "parent_id": "621"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "text": "材料分切",
+              "children": [
+                {
+                  "text": "材料分切领料",
+                  "children": [
+                    {
+                      "text": "列表-材料分切领料",
+                      "url": "KuCun/KC_CLCRK/Index.aspx?QXID=1467&MenuTree=1&LoginUserID=2069",
+                      "parent_name": "材料分切领料",
+                      "parent_id": "663"
+                    }
+                  ]
+                },
+                {
+                  "text": "材料分切补料",
+                  "children": [
+                    {
+                      "text": "列表-材料分切补料",
+                      "url": "KuCun/KC_CLCRK/Index.aspx?QXID=1506&MenuTree=1&LoginUserID=2069",
+                      "parent_name": "材料分切补料",
+                      "parent_id": "679"
+                    }
+                  ]
+                },
+                {
+                  "text": "新材料分切入库通知单",
+                  "children": [
+                    {
+                      "text": "列表-新材料分切入库通知单",
+                      "url": "KuCun/KC_CLCRKSQ/Index.aspx?QXID=1525&MenuTree=1&LoginUserID=2069",
+                      "parent_name": "新材料分切入库通知单",
+                      "parent_id": "683"
+                    }
+                  ]
+                },
+                {
+                  "text": "新材料分切入库",
+                  "children": [
+                    {
+                      "text": "列表-新材料分切入库",
+                      "url": "KuCun/KC_CLCRK/Index.aspx?QXID=1477&MenuTree=1&LoginUserID=2069",
+                      "parent_name": "新材料分切入库",
+                      "parent_id": "664"
+                    }
+                  ]
+                },
+                {
+                  "text": "材料分切退库",
+                  "children": [
+                    {
+                      "text": "列表-材料分切退库",
+                      "url": "KuCun/KC_CLCRK/Index.aspx?QXID=1487&MenuTree=1&LoginUserID=2069",
+                      "parent_name": "材料分切退库",
+                      "parent_id": "673"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "text": "生产库存",
+              "children": [
+                {
+                  "text": "生产领料",
+                  "children": [
+                    {
+                      "text": "列表-生产领料",
+                      "url": "KuCun/KC_CLCRK/Index.aspx?QXID=398&MenuTree=1&LoginUserID=2069",
+                      "parent_name": "生产领料",
+                      "parent_id": "293"
+                    }
+                  ]
+                },
+                {
+                  "text": "生产补料",
+                  "children": [
+                    {
+                      "text": "列表-生产补料",
+                      "url": "KuCun/KC_CLCRK/Index.aspx?QXID=412&MenuTree=1&LoginUserID=2069",
+                      "parent_name": "生产补料",
+                      "parent_id": "295"
+                    }
+                  ]
+                },
+                {
+                  "text": "生产退料",
+                  "children": [
+                    {
+                      "text": "列表-生产退料",
+                      "url": "KuCun/KC_CLCRK/Index.aspx?QXID=419&MenuTree=1&LoginUserID=2069",
+                      "parent_name": "生产退料",
+                      "parent_id": "296"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "text": "材料库存统计",
+              "children": [
+                {
+                  "text": "日常",
+                  "children": [
+                    {
+                      "text": "材料实际库存",
+                      "url": "KuCun/KC_CLTJFX/KC_CLSJKC/KC_CLSJKC.aspx?QXID=484&MenuTree=1&LoginUserID=2069",
+                      "parent_name": "日常",
+                      "parent_id": "3556"
+                    },
+                    {
+                      "text": "材料出入库明细",
+                      "url": "KuCun/KC_CLTJFX/KC_CLCRKMX.aspx?QXID=642&MenuTree=1&LoginUserID=2069",
+                      "parent_name": "日常",
+                      "parent_id": "3556"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "text": "产品管理",
+          "children": [
+            {
+              "text": "产品入库",
+              "children": [
+                {
+                  "text": "产品生产入库",
+                  "children": [
+                    {
+                      "text": "列表-产品生产入库",
+                      "url": "KuCun/KC_CPCRK/Index.aspx?QXID=500&MenuTree=1&LoginUserID=2069",
+                      "parent_name": "产品生产入库",
+                      "parent_id": "331"
+                    }
+                  ]
+                },
+                {
+                  "text": "产品退给生产",
+                  "children": [
+                    {
+                      "text": "列表-产品退给生产",
+                      "url": "KuCun/KC_CPCRK/Index.aspx?QXID=5386&MenuTree=1&LoginUserID=2069",
+                      "parent_name": "产品退给生产",
+                      "parent_id": "1527"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "text": "产品送货",
+              "children": [
+                {
+                  "text": "产品送货",
+                  "children": [
+                    {
+                      "text": "列表-产品送货",
+                      "url": "KuCun/KC_CPCRK/Index.aspx?QXID=509&MenuTree=1&LoginUserID=2069",
+                      "parent_name": "产品送货",
+                      "parent_id": "334"
+                    }
+                  ]
+                },
+                {
+                  "text": "客户产品退货",
+                  "children": [
+                    {
+                      "text": "新增-客户产品退货",
+                      "url": "KuCun/KC_CPCRK/Add.aspx?QXID=515&MenuTree=1&LoginUserID=2069",
+                      "parent_name": "客户产品退货",
+                      "parent_id": "337"
+                    },
+                    {
+                      "text": "列表-客户产品退货",
+                      "url": "KuCun/KC_CPCRK/Index.aspx?QXID=518&MenuTree=1&LoginUserID=2069",
+                      "parent_name": "客户产品退货",
+                      "parent_id": "337"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "text": "产品调拨",
+              "children": [
+                {
+                  "text": "产品调拨申请",
+                  "children": [
+                    {
+                      "text": "列表-产品调拨申请",
+                      "url": "KuCun/KC_CPCRKSQ/Index.aspx?QXID=3424&MenuTree=1&LoginUserID=2069",
+                      "parent_name": "产品调拨申请",
+                      "parent_id": "1138"
+                    }
+                  ]
+                },
+                {
+                  "text": "产品调拨出库",
+                  "children": [
+                    {
+                      "text": "列表-产品调拨出库",
+                      "url": "KuCun/KC_CPCRK/Index.aspx?QXID=528&MenuTree=1&LoginUserID=2069",
+                      "parent_name": "产品调拨出库",
+                      "parent_id": "346"
+                    }
+                  ]
+                },
+                {
+                  "text": "产品调拨入库",
+                  "children": [
+                    {
+                      "text": "列表-产品调拨入库",
+                      "url": "KuCun/KC_CPCRK/Index.aspx?QXID=537&MenuTree=1&LoginUserID=2069",
+                      "parent_name": "产品调拨入库",
+                      "parent_id": "347"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "text": "产品其他出入库",
+              "children": [
+                {
+                  "text": "产品其他入库",
+                  "children": [
+                    {
+                      "text": "列表-产品其他入库",
+                      "url": "KuCun/KC_CPCRK/Index.aspx?QXID=556&MenuTree=1&LoginUserID=2069",
+                      "parent_name": "产品其他入库",
+                      "parent_id": "362"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "text": "产品库存统计",
+              "children": [
+                {
+                  "text": "日常",
+                  "children": [
+                    {
+                      "text": "产品实际库存",
+                      "url": "KuCun/KC_CPTJFX/KC_CPSJKC.aspx?QXID=618&MenuTree=1&LoginUserID=2069",
+                      "parent_name": "日常",
+                      "parent_id": "3558"
+                    },
+                    {
+                      "text": "产品出入库明细",
+                      "url": "KuCun/KC_CPTJFX/KC_CPCRKMX.aspx?QXID=679&MenuTree=1&LoginUserID=2069",
+                      "parent_name": "日常",
+                      "parent_id": "3558"
+                    }
+                  ]
+                },
+                {
+                  "text": "其它",
+                  "children": [
+                    {
+                      "text": "呆滞产品分析",
+                      "url": "KuCun/KC_CPTJFX/KC_DZCPFX/KC_DZCPFX.aspx?QXID=3914&MenuTree=1&LoginUserID=2069",
+                      "parent_name": "其它",
+                      "parent_id": "3559"
+                    },
+                    {
+                      "text": "产品存放时间统计",
+                      "url": "KuCun/KC_CPTJFX/KC_CPCFSJTJ.aspx?QXID=4271&MenuTree=1&LoginUserID=2069",
+                      "parent_name": "其它",
+                      "parent_id": "3559"
+                    },
+                    {
+                      "text": "产品安全库存分析",
+                      "url": "KuCun/KC_CPTJFX/KC_CPSXXKCFX.aspx?QXID=2231&MenuTree=1&LoginUserID=2069",
+                      "parent_name": "其它",
+                      "parent_id": "3559"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "text": "关务管理",
+      "children": [
+        {
+          "text": "出口管理",
+          "children": [
+            {
+              "text": "装柜通知单",
+              "children": [
+                {
+                  "text": "列表-装柜通知单",
+                  "url": "BaoGuanZhuanChang/DD_ZGTZD/Index.aspx?QXID=5099&MenuTree=1&LoginUserID=2069",
+                  "parent_name": "装柜通知单",
+                  "parent_id": "1446"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "text": "关务统计分析",
+          "children": [
+            {
+              "text": "出口费用分析",
+              "url": "BaoGuanZhuanChang/CWFYFX/BGZC_CWFYFX.aspx?QXID=5147&MenuTree=1&LoginUserID=2069",
+              "parent_name": "关务统计分析",
+              "parent_id": "1461"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "text": "品质管理",
+      "children": [
+        {
+          "text": "材料检验",
+          "children": [
+            {
+              "text": "采购材料入库检验",
+              "children": [
+                {
+                  "text": "列表-采购材料入库检验",
+                  "url": "PinZhi/PZ_CLRKJY/Index.aspx?QXID=1391&MenuTree=1&LoginUserID=2069",
+                  "parent_name": "采购材料入库检验",
+                  "parent_id": "646"
+                }
+              ]
+            },
+            {
+              "text": "采购材料品质异常报告",
+              "children": [
+                {
+                  "text": "列表-采购材料品质异常报告",
+                  "url": "PinZhi/PZ_CLBHGBG/Index.aspx?QXID=1996&MenuTree=1&LoginUserID=2069",
+                  "parent_name": "采购材料品质异常报告",
+                  "parent_id": "1060"
+                }
+              ]
+            },
+            {
+              "text": "客供材料入库检验",
+              "children": [
+                {
+                  "text": "列表-客供材料入库检验",
+                  "url": "PinZhi/PZ_CLRKJY/Index.aspx?QXID=2016&MenuTree=1&LoginUserID=2069",
+                  "parent_name": "客供材料入库检验",
+                  "parent_id": "776"
+                }
+              ]
+            },
+            {
+              "text": "客供材料品质异常报告",
+              "children": [
+                {
+                  "text": "列表-客供材料品质异常报告",
+                  "url": "PinZhi/PZ_CLBHGBG/Index.aspx?QXID=6905&MenuTree=1&LoginUserID=2069",
+                  "parent_name": "客供材料品质异常报告",
+                  "parent_id": "1933"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "text": "外发检验",
+          "children": [
+            {
+              "text": "工序外发反馈检验",
+              "children": [
+                {
+                  "text": "列表-工序外发反馈检验",
+                  "url": "PinZhi/PZ_GXWFJY/Index.aspx?QXID=6675&MenuTree=1&LoginUserID=2069",
+                  "parent_name": "工序外发反馈检验",
+                  "parent_id": "1884"
+                }
+              ]
+            },
+            {
+              "text": "外发特采申请单",
+              "parent_name": "外发检验",
+              "parent_id": "1883"
+            },
+            {
+              "text": "工序外发扣款",
+              "children": [
+                {
+                  "text": "列表-工序外发扣款",
+                  "url": "PinZhi/PZ_GXWFKK/Index.aspx?QXID=6688&MenuTree=1&LoginUserID=2069",
+                  "parent_name": "工序外发扣款",
+                  "parent_id": "1886"
+                }
+              ]
+            },
+            {
+              "text": "工序外发不合格报告",
+              "children": [
+                {
+                  "text": "列表-工序外发不合格报告",
+                  "url": "PinZhi/PZ_WFBHGBG/Index.aspx?QXID=6662&MenuTree=1&LoginUserID=2069",
+                  "parent_name": "工序外发不合格报告",
+                  "parent_id": "1885"
+                }
+              ]
+            },
+            {
+              "text": "外发供应商预防纠正措施",
+              "children": [
+                {
+                  "text": "列表-外发供应商预防纠正措施",
+                  "url": "PinZhi/PZ_GYSYFJZCS_M/Index.aspx?QXID=6701&MenuTree=1&LoginUserID=2069",
+                  "parent_name": "外发供应商预防纠正措施",
+                  "parent_id": "1887"
+                }
+              ]
+            },
+            {
+              "text": "外发全检申请单",
+              "children": [
+                {
+                  "text": "列表-外发全检申请单",
+                  "url": "PinZhi/PZ_WLFGSQ/Index.aspx?QXID=12171&MenuTree=1&LoginUserID=2069",
+                  "parent_name": "外发全检申请单",
+                  "parent_id": "3191"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "text": "工序检验",
+          "children": [
+            {
+              "text": "工序巡视检验",
+              "children": [
+                {
+                  "text": "列表-工序巡视检验",
+                  "url": "PinZhi/PZ_GXZLJY/Index.aspx?QXID=6472&MenuTree=1&LoginUserID=2069",
+                  "parent_name": "工序巡视检验",
+                  "parent_id": "1839"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "text": "产品检验",
+          "children": [
+            {
+              "text": "产品入库检验",
+              "children": [
+                {
+                  "text": "列表-产品入库检验",
+                  "url": "PinZhi/PZ_CPCRKJY/Index.aspx?QXID=2056&MenuTree=1&LoginUserID=2069",
+                  "parent_name": "产品入库检验",
+                  "parent_id": "783"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "text": "实验室检验",
+          "children": [
+            {
+              "text": "实验室检验申请表",
+              "children": [
+                {
+                  "text": "新增-实验室检验申请表",
+                  "url": "PinZhi/PZ_SYSJYSQ/Add.aspx?QXID=8122&MenuTree=1&LoginUserID=2069",
+                  "parent_name": "实验室检验申请表",
+                  "parent_id": "2236"
+                },
+                {
+                  "text": "列表-实验室检验申请表",
+                  "url": "PinZhi/PZ_SYSJYSQ/Index.aspx?QXID=8125&MenuTree=1&LoginUserID=2069",
+                  "parent_name": "实验室检验申请表",
+                  "parent_id": "2236"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "text": "部门预防",
+          "children": [
+            {
+              "text": "部门预防纠正措施",
+              "children": [
+                {
+                  "text": "新增-部门预防纠正措施",
+                  "url": "PinZhi/PZ_BMYFJZCS_M/Add.aspx?QXID=3122&MenuTree=1&LoginUserID=2069",
+                  "parent_name": "部门预防纠正措施",
+                  "parent_id": "1066"
+                },
+                {
+                  "text": "列表-部门预防纠正措施",
+                  "url": "PinZhi/PZ_BMYFJZCS_M/Index.aspx?QXID=3125&MenuTree=1&LoginUserID=2069",
+                  "parent_name": "部门预防纠正措施",
+                  "parent_id": "1066"
                 }
               ]
             }
@@ -235,17 +2217,29 @@
               "children": [
                 {
                   "text": "新增-设备维修通知单",
-                  "url": "SheBei/SB_WXTZD/Add.aspx?QXID=1663&MenuTree=1&LoginUserID=2474",
+                  "url": "SheBei/SB_WXTZD/Add.aspx?QXID=1663&MenuTree=1&LoginUserID=2069",
                   "parent_name": "设备维修通知单",
                   "parent_id": "723"
                 },
                 {
                   "text": "列表-设备维修通知单",
-                  "url": "SheBei/SB_WXTZD/Index.aspx?QXID=1666&MenuTree=1&LoginUserID=2474",
+                  "url": "SheBei/SB_WXTZD/Index.aspx?QXID=1666&MenuTree=1&LoginUserID=2069",
                   "parent_name": "设备维修通知单",
                   "parent_id": "723"
                 }
               ]
+            },
+            {
+              "text": "设备维修记录",
+              "url": "SheBei/SB_WXTZD/Index.aspx?QXID=1674&MenuTree=1&LoginUserID=2069",
+              "parent_name": "设备维修",
+              "parent_id": "1803"
+            },
+            {
+              "text": "设备维修验收",
+              "url": "SheBei/SB_WXTZD/Index.aspx?QXID=1682&MenuTree=1&LoginUserID=2069",
+              "parent_name": "设备维修",
+              "parent_id": "1803"
             }
           ]
         }
@@ -258,6 +2252,100 @@
           "text": "人事管理",
           "children": [
             {
+              "text": "招聘管理",
+              "children": [
+                {
+                  "text": "用工申请",
+                  "children": [
+                    {
+                      "text": "新增-用工申请",
+                      "url": "RenShi/RS_YGSQ_M/Add.aspx?QXID=7534&MenuTree=1&LoginUserID=2069",
+                      "parent_name": "用工申请",
+                      "parent_id": "2072"
+                    },
+                    {
+                      "text": "列表-用工申请",
+                      "url": "RenShi/RS_YGSQ_M/Index.aspx?QXID=7537&MenuTree=1&LoginUserID=2069",
+                      "parent_name": "用工申请",
+                      "parent_id": "2072"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "text": "调岗离职",
+              "children": [
+                {
+                  "text": "离职申请",
+                  "children": [
+                    {
+                      "text": "新增-离职申请",
+                      "url": "RenShi/RS_YGLZSQ_M/Add.aspx?QXID=2937&MenuTree=1&LoginUserID=2069",
+                      "parent_name": "离职申请",
+                      "parent_id": "1014"
+                    },
+                    {
+                      "text": "列表-离职申请",
+                      "url": "RenShi/RS_YGLZSQ_M/Index.aspx?QXID=2940&MenuTree=1&LoginUserID=2069",
+                      "parent_name": "离职申请",
+                      "parent_id": "1014"
+                    }
+                  ]
+                },
+                {
+                  "text": "员工转正",
+                  "children": [
+                    {
+                      "text": "新增-员工转正",
+                      "url": "RenShi/RS_YGZZ_M/Add.aspx?QXID=2451&MenuTree=1&LoginUserID=2069",
+                      "parent_name": "员工转正",
+                      "parent_id": "879"
+                    },
+                    {
+                      "text": "列表-员工转正",
+                      "url": "RenShi/RS_YGZZ_M/Index.aspx?QXID=2454&MenuTree=1&LoginUserID=2069",
+                      "parent_name": "员工转正",
+                      "parent_id": "879"
+                    }
+                  ]
+                },
+                {
+                  "text": "人事变更",
+                  "children": [
+                    {
+                      "text": "新增-人事变更",
+                      "url": "RenShi/RS_ZWBG_M/Add.aspx?QXID=2422&MenuTree=1&LoginUserID=2069",
+                      "parent_name": "人事变更",
+                      "parent_id": "873"
+                    },
+                    {
+                      "text": "列表-人事变更",
+                      "url": "RenShi/RS_ZWBG_M/Index.aspx?QXID=2425&MenuTree=1&LoginUserID=2069",
+                      "parent_name": "人事变更",
+                      "parent_id": "873"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "text": "培训管理",
+              "children": [
+                {
+                  "text": "培训记录",
+                  "children": [
+                    {
+                      "text": "列表-培训记录",
+                      "url": "RenShi/RS_PXJL_M/Index.aspx?QXID=2629&MenuTree=1&LoginUserID=2069",
+                      "parent_name": "培训记录",
+                      "parent_id": "871"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
               "text": "行政管理",
               "children": [
                 {
@@ -265,17 +2353,38 @@
                   "children": [
                     {
                       "text": "新增-工作联络单",
-                      "url": "RenShi/RS_GZLLD_M/Add.aspx?QXID=8540&MenuTree=1&LoginUserID=2474",
+                      "url": "RenShi/RS_GZLLD_M/Add.aspx?QXID=8540&MenuTree=1&LoginUserID=2069",
                       "parent_name": "工作联络单",
                       "parent_id": "2301"
                     },
                     {
                       "text": "列表-工作联络单",
-                      "url": "RenShi/RS_GZLLD_M/Index.aspx?QXID=8543&MenuTree=1&LoginUserID=2474",
+                      "url": "RenShi/RS_GZLLD_M/Index.aspx?QXID=8543&MenuTree=1&LoginUserID=2069",
                       "parent_name": "工作联络单",
                       "parent_id": "2301"
                     }
                   ]
+                }
+              ]
+            },
+            {
+              "text": "人事统计分析",
+              "parent_name": "人事管理",
+              "parent_id": "865"
+            }
+          ]
+        },
+        {
+          "text": "后勤管理",
+          "children": [
+            {
+              "text": "饭堂管理",
+              "children": [
+                {
+                  "text": "提前报餐",
+                  "url": "RenShi/RS_TQBC/Add.aspx?QXID=8868&MenuTree=1&LoginUserID=2069",
+                  "parent_name": "饭堂管理",
+                  "parent_id": "2335"
                 }
               ]
             }
@@ -286,7 +2395,7 @@
           "children": [
             {
               "text": "考勤档案",
-              "url": "RenShi/RS_KQDA_M/Add.aspx?QXID=2553&MenuTree=1&LoginUserID=2474",
+              "url": "RenShi/RS_KQDA_M/Add.aspx?QXID=2553&MenuTree=1&LoginUserID=2069",
               "parent_name": "考勤管理",
               "parent_id": "868"
             },
@@ -298,13 +2407,13 @@
                   "children": [
                     {
                       "text": "新增-员工签卡",
-                      "url": "RenShi/RS_YGQK_M/Add.aspx?QXID=2799&MenuTree=1&LoginUserID=2474",
+                      "url": "RenShi/RS_YGQK_M/Add.aspx?QXID=2799&MenuTree=1&LoginUserID=2069",
                       "parent_name": "员工签卡",
                       "parent_id": "976"
                     },
                     {
                       "text": "列表-员工签卡",
-                      "url": "RenShi/RS_YGQK_M/Index.aspx?QXID=2802&MenuTree=1&LoginUserID=2474",
+                      "url": "RenShi/RS_YGQK_M/Index.aspx?QXID=2802&MenuTree=1&LoginUserID=2069",
                       "parent_name": "员工签卡",
                       "parent_id": "976"
                     }
@@ -315,9 +2424,43 @@
                   "children": [
                     {
                       "text": "列表-员工请假",
-                      "url": "RenShi/RS_YGQJ_M/Index.aspx?QXID=2509&MenuTree=1&LoginUserID=2474",
+                      "url": "RenShi/RS_YGQJ_M/Index.aspx?QXID=2509&MenuTree=1&LoginUserID=2069",
                       "parent_name": "员工请假",
                       "parent_id": "874"
+                    }
+                  ]
+                },
+                {
+                  "text": "请假销假",
+                  "children": [
+                    {
+                      "text": "新增-请假销假",
+                      "url": "RenShi/RS_YGQJ_M/Add.aspx?QXID=5721&MenuTree=1&LoginUserID=2069",
+                      "parent_name": "请假销假",
+                      "parent_id": "1612"
+                    },
+                    {
+                      "text": "列表-请假销假",
+                      "url": "RenShi/RS_YGQJ_M/Index.aspx?QXID=5724&MenuTree=1&LoginUserID=2069",
+                      "parent_name": "请假销假",
+                      "parent_id": "1612"
+                    }
+                  ]
+                },
+                {
+                  "text": "员工休假",
+                  "children": [
+                    {
+                      "text": "新增-员工休假",
+                      "url": "RenShi/RS_YGQJ_M/Add.aspx?QXID=2516&MenuTree=1&LoginUserID=2069",
+                      "parent_name": "员工休假",
+                      "parent_id": "875"
+                    },
+                    {
+                      "text": "列表-员工休假",
+                      "url": "RenShi/RS_YGQJ_M/Index.aspx?QXID=2519&MenuTree=1&LoginUserID=2069",
+                      "parent_name": "员工休假",
+                      "parent_id": "875"
                     }
                   ]
                 },
@@ -326,17 +2469,83 @@
                   "children": [
                     {
                       "text": "新增-员工调休",
-                      "url": "RenShi/RS_YGTX_M/Add.aspx?QXID=14247&MenuTree=1&LoginUserID=2474",
+                      "url": "RenShi/RS_YGTX_M/Add.aspx?QXID=14247&MenuTree=1&LoginUserID=2069",
                       "parent_name": "员工调休",
                       "parent_id": "3758"
                     },
                     {
                       "text": "列表-员工调休",
-                      "url": "RenShi/RS_YGTX_M/Index.aspx?QXID=14250&MenuTree=1&LoginUserID=2474",
+                      "url": "RenShi/RS_YGTX_M/Index.aspx?QXID=14250&MenuTree=1&LoginUserID=2069",
                       "parent_name": "员工调休",
                       "parent_id": "3758"
                     }
                   ]
+                }
+              ]
+            },
+            {
+              "text": "人工排班",
+              "children": [
+                {
+                  "text": "列表-人工排班",
+                  "url": "RenShi/RS_RGPB_M/Index.aspx?QXID=2568&MenuTree=1&LoginUserID=2069",
+                  "parent_name": "人工排班",
+                  "parent_id": "884"
+                }
+              ]
+            },
+            {
+              "text": "考勤统计分析",
+              "children": [
+                {
+                  "text": "员工考勤统计",
+                  "url": "RenShi/RS_RSTJFX/RS_YGKQTJ.aspx?QXID=3037&MenuTree=1&LoginUserID=2069",
+                  "parent_name": "考勤统计分析",
+                  "parent_id": "3216"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "text": "工资管理",
+          "children": [
+            {
+              "text": "新入职员工工资确定",
+              "children": [
+                {
+                  "text": "新增-新入职员工工资确定",
+                  "url": "RenShi/RS_XYGGZQD_M/Add.aspx?QXID=8951&MenuTree=1&LoginUserID=2069",
+                  "parent_name": "新入职员工工资确定",
+                  "parent_id": "2394"
+                },
+                {
+                  "text": "列表-新入职员工工资确定",
+                  "url": "RenShi/RS_XYGGZQD_M/Index.aspx?QXID=8954&MenuTree=1&LoginUserID=2069",
+                  "parent_name": "新入职员工工资确定",
+                  "parent_id": "2394"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "text": "绩效考核",
+          "children": [
+            {
+              "text": "绩效指标评价",
+              "children": [
+                {
+                  "text": "新增-绩效指标评价",
+                  "url": "RenShi/RS_JXKH_JXZBPJ_M/Add.aspx?QXID=13826&MenuTree=1&LoginUserID=2069",
+                  "parent_name": "绩效指标评价",
+                  "parent_id": "3620"
+                },
+                {
+                  "text": "列表-绩效指标评价",
+                  "url": "RenShi/RS_JXKH_JXZBPJ_M/Index.aspx?QXID=13829&MenuTree=1&LoginUserID=2069",
+                  "parent_name": "绩效指标评价",
+                  "parent_id": "3620"
                 }
               ]
             }
@@ -348,22 +2557,106 @@
       "text": "财务管理",
       "children": [
         {
+          "text": "客户应收账款",
+          "children": [
+            {
+              "text": "客户订单对账单",
+              "children": [
+                {
+                  "text": "新增-客户订单对账单",
+                  "url": "YingShouYingFu/YSYF_KHDDDZ_M/Add.aspx?QXID=779&MenuTree=1&LoginUserID=2069",
+                  "parent_name": "客户订单对账单",
+                  "parent_id": "433"
+                },
+                {
+                  "text": "列表-客户订单对账单",
+                  "url": "YingShouYingFu/YSYF_KHDDDZ_M/Index.aspx?QXID=782&MenuTree=1&LoginUserID=2069",
+                  "parent_name": "客户订单对账单",
+                  "parent_id": "433"
+                }
+              ]
+            },
+            {
+              "text": "客户订单预收款单",
+              "children": [
+                {
+                  "text": "新增-客户订单预收款单",
+                  "url": "YingShouYingFu/YSYF_KHDDSK_M/Add.aspx?QXID=3299&MenuTree=1&LoginUserID=2069",
+                  "parent_name": "客户订单预收款单",
+                  "parent_id": "1105"
+                },
+                {
+                  "text": "列表-客户订单预收款单",
+                  "url": "YingShouYingFu/YSYF_KHDDSK_M/Index.aspx?QXID=3302&MenuTree=1&LoginUserID=2069",
+                  "parent_name": "客户订单预收款单",
+                  "parent_id": "1105"
+                }
+              ]
+            }
+          ]
+        },
+        {
           "text": "员工报销",
           "children": [
+            {
+              "text": "员工借款申请",
+              "children": [
+                {
+                  "text": "新增-员工借款申请",
+                  "url": "YingShouYingFu/YSYF_YGJKSQ_M/Add.aspx?QXID=2260&MenuTree=1&LoginUserID=2069",
+                  "parent_name": "员工借款申请",
+                  "parent_id": "836"
+                },
+                {
+                  "text": "列表-员工借款申请",
+                  "url": "YingShouYingFu/YSYF_YGJKSQ_M/Index.aspx?QXID=2263&MenuTree=1&LoginUserID=2069",
+                  "parent_name": "员工借款申请",
+                  "parent_id": "836"
+                }
+              ]
+            },
             {
               "text": "费用报销申请",
               "children": [
                 {
                   "text": "新增-费用报销申请",
-                  "url": "YingShouYingFu/YSYF_FYBXSQ_M/Add.aspx?QXID=2273&MenuTree=1&LoginUserID=2474",
+                  "url": "YingShouYingFu/YSYF_FYBXSQ_M/Add.aspx?QXID=2273&MenuTree=1&LoginUserID=2069",
                   "parent_name": "费用报销申请",
                   "parent_id": "837"
                 },
                 {
                   "text": "列表-费用报销申请",
-                  "url": "YingShouYingFu/YSYF_FYBXSQ_M/Index.aspx?QXID=2276&MenuTree=1&LoginUserID=2474",
+                  "url": "YingShouYingFu/YSYF_FYBXSQ_M/Index.aspx?QXID=2276&MenuTree=1&LoginUserID=2069",
                   "parent_name": "费用报销申请",
                   "parent_id": "837"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "text": "财务统计分析",
+          "children": [
+            {
+              "text": "客户应收",
+              "children": [
+                {
+                  "text": "客户订单对账统计",
+                  "url": "YingShouYingFu/YSYF_TJFX/YSYF_KHDDWDZ.aspx?QXID=7494&MenuTree=1&LoginUserID=2069",
+                  "parent_name": "客户应收",
+                  "parent_id": "2048"
+                },
+                {
+                  "text": "客户订单开票统计",
+                  "url": "YingShouYingFu/YSYF_TJFX/YSYF_KHDDWKP.aspx?QXID=8017&MenuTree=1&LoginUserID=2069",
+                  "parent_name": "客户应收",
+                  "parent_id": "2048"
+                },
+                {
+                  "text": "客户订单应收账款账龄分析",
+                  "url": "YingShouYingFu/YSYF_TJFX/YSYF_KHDDYSZKZLFX.aspx?QXID=7249&MenuTree=1&LoginUserID=2069",
+                  "parent_name": "客户应收",
+                  "parent_id": "2048"
                 }
               ]
             }
@@ -372,31 +2665,1030 @@
       ]
     },
     {
+      "text": "成本管理",
+      "children": [
+        {
+          "text": "销售成本",
+          "children": [
+            {
+              "text": "列表-销售成本",
+              "url": "ChengBen/CB_XSCB_M/Index.aspx?QXID=8690&MenuTree=1&LoginUserID=2069",
+              "parent_name": "销售成本",
+              "parent_id": "2332"
+            }
+          ]
+        },
+        {
+          "text": "成本统计分析",
+          "children": [
+            {
+              "text": "客户订单成本分析",
+              "url": "ChengBen/CB_CBTJFX/CB_KHDDCBFX.aspx?QXID=8068&MenuTree=1&LoginUserID=2069",
+              "parent_name": "成本统计分析",
+              "parent_id": "2225"
+            },
+            {
+              "text": "毛利分析表",
+              "url": "ChengBen/CB_CBTJFX/CB_MLFX.aspx?QXID=8795&MenuTree=1&LoginUserID=2069",
+              "parent_name": "成本统计分析",
+              "parent_id": "2225"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "text": "文档管理",
+      "children": [
+        {
+          "text": "文档资料",
+          "url": "WenDang/WD_WDZL/Add.aspx?QXID=4109&MenuTree=1&LoginUserID=2069",
+          "parent_name": "文档管理",
+          "parent_id": "1275"
+        }
+      ]
+    },
+    {
       "text": "个人信息",
       "children": [
         {
           "text": "查看详细",
-          "url": "Accounts/userinfo.aspx?QXID=1356&MenuTree=1&LoginUserID=2474",
+          "url": "Accounts/userinfo.aspx?QXID=1356&MenuTree=1&LoginUserID=2069",
           "parent_name": "个人信息",
           "parent_id": "38"
         },
         {
           "text": "修改密码",
-          "url": "Accounts/userpass.ASPX?QXID=1357&MenuTree=1&LoginUserID=2474",
+          "url": "Accounts/userpass.ASPX?QXID=1357&MenuTree=1&LoginUserID=2069",
           "parent_name": "个人信息",
           "parent_id": "38"
         },
         {
           "text": "修改资料",
-          "url": "Accounts/usermodify.ASPX?QXID=1358&MenuTree=1&LoginUserID=2474",
+          "url": "Accounts/usermodify.ASPX?QXID=1358&MenuTree=1&LoginUserID=2069",
           "parent_name": "个人信息",
           "parent_id": "38"
         }
       ]
     },
     {
-      "text": "系统管理",
+      "text": "基础资料",
+      "children": [
+        {
+          "text": "材料资料",
+          "children": [
+            {
+              "text": "纸料档案",
+              "children": [
+                {
+                  "text": "新增-纸料档案",
+                  "url": "Base/Base_WLZL/Add.aspx?QXID=132&MenuTree=1&LoginUserID=2069",
+                  "parent_name": "纸料档案",
+                  "parent_id": "170"
+                },
+                {
+                  "text": "列表-纸料档案",
+                  "url": "Base/Base_WLZL/Index.aspx?QXID=131&MenuTree=1&LoginUserID=2069",
+                  "parent_name": "纸料档案",
+                  "parent_id": "170"
+                }
+              ]
+            },
+            {
+              "text": "辅料档案",
+              "children": [
+                {
+                  "text": "新增-辅料档案",
+                  "url": "Base/Base_WLZL/Add.aspx?QXID=1136&MenuTree=1&LoginUserID=2069",
+                  "parent_name": "辅料档案",
+                  "parent_id": "563"
+                },
+                {
+                  "text": "列表-辅料档案",
+                  "url": "Base/Base_WLZL/Index.aspx?QXID=1139&MenuTree=1&LoginUserID=2069",
+                  "parent_name": "辅料档案",
+                  "parent_id": "563"
+                }
+              ]
+            },
+            {
+              "text": "材料类别",
+              "children": [
+                {
+                  "text": "列表-材料类别",
+                  "url": "Base/Base_WLLB/Index.aspx?QXID=93&MenuTree=1&LoginUserID=2069",
+                  "parent_name": "材料类别",
+                  "parent_id": "140"
+                }
+              ]
+            },
+            {
+              "text": "材料品牌",
+              "children": [
+                {
+                  "text": "列表-材料品牌",
+                  "url": "Base/Base_PP/Index.aspx?QXID=126&MenuTree=1&LoginUserID=2069",
+                  "parent_name": "材料品牌",
+                  "parent_id": "164"
+                }
+              ]
+            },
+            {
+              "text": "材料来源",
+              "children": [
+                {
+                  "text": "列表-材料来源",
+                  "url": "Base/Base_Public/Index.aspx?QXID=127&MenuTree=1&LoginUserID=2069",
+                  "parent_name": "材料来源",
+                  "parent_id": "167"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "text": "产品资料",
+          "children": [
+            {
+              "text": "产品档案",
+              "children": [
+                {
+                  "text": "新增-产品档案",
+                  "url": "Base/Base_CPZL/Add.aspx?QXID=673&MenuTree=1&LoginUserID=2069",
+                  "parent_name": "产品档案",
+                  "parent_id": "384"
+                },
+                {
+                  "text": "列表-产品档案",
+                  "url": "Base/Base_CPZL/Index.aspx?QXID=676&MenuTree=1&LoginUserID=2069",
+                  "parent_name": "产品档案",
+                  "parent_id": "384"
+                }
+              ]
+            },
+            {
+              "text": "产品模板",
+              "children": [
+                {
+                  "text": "新增-产品模板",
+                  "url": "Base/Base_CPZL/Add.aspx?QXID=5289&MenuTree=1&LoginUserID=2069",
+                  "parent_name": "产品模板",
+                  "parent_id": "1491"
+                },
+                {
+                  "text": "列表-产品模板",
+                  "url": "Base/Base_CPZL/Index.aspx?QXID=5292&MenuTree=1&LoginUserID=2069",
+                  "parent_name": "产品模板",
+                  "parent_id": "1491"
+                }
+              ]
+            },
+            {
+              "text": "产品类别",
+              "children": [
+                {
+                  "text": "新增-产品类别",
+                  "url": "Base/Base_CPLB/Add.aspx?QXID=667&MenuTree=1&LoginUserID=2069",
+                  "parent_name": "产品类别",
+                  "parent_id": "383"
+                },
+                {
+                  "text": "列表-产品类别",
+                  "url": "Base/Base_CPLB/Index.aspx?QXID=670&MenuTree=1&LoginUserID=2069",
+                  "parent_name": "产品类别",
+                  "parent_id": "383"
+                }
+              ]
+            },
+            {
+              "text": "部件相关资料",
+              "children": [
+                {
+                  "text": "部件类别",
+                  "children": [
+                    {
+                      "text": "新增-部件类别",
+                      "url": "Base/Base_Public/Add.aspx?QXID=10836&MenuTree=1&LoginUserID=2069",
+                      "parent_name": "部件类别",
+                      "parent_id": "2853"
+                    },
+                    {
+                      "text": "列表-部件类别",
+                      "url": "Base/Base_Public/Index.aspx?QXID=10839&MenuTree=1&LoginUserID=2069",
+                      "parent_name": "部件类别",
+                      "parent_id": "2853"
+                    }
+                  ]
+                },
+                {
+                  "text": "部件资料",
+                  "children": [
+                    {
+                      "text": "新增-部件资料",
+                      "url": "Base/Base_Public/Add.aspx?QXID=109&MenuTree=1&LoginUserID=2069",
+                      "parent_name": "部件资料",
+                      "parent_id": "154"
+                    },
+                    {
+                      "text": "列表-部件资料",
+                      "url": "Base/Base_Public/Index.aspx?QXID=112&MenuTree=1&LoginUserID=2069",
+                      "parent_name": "部件资料",
+                      "parent_id": "154"
+                    }
+                  ]
+                },
+                {
+                  "text": "颜色资料",
+                  "children": [
+                    {
+                      "text": "新增-颜色资料",
+                      "url": "Base/Base_YSYS/Add.aspx?QXID=714&MenuTree=1&LoginUserID=2069",
+                      "parent_name": "颜色资料",
+                      "parent_id": "404"
+                    },
+                    {
+                      "text": "列表-颜色资料",
+                      "url": "Base/Base_YSYS/Index.aspx?QXID=717&MenuTree=1&LoginUserID=2069",
+                      "parent_name": "颜色资料",
+                      "parent_id": "404"
+                    }
+                  ]
+                },
+                {
+                  "text": "部件类别分组",
+                  "url": "Base/Base_BJLB_FZ/Index.aspx?QXID=12448&MenuTree=1&LoginUserID=2069",
+                  "parent_name": "部件相关资料",
+                  "parent_id": "3390"
+                }
+              ]
+            },
+            {
+              "text": "工艺资料设置",
+              "children": [
+                {
+                  "text": "印刷机台",
+                  "children": [
+                    {
+                      "text": "新增-印刷机台",
+                      "url": "Base/Base_SCJT/Add.aspx?QXID=848&MenuTree=1&LoginUserID=2069",
+                      "parent_name": "印刷机台",
+                      "parent_id": "459"
+                    },
+                    {
+                      "text": "列表-印刷机台",
+                      "url": "Base/Base_SCJT/Index.aspx?QXID=851&MenuTree=1&LoginUserID=2069",
+                      "parent_name": "印刷机台",
+                      "parent_id": "459"
+                    }
+                  ]
+                },
+                {
+                  "text": "工序资料",
+                  "children": [
+                    {
+                      "text": "列表-工序资料",
+                      "url": "Base/Base_GXZL/Index.aspx?QXID=710&MenuTree=1&LoginUserID=2069",
+                      "parent_name": "工序资料",
+                      "parent_id": "401"
+                    }
+                  ]
+                },
+                {
+                  "text": "工序生产步骤资料",
+                  "children": [
+                    {
+                      "text": "新增-工序生产步骤资料",
+                      "url": "Base/Base_GXBZZL/Add.aspx?QXID=5957&MenuTree=1&LoginUserID=2069",
+                      "parent_name": "工序生产步骤资料",
+                      "parent_id": "1630"
+                    },
+                    {
+                      "text": "列表-工序生产步骤资料",
+                      "url": "Base/Base_GXBZZL/Index.aspx?QXID=5784&MenuTree=1&LoginUserID=2069",
+                      "parent_name": "工序生产步骤资料",
+                      "parent_id": "1630"
+                    }
+                  ]
+                },
+                {
+                  "text": "工序类别",
+                  "children": [
+                    {
+                      "text": "新增-工序类别",
+                      "url": "Base/Base_GXLB/Add.aspx?QXID=700&MenuTree=1&LoginUserID=2069",
+                      "parent_name": "工序类别",
+                      "parent_id": "398"
+                    },
+                    {
+                      "text": "列表-工序类别",
+                      "url": "Base/Base_GXLB/Index.aspx?QXID=703&MenuTree=1&LoginUserID=2069",
+                      "parent_name": "工序类别",
+                      "parent_id": "398"
+                    }
+                  ]
+                },
+                {
+                  "text": "工艺流程名称",
+                  "children": [
+                    {
+                      "text": "新增-工艺流程名称",
+                      "url": "ShengChan/SC_Base_GYLC_Name/Add.aspx?QXID=4899&MenuTree=1&LoginUserID=2069",
+                      "parent_name": "工艺流程名称",
+                      "parent_id": "1407"
+                    },
+                    {
+                      "text": "列表-工艺流程名称",
+                      "url": "ShengChan/SC_Base_GYLC_Name/Index.aspx?QXID=4902&MenuTree=1&LoginUserID=2069",
+                      "parent_name": "工艺流程名称",
+                      "parent_id": "1407"
+                    }
+                  ]
+                },
+                {
+                  "text": "工艺流程设置",
+                  "children": [
+                    {
+                      "text": "新增-工艺流程设置",
+                      "url": "ShengChan/SC_Base_GYLC/Add.aspx?QXID=1074&MenuTree=1&LoginUserID=2069",
+                      "parent_name": "工艺流程设置",
+                      "parent_id": "549"
+                    },
+                    {
+                      "text": "列表-工艺流程设置",
+                      "url": "ShengChan/SC_Base_GYLC/Index.aspx?QXID=1077&MenuTree=1&LoginUserID=2069",
+                      "parent_name": "工艺流程设置",
+                      "parent_id": "549"
+                    }
+                  ]
+                },
+                {
+                  "text": "单价体系",
+                  "children": [
+                    {
+                      "text": "新增-单价体系",
+                      "url": "Base/Base_DJTX/Add.aspx?QXID=1025&MenuTree=1&LoginUserID=2069",
+                      "parent_name": "单价体系",
+                      "parent_id": "535"
+                    },
+                    {
+                      "text": "列表-单价体系",
+                      "url": "Base/Base_DJTX/Index.aspx?QXID=1028&MenuTree=1&LoginUserID=2069",
+                      "parent_name": "单价体系",
+                      "parent_id": "535"
+                    }
+                  ]
+                },
+                {
+                  "text": "工艺要求",
+                  "url": "Base/Base_GYYQ/Index.aspx?QXID=3448&MenuTree=1&LoginUserID=2069",
+                  "parent_name": "工艺资料设置",
+                  "parent_id": "3059"
+                }
+              ]
+            },
+            {
+              "text": "展开尺寸设置",
+              "children": [
+                {
+                  "text": "配件类别",
+                  "children": [
+                    {
+                      "text": "新增-配件类别",
+                      "url": "Base/Base_Public/Add.aspx?QXID=10848&MenuTree=1&LoginUserID=2069",
+                      "parent_name": "配件类别",
+                      "parent_id": "2857"
+                    },
+                    {
+                      "text": "列表-配件类别",
+                      "url": "Base/Base_Public/Index.aspx?QXID=10851&MenuTree=1&LoginUserID=2069",
+                      "parent_name": "配件类别",
+                      "parent_id": "2857"
+                    }
+                  ]
+                },
+                {
+                  "text": "坑位产品分类",
+                  "children": [
+                    {
+                      "text": "新增-坑位产品分类",
+                      "url": "Base/Base_Public/Add.aspx?QXID=10860&MenuTree=1&LoginUserID=2069",
+                      "parent_name": "坑位产品分类",
+                      "parent_id": "2863"
+                    },
+                    {
+                      "text": "列表-坑位产品分类",
+                      "url": "Base/Base_Public/Index.aspx?QXID=10863&MenuTree=1&LoginUserID=2069",
+                      "parent_name": "坑位产品分类",
+                      "parent_id": "2863"
+                    }
+                  ]
+                },
+                {
+                  "text": "灰板坑位设置",
+                  "children": [
+                    {
+                      "text": "新增-灰板坑位设置",
+                      "url": "Base/Base_Public/Add.aspx?QXID=10867&MenuTree=1&LoginUserID=2069",
+                      "parent_name": "灰板坑位设置",
+                      "parent_id": "2866"
+                    },
+                    {
+                      "text": "列表-灰板坑位设置",
+                      "url": "Base/Base_Public/Index.aspx?QXID=10870&MenuTree=1&LoginUserID=2069",
+                      "parent_name": "灰板坑位设置",
+                      "parent_id": "2866"
+                    }
+                  ]
+                },
+                {
+                  "text": "产品包边分类",
+                  "children": [
+                    {
+                      "text": "新增-产品包边分类",
+                      "url": "Base/Base_Public/Add.aspx?QXID=11056&MenuTree=1&LoginUserID=2069",
+                      "parent_name": "产品包边分类",
+                      "parent_id": "2915"
+                    },
+                    {
+                      "text": "列表-产品包边分类",
+                      "url": "Base/Base_Public/Index.aspx?QXID=11059&MenuTree=1&LoginUserID=2069",
+                      "parent_name": "产品包边分类",
+                      "parent_id": "2915"
+                    }
+                  ]
+                },
+                {
+                  "text": "产品包边位",
+                  "children": [
+                    {
+                      "text": "新增-产品包边位",
+                      "url": "Base/Base_Public/Add.aspx?QXID=10854&MenuTree=1&LoginUserID=2069",
+                      "parent_name": "产品包边位",
+                      "parent_id": "2860"
+                    },
+                    {
+                      "text": "列表-产品包边位",
+                      "url": "Base/Base_Public/Index.aspx?QXID=10857&MenuTree=1&LoginUserID=2069",
+                      "parent_name": "产品包边位",
+                      "parent_id": "2860"
+                    }
+                  ]
+                },
+                {
+                  "text": "展开尺寸公式设置",
+                  "children": [
+                    {
+                      "text": "新增-展开尺寸公式设置",
+                      "url": "Base/Base_JSGSSZ/Add.aspx?QXID=4408&MenuTree=1&LoginUserID=2069",
+                      "parent_name": "展开尺寸公式设置",
+                      "parent_id": "1366"
+                    },
+                    {
+                      "text": "列表-展开尺寸公式设置",
+                      "url": "Base/Base_JSGSSZ/Index.aspx?QXID=4411&MenuTree=1&LoginUserID=2069",
+                      "parent_name": "展开尺寸公式设置",
+                      "parent_id": "1366"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "text": "装订方式",
+              "children": [
+                {
+                  "text": "新增-装订方式",
+                  "url": "Base/Base_Public/Add.aspx?QXID=693&MenuTree=1&LoginUserID=2069",
+                  "parent_name": "装订方式",
+                  "parent_id": "395"
+                },
+                {
+                  "text": "列表-装订方式",
+                  "url": "Base/Base_Public/Index.aspx?QXID=696&MenuTree=1&LoginUserID=2069",
+                  "parent_name": "装订方式",
+                  "parent_id": "395"
+                }
+              ]
+            },
+            {
+              "text": "台板类型",
+              "children": [
+                {
+                  "text": "新增-台板类型",
+                  "url": "Base/Base_Public/Add.aspx?QXID=882&MenuTree=1&LoginUserID=2069",
+                  "parent_name": "台板类型",
+                  "parent_id": "474"
+                },
+                {
+                  "text": "列表-台板类型",
+                  "url": "Base/Base_Public/Index.aspx?QXID=885&MenuTree=1&LoginUserID=2069",
+                  "parent_name": "台板类型",
+                  "parent_id": "474"
+                }
+              ]
+            },
+            {
+              "text": "开版留位默认值",
+              "children": [
+                {
+                  "text": "新增-开版留位默认值",
+                  "url": "Base/Base_Public/Add.aspx?QXID=3908&MenuTree=1&LoginUserID=2069",
+                  "parent_name": "开版留位默认值",
+                  "parent_id": "1263"
+                },
+                {
+                  "text": "列表-开版留位默认值",
+                  "url": "Base/Base_Public/Index.aspx?QXID=3911&MenuTree=1&LoginUserID=2069",
+                  "parent_name": "开版留位默认值",
+                  "parent_id": "1263"
+                }
+              ]
+            },
+            {
+              "text": "开料留位默认值",
+              "children": [
+                {
+                  "text": "新增-开料留位默认值",
+                  "url": "Base/Base_Public/Add.aspx?QXID=2865&MenuTree=1&LoginUserID=2069",
+                  "parent_name": "开料留位默认值",
+                  "parent_id": "996"
+                },
+                {
+                  "text": "列表-开料留位默认值",
+                  "url": "Base/Base_Public/Index.aspx?QXID=2868&MenuTree=1&LoginUserID=2069",
+                  "parent_name": "开料留位默认值",
+                  "parent_id": "996"
+                }
+              ]
+            },
+            {
+              "text": "语言代码表",
+              "children": [
+                {
+                  "text": "列表-语言代码表",
+                  "url": "Base/Base_YYDMB/Index.aspx?QXID=3642&MenuTree=1&LoginUserID=2069",
+                  "parent_name": "语言代码表",
+                  "parent_id": "1195"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "text": "客户资料",
+          "children": [
+            {
+              "text": "客户档案",
+              "children": [
+                {
+                  "text": "新增-客户档案",
+                  "url": "Base/Base_KHZL/Add.aspx?QXID=188&MenuTree=1&LoginUserID=2069",
+                  "parent_name": "客户档案",
+                  "parent_id": "212"
+                },
+                {
+                  "text": "列表-客户档案",
+                  "url": "Base/Base_KHZL/Index.aspx?QXID=187&MenuTree=1&LoginUserID=2069",
+                  "parent_name": "客户档案",
+                  "parent_id": "212"
+                }
+              ]
+            },
+            {
+              "text": "客户类别",
+              "children": [
+                {
+                  "text": "新增-客户类别",
+                  "url": "Base/Base_Public_tree/Add.aspx?QXID=192&MenuTree=1&LoginUserID=2069",
+                  "parent_name": "客户类别",
+                  "parent_id": "215"
+                },
+                {
+                  "text": "列表-客户类别",
+                  "url": "Base/Base_Public_tree/Index.aspx?QXID=191&MenuTree=1&LoginUserID=2069",
+                  "parent_name": "客户类别",
+                  "parent_id": "215"
+                }
+              ]
+            },
+            {
+              "text": "客户属性",
+              "children": [
+                {
+                  "text": "新增-客户属性",
+                  "url": "Base/Base_Public/Add.aspx?QXID=3392&MenuTree=1&LoginUserID=2069",
+                  "parent_name": "客户属性",
+                  "parent_id": "1132"
+                },
+                {
+                  "text": "列表-客户属性",
+                  "url": "Base/Base_Public/Index.aspx?QXID=3395&MenuTree=1&LoginUserID=2069",
+                  "parent_name": "客户属性",
+                  "parent_id": "1132"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "text": "人事资料",
+          "children": [
+            {
+              "text": "员工档案相关",
+              "children": [
+                {
+                  "text": "员工档案",
+                  "children": [
+                    {
+                      "text": "列表-员工档案",
+                      "url": "Base/Base_YGDA/Index.aspx?QXID=174&MenuTree=1&LoginUserID=2069",
+                      "parent_name": "员工档案",
+                      "parent_id": "208"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "text": "培训相关",
+              "children": [
+                {
+                  "text": "员工考核类型",
+                  "children": [
+                    {
+                      "text": "列表-员工考核类型",
+                      "url": "Base/Base_YGKH/Index.aspx?QXID=8926&MenuTree=1&LoginUserID=2069",
+                      "parent_name": "员工考核类型",
+                      "parent_id": "2383"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "text": "设备资料",
+          "children": [
+            {
+              "text": "设备档案",
+              "children": [
+                {
+                  "text": "列表-设备档案",
+                  "url": "Base/Base_SBDA/Index.aspx?QXID=836&MenuTree=1&LoginUserID=2069",
+                  "parent_name": "设备档案",
+                  "parent_id": "453"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "text": "生产资料",
+          "children": [
+            {
+              "text": "生产计划",
+              "children": [
+                {
+                  "text": "工序数据拆分原则",
+                  "children": [
+                    {
+                      "text": "列表-工序数据拆分原则",
+                      "url": "Base/Base_GXSLCFYZ_M/Index.aspx?QXID=3774&MenuTree=1&LoginUserID=2069",
+                      "parent_name": "工序数据拆分原则",
+                      "parent_id": "1234"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "text": "海运费资料",
+          "children": [
+            {
+              "text": "纸板类型",
+              "children": [
+                {
+                  "text": "新增-纸板类型",
+                  "url": "Base/Base_Public/Add.aspx?QXID=892&MenuTree=1&LoginUserID=2069",
+                  "parent_name": "纸板类型",
+                  "parent_id": "479"
+                },
+                {
+                  "text": "列表-纸板类型",
+                  "url": "Base/Base_Public/Index.aspx?QXID=895&MenuTree=1&LoginUserID=2069",
+                  "parent_name": "纸板类型",
+                  "parent_id": "479"
+                }
+              ]
+            },
+            {
+              "text": "台板资料表",
+              "children": [
+                {
+                  "text": "新增-台板资料表",
+                  "url": "Base/Base_Public/Add.aspx?QXID=897&MenuTree=1&LoginUserID=2069",
+                  "parent_name": "台板资料表",
+                  "parent_id": "480"
+                },
+                {
+                  "text": "列表-台板资料表",
+                  "url": "Base/Base_Public/Index.aspx?QXID=900&MenuTree=1&LoginUserID=2069",
+                  "parent_name": "台板资料表",
+                  "parent_id": "480"
+                }
+              ]
+            },
+            {
+              "text": "集装箱类型",
+              "children": [
+                {
+                  "text": "新增-集装箱类型",
+                  "url": "HaiYunFei/HYF_Base_JZXLX/Add.aspx?QXID=902&MenuTree=1&LoginUserID=2069",
+                  "parent_name": "集装箱类型",
+                  "parent_id": "481"
+                },
+                {
+                  "text": "列表-集装箱类型",
+                  "url": "HaiYunFei/HYF_Base_JZXLX/Index.aspx?QXID=905&MenuTree=1&LoginUserID=2069",
+                  "parent_name": "集装箱类型",
+                  "parent_id": "481"
+                }
+              ]
+            },
+            {
+              "text": "底卡资料",
+              "children": [
+                {
+                  "text": "新增-底卡资料",
+                  "url": "Base/Base_Public/Add.aspx?QXID=907&MenuTree=1&LoginUserID=2069",
+                  "parent_name": "底卡资料",
+                  "parent_id": "482"
+                },
+                {
+                  "text": "列表-底卡资料",
+                  "url": "Base/Base_Public/Index.aspx?QXID=910&MenuTree=1&LoginUserID=2069",
+                  "parent_name": "底卡资料",
+                  "parent_id": "482"
+                }
+              ]
+            },
+            {
+              "text": "纸箱入费价格",
+              "children": [
+                {
+                  "text": "新增-纸箱入费价格",
+                  "url": "Base/Base_Public/Add.aspx?QXID=912&MenuTree=1&LoginUserID=2069",
+                  "parent_name": "纸箱入费价格",
+                  "parent_id": "483"
+                },
+                {
+                  "text": "列表-纸箱入费价格",
+                  "url": "Base/Base_Public/Index.aspx?QXID=915&MenuTree=1&LoginUserID=2069",
+                  "parent_name": "纸箱入费价格",
+                  "parent_id": "483"
+                }
+              ]
+            },
+            {
+              "text": "台板入费价格",
+              "children": [
+                {
+                  "text": "新增-台板入费价格",
+                  "url": "Base/Base_Public/Add.aspx?QXID=917&MenuTree=1&LoginUserID=2069",
+                  "parent_name": "台板入费价格",
+                  "parent_id": "484"
+                },
+                {
+                  "text": "列表-台板入费价格",
+                  "url": "Base/Base_Public/Index.aspx?QXID=920&MenuTree=1&LoginUserID=2069",
+                  "parent_name": "台板入费价格",
+                  "parent_id": "484"
+                }
+              ]
+            },
+            {
+              "text": "海运地区",
+              "children": [
+                {
+                  "text": "新增-海运地区",
+                  "url": "Base/Base_Public/Add.aspx?QXID=927&MenuTree=1&LoginUserID=2069",
+                  "parent_name": "海运地区",
+                  "parent_id": "485"
+                },
+                {
+                  "text": "列表-海运地区",
+                  "url": "Base/Base_Public/Index.aspx?QXID=930&MenuTree=1&LoginUserID=2069",
+                  "parent_name": "海运地区",
+                  "parent_id": "485"
+                }
+              ]
+            },
+            {
+              "text": "CBM费用级别",
+              "children": [
+                {
+                  "text": "新增-CBM费用级别",
+                  "url": "HaiYunFei/HYF_Base_CBMFYJB/Add.aspx?QXID=922&MenuTree=1&LoginUserID=2069",
+                  "parent_name": "CBM费用级别",
+                  "parent_id": "486"
+                },
+                {
+                  "text": "列表-CBM费用级别",
+                  "url": "HaiYunFei/HYF_Base_CBMFYJB/Index.aspx?QXID=925&MenuTree=1&LoginUserID=2069",
+                  "parent_name": "CBM费用级别",
+                  "parent_id": "486"
+                }
+              ]
+            },
+            {
+              "text": "运费类型",
+              "children": [
+                {
+                  "text": "新增-运费类型",
+                  "url": "Base/Base_Public/Add.aspx?QXID=947&MenuTree=1&LoginUserID=2069",
+                  "parent_name": "运费类型",
+                  "parent_id": "509"
+                },
+                {
+                  "text": "列表-运费类型",
+                  "url": "Base/Base_Public/Index.aspx?QXID=950&MenuTree=1&LoginUserID=2069",
+                  "parent_name": "运费类型",
+                  "parent_id": "509"
+                }
+              ]
+            },
+            {
+              "text": "海运费项明细",
+              "children": [
+                {
+                  "text": "新增-海运费项明细",
+                  "url": "HaiYunFei/HYF_Base_FYMX/Add.aspx?QXID=953&MenuTree=1&LoginUserID=2069",
+                  "parent_name": "海运费项明细",
+                  "parent_id": "512"
+                },
+                {
+                  "text": "列表-海运费项明细",
+                  "url": "HaiYunFei/HYF_Base_FYMX/Index.aspx?QXID=956&MenuTree=1&LoginUserID=2069",
+                  "parent_name": "海运费项明细",
+                  "parent_id": "512"
+                }
+              ]
+            },
+            {
+              "text": "海运费计算公式",
+              "children": [
+                {
+                  "text": "新增-海运费计算公式",
+                  "url": "Base/Base_Public/Add.aspx?QXID=941&MenuTree=1&LoginUserID=2069",
+                  "parent_name": "海运费计算公式",
+                  "parent_id": "506"
+                },
+                {
+                  "text": "列表-海运费计算公式",
+                  "url": "Base/Base_Public/Index.aspx?QXID=944&MenuTree=1&LoginUserID=2069",
+                  "parent_name": "海运费计算公式",
+                  "parent_id": "506"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "text": "综合资料",
+          "children": [
+            {
+              "text": "币种",
+              "children": [
+                {
+                  "text": "新增-币种",
+                  "url": "Base/Base_Public/Add.aspx?QXID=104&MenuTree=1&LoginUserID=2069",
+                  "parent_name": "币种",
+                  "parent_id": "151"
+                },
+                {
+                  "text": "列表-币种",
+                  "url": "Base/Base_Public/Index.aspx?QXID=107&MenuTree=1&LoginUserID=2069",
+                  "parent_name": "币种",
+                  "parent_id": "151"
+                }
+              ]
+            },
+            {
+              "text": "发票类别",
+              "children": [
+                {
+                  "text": "新增-发票类别",
+                  "url": "Base/Base_Public/Add.aspx?QXID=147&MenuTree=1&LoginUserID=2069",
+                  "parent_name": "发票类别",
+                  "parent_id": "183"
+                },
+                {
+                  "text": "列表-发票类别",
+                  "url": "Base/Base_Public/Index.aspx?QXID=150&MenuTree=1&LoginUserID=2069",
+                  "parent_name": "发票类别",
+                  "parent_id": "183"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "text": "阿米巴管理",
+          "children": [
+            {
+              "text": "工序分组类别",
+              "children": [
+                {
+                  "text": "列表-工序分组类别",
+                  "url": "Base/Base_Public_tree/Index.aspx?QXID=13687&MenuTree=1&LoginUserID=2069",
+                  "parent_name": "工序分组类别",
+                  "parent_id": "3583"
+                }
+              ]
+            },
+            {
+              "text": "工序分组",
+              "children": [
+                {
+                  "text": "列表-工序分组",
+                  "url": "AMB/AMB_Base_GXFZ_M/Index.aspx?QXID=13672&MenuTree=1&LoginUserID=2069",
+                  "parent_name": "工序分组",
+                  "parent_id": "3584"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "text": "发送信息",
+      "url": "SysPublic/SendMessage.aspx?QXID=1354&MenuTree=1&LoginUserID=2069",
       "parent_id": "0"
+    },
+    {
+      "text": "系统管理",
+      "children": [
+        {
+          "text": "临时授权",
+          "children": [
+            {
+              "text": "新增-临时授权",
+              "url": "Accounts/Accounts_TempPermissions_M/Add.aspx?QXID=2950&MenuTree=1&LoginUserID=2069",
+              "parent_name": "临时授权",
+              "parent_id": "1017"
+            },
+            {
+              "text": "列表-临时授权",
+              "url": "Accounts/Accounts_TempPermissions_M/Index.aspx?QXID=2953&MenuTree=1&LoginUserID=2069",
+              "parent_name": "临时授权",
+              "parent_id": "1017"
+            }
+          ]
+        },
+        {
+          "text": "计算公式编辑器",
+          "children": [
+            {
+              "text": "列表-计算公式编辑器",
+              "url": "SysPublic/Base_JJGS/Index.aspx?QXID=749&MenuTree=1&LoginUserID=2069",
+              "parent_name": "计算公式编辑器",
+              "parent_id": "419"
+            }
+          ]
+        },
+        {
+          "text": "日程管理",
+          "url": "SysPublic/Sys_RCGL_M/Sys_RCGL.aspx?QXID=2374&MenuTree=1&LoginUserID=2069",
+          "parent_name": "系统管理",
+          "parent_id": "12"
+        },
+        {
+          "text": "系统问题反馈",
+          "children": [
+            {
+              "text": "列表-系统问题反馈",
+              "url": "SysPublic/System_WTFK/Index.aspx?QXID=964&MenuTree=1&LoginUserID=2069",
+              "parent_name": "系统问题反馈",
+              "parent_id": "515"
+            }
+          ]
+        },
+        {
+          "text": "系统审批设置",
+          "children": [
+            {
+              "text": "审批完自动提醒设置",
+              "url": "SysPublic/Accounts_Check_Message.aspx?QXID=3743&MenuTree=1&LoginUserID=2069",
+              "parent_name": "系统审批设置",
+              "parent_id": "1220"
+            }
+          ]
+        }
+      ]
     }
   ]
 }

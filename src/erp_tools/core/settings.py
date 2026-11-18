@@ -34,6 +34,9 @@ YAML_TO_ENV: dict[tuple[str, str], str] = {
     ("qxid", "price"): "ERP_QXID_PRICE",
     ("qxid", "price_index"): "ERP_QXID_PRICE_INDEX",
     ("qxid", "attendance"): "ERP_QXID_ATTENDANCE",
+    ("qxid", "costing_index"): "ERP_QXID_COST_INDEX",
+    ("qxid", "production_index"): "ERP_QXID_PRODUCTION_INDEX",
+    ("qxid", "purchase_index"): "ERP_QXID_PURCHASE_INDEX",
 }
 
 

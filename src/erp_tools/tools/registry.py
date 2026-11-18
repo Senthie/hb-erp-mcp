@@ -6,6 +6,15 @@ from typing import Type
 
 from .attendance import AttendanceTool
 from .base import Option, Tool
+from .grid_module import (
+    CostingListTool,
+    ProductionDetailTool,
+    ProductionListTool,
+    ProductionNodeTool,
+    PurchaseDetailTool,
+    PurchaseListTool,
+    PurchaseNodeTool,
+)
 from .quote_index import QuoteListTool
 from .quote_price import PriceDetailTool, PriceListTool, PriceNodeTool
 from .quote_request import QuoteRequestTool
@@ -18,6 +27,14 @@ _TOOLS: dict[str, Type[Tool]] = {
     PriceNodeTool.name: PriceNodeTool,
     QuoteRequestTool.name: QuoteRequestTool,
     AttendanceTool.name: AttendanceTool,
+    # 三个新模块（列表-产品核价 / 列表-生产施工单 / 列表-采购订单）
+    CostingListTool.name: CostingListTool,
+    ProductionListTool.name: ProductionListTool,
+    ProductionDetailTool.name: ProductionDetailTool,
+    ProductionNodeTool.name: ProductionNodeTool,
+    PurchaseListTool.name: PurchaseListTool,
+    PurchaseDetailTool.name: PurchaseDetailTool,
+    PurchaseNodeTool.name: PurchaseNodeTool,
 }
 
 
