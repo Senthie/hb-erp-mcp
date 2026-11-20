@@ -22,7 +22,7 @@ from erp_tools.tools.grid_module.parser import (
     popup_url,
     split_args,
 )
-from erp_tools.tools.grid_module.spec import COSTING, PRODUCTION, PURCHASE
+from erp_tools.tools.grid_module.spec import COSTING, PRODUCTION, PURCHASE, SALES_ORDER
 
 FIXTURES = Path(__file__).resolve().parent / "fixtures"
 
@@ -40,13 +40,16 @@ def test_module_aliases() -> None:
     assert get_module("采购订单") is PURCHASE
     assert get_module("产品核价") is COSTING
     assert get_module("CPHJ") is COSTING
+    assert get_module("客户订单") is SALES_ORDER
+    assert get_module("订单") is SALES_ORDER
+    assert get_module("KHDD") is SALES_ORDER
     with pytest.raises(Exception):
         get_module("不存在")
 
 
 def test_modules_registry() -> None:
-    assert set(MODULES) == {"production", "purchase", "costing"}
-    # 三个列表页都必须填 QXID 兜底值（菜单探测在这三个页面上不可靠）
+    assert set(MODULES) == {"production", "purchase", "costing", "sales_order"}
+    # 四个列表页都必须填 QXID 兜底值（菜单探测在这些页面上不可靠）
     for spec in MODULES.values():
         assert spec.fallback_qxid.isdigit()
         assert spec.list_path.endswith("Index.aspx")
@@ -58,6 +61,9 @@ def test_filter_aliases_resolve() -> None:
     assert PRODUCTION.control_for("状态") == "txtSCZT"
     assert PURCHASE.control_for("材料类别") == "txtCLLB"
     assert COSTING.control_for("签订单") == "txtXKHDD"
+    assert SALES_ORDER.control_for("订单状态") == "txtDDZT"
+    assert SALES_ORDER.control_for("txtDDZT") == "txtDDZT"
+    assert SALES_ORDER.control_for("业务员") == "txtYGXM"
     assert PRODUCTION.control_for("不存在的过滤项") == ""
 
 
@@ -68,6 +74,12 @@ def test_date_fields() -> None:
     # 采购订单没有日期字段下拉，固定按制单日期
     assert PURCHASE.date_control == ""
     assert PURCHASE.default_date_field() == "ZDRQ"
+    # 客户订单有 4 个日期字段，默认制单日期
+    assert SALES_ORDER.date_control == "txtRQLX"
+    assert SALES_ORDER.resolve_date_field("订单日期") == "DDRQ"
+    assert SALES_ORDER.resolve_date_field("交货日期") == "JHRQ"
+    assert SALES_ORDER.resolve_date_field("离厂日期") == "LCRQ"
+    assert SALES_ORDER.default_date_field() == "ZDRQ"
 
 
 # ══════════════════ 详情页解析 ══════════════════
@@ -157,7 +169,7 @@ def test_discover_nodes_finds_production_nodes(production_html: str) -> None:
     bjfl = entries["part_materials"]
     assert bjfl.button == "btnSelectBJFL"
     assert bjfl.function == "OpenInputBJFLData"
-    assert bjfl.page == "add_bjfl.aspx"
+    assert bjfl.page == "Add_BJFL.aspx"
     # 参数下标从函数体反推：PID=0 → lblSelectCPZLPID，BJID=1 → lblSelectBJZLID
     assert bjfl.sets["lblSelectCPZLPID"] == 0
     assert bjfl.sets["lblSelectBJZLID"] == 1
@@ -276,3 +288,37 @@ def test_costing_reuses_price_pages() -> None:
     assert COSTING.detail_path == "BaoJia/BJ_KHBJ/Add.aspx"
     assert COSTING.fallback_qxid == "1281"
     assert COSTING.nodes == {}          # 子数据走 erp_price_node
+
+
+def test_sales_order_spec() -> None:
+    assert SALES_ORDER.list_path == "DingDan/DD_KHDD/Index.aspx"
+    assert SALES_ORDER.detail_path == "DingDan/DD_KHDD/Add.aspx"
+    assert SALES_ORDER.fallback_qxid == "687"
+    assert SALES_ORDER.number_column == "表单编号"
+    assert len(SALES_ORDER.filter_controls) == 22
+
+
+def test_sales_order_nodes() -> None:
+    """20 个弹窗子页（2026-11-20 实测）。"""
+    assert len(SALES_ORDER.nodes) == 20
+    assert SALES_ORDER.nodes["part"][0] == "Add_BJZL.aspx"
+    assert SALES_ORDER.nodes["part"][1] == "btnSelectBJZL"
+    assert SALES_ORDER.nodes["feedback"][0] == "Add_KHDDXQFK.aspx"
+    assert SALES_ORDER.nodes["quantities"][0] == "Add_CPSL.aspx"
+    # 所有节点都必须有子页、按钮、中文说明
+    for node, (page, button, label) in SALES_ORDER.nodes.items():
+        assert page.endswith(".aspx"), node
+        assert button, node
+        assert label, node
+
+
+def test_sales_order_node_aliases() -> None:
+    from erp_tools.tools.grid_module.tools import SalesOrderNodeTool
+
+    tool = SalesOrderNodeTool.__new__(SalesOrderNodeTool)   # 只用 spec，不需要会话
+    assert tool.resolve_node("数量档") == "quantities"
+    assert tool.resolve_node("需求反馈") == "feedback"
+    assert tool.resolve_node("PART_MACHINES") == "part_machines"
+    assert tool.resolve_node("Add_CPSL.aspx") == "quantities"
+    with pytest.raises(Exception):
+        tool.resolve_node("不存在节点")

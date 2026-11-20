@@ -32,6 +32,9 @@ from ...tools.grid_module import (
     PurchaseDetailTool,
     PurchaseListTool,
     PurchaseNodeTool,
+    SalesOrderDetailTool,
+    SalesOrderListTool,
+    SalesOrderNodeTool,
 )
 from ...tools.quote_create import QuoteCreateService
 from ...tools.quote_index import QuoteListTool
@@ -57,7 +60,7 @@ PAGE_KEYS = {
 
 
 def _module_capabilities(pages: dict[str, str]) -> dict[str, dict[str, Any]]:
-    """三个新模块的页面权限。
+    """四个模块（核价/施工单/采购订单/客户订单）的页面权限。
 
     ⚠ **不能直接用菜单探测值**：同一路径挂在多个菜单下（`BJ_KHBJ/Index.aspx` 既是
     客户报价 860 又是产品核价 1281；`SC_SCSGD/Index.aspx` 既是 740 又是 983），
@@ -503,17 +506,17 @@ def register_tools(mcp: MCPServer, state: ServerState) -> None:
     @mcp.tool(
         name="erp_page_catalog",
         description=(
-            "【只读】列出「列表-产品核价 / 列表-生产施工单 / 列表-采购订单」三个模块"
+            "【只读】列出「列表-产品核价 / 列表-生产施工单 / 列表-采购订单 / 列表-客户订单」四个模块"
             "以及它们全部数据页面的实测清单：列表页、详情页、每个弹窗子页"
             "（子页文件名 + 打开它的按钮 + 中文说明），并标注哪些页已接入哪个 MCP 工具。"
-            "module 留空返回全部三个模块。"
+            "module 留空返回全部四个模块。"
         ),
     )
     @_tool_errors
     def erp_page_catalog(
         module: Annotated[
             str,
-            Field(description="模块：costing / production / purchase；留空=全部"),
+            Field(description="模块：costing / production / purchase / sales_order；留空=全部"),
         ] = "",
     ) -> dict[str, Any]:
         from erp_tools.tools.grid_module import MODULES, get_module
@@ -526,6 +529,9 @@ def register_tools(mcp: MCPServer, state: ServerState) -> None:
                            "node": "erp_production_node"},
             "purchase": {"list": "erp_purchase_list", "detail": "erp_purchase_detail",
                          "node": "erp_purchase_node"},
+            "sales_order": {"list": "erp_sales_order_list",
+                            "detail": "erp_sales_order_detail",
+                            "node": "erp_sales_order_node"},
         }
         out = []
         for spec in specs:
@@ -762,6 +768,96 @@ def register_tools(mcp: MCPServer, state: ServerState) -> None:
     ) -> dict[str, Any]:
         session = _session(state)
         tool = PurchaseNodeTool(session.auth)
+        with state.provider.slot():
+            if node.strip().lower() in ("list", "ls", "nodes"):
+                return {"nodes": tool.catalog(record_id)}
+            return tool.fetch(record_id, tool.resolve_node(node))
+
+    # ---------- 客户订单 ----------
+    @mcp.tool(
+        name="erp_sales_order_list",
+        description=(
+            "查询客户订单【列表】（DingDan/DD_KHDD/Index.aspx，QXID=687）。"
+            "⚠ 一行=一个订单产品行（表单编号 KHDD 开头），同一单号可能多行，用 记录ID 定位单行。"
+            f"默认 {DEFAULT_RECORDS} 行，上限 {MAX_RECORDS}。"
+        ),
+    )
+    @_tool_errors
+    def erp_sales_order_list(
+        from_date: Annotated[str | None, Field(description="起 YYYY-MM-DD")] = None,
+        to_date: Annotated[str | None, Field(description="止 YYYY-MM-DD")] = None,
+        date_type: Annotated[
+            str,
+            Field(description="日期字段（默认制单日期）：订单日期/离厂日期/交货日期"),
+        ] = "制单日期",
+        where: Annotated[
+            str | None,
+            Field(description="本地过滤：客户名称~CAR,订单状态=编辑中"),
+        ] = None,
+        filters: Annotated[
+            dict[str, str] | None,
+            Field(description="服务端下拉（中文键）：订单状态/审批情况/客户属性/业务员…"),
+        ] = None,
+        key: Annotated[str, Field(description="服务端关键字（配合 field）")] = "",
+        field: Annotated[str, Field(description="关键字字段：表单编号/客户名称…")] = "",
+        key1: Annotated[str, Field(description="第二个服务端关键字")] = "",
+        field1: Annotated[str, Field(description="第二个关键字字段")] = "",
+        columns: Annotated[str | None, Field(description="只返回这些列，逗号分隔")] = None,
+        limit: Annotated[int, Field(description=f"1~{MAX_RECORDS}，超出截断")] = DEFAULT_RECORDS,
+    ) -> dict[str, Any]:
+        session = _session(state)
+        size = _clamp(limit)
+        with state.provider.slot():
+            rows, headers, page = SalesOrderListTool(session.auth).collect(
+                from_date=from_date, to_date=to_date, date_type=date_type or "制单日期",
+                key=key or "", field=field or "", key1=key1 or "", field1=field1 or "",
+                where=where, filters=filters, limit=size,
+            )
+        return _grid_response(rows, headers, page,
+                              "一行 = 一个订单产品行；同一 表单编号 可能多行",
+                              columns=columns)
+
+    @mcp.tool(
+        name="erp_sales_order_detail",
+        description=(
+            "客户订单【详情】（DingDan/DD_KHDD/Add.aspx，只读）：表头与产品字段"
+            "（订单状态/客户名称/客户单号/产品名称/数量/价格…）+ 页内网格"
+            "（部件/选配/送货等）+ 备注类文本域 + 可点开的子页清单（nodes）。"
+        ),
+    )
+    @_tool_errors
+    def erp_sales_order_detail(
+        record_id: Annotated[str | None,
+                              Field(description="记录 ID（列表的 记录ID）")] = None,
+        number: Annotated[str | None, Field(description="表单编号，如 KHDD26110043")] = None,
+        include_texts: Annotated[bool, Field(description="是否返回备注文本域")] = True,
+    ) -> dict[str, Any]:
+        session = _session(state)
+        tool = SalesOrderDetailTool(session.auth)
+        with state.provider.slot():
+            rows = tool.resolve_records(record_id=record_id or "", number=number or "")
+            return tool.fetch_one(rows[0]["记录ID"], include_texts=include_texts)
+
+    @mcp.tool(
+        name="erp_sales_order_node",
+        description=(
+            "客户订单里「点开才有的子数据」（每个节点一次 POST+GET，1-2 秒）。"
+            "node=list 列出全部节点（会标出这一单哪些能点开）；可用："
+            "cp=产品资料、cp_process=产品工序、cp_materials=产品辅料、"
+            "part=部件资料、part_materials=部件辅料、part_process=部件工序、"
+            "part_machines=部件机台、product_check=送货资料、quantities=数量档、"
+            "fees=费项明细、other_fees=其他费项、feedback=需求反馈、sgkb=手工开版、"
+            "product_bg=产品资料变更、stock=生产库存明细等（共 20 个）。"
+            "⚠ fees / other_fees 在 ERP 侧是死链（弹窗指向 404），调用会明确报错。"
+        ),
+    )
+    @_tool_errors
+    def erp_sales_order_node(
+        record_id: Annotated[str, Field(description="记录 ID")],
+        node: Annotated[str, Field(description="节点名；list 查看全部")],
+    ) -> dict[str, Any]:
+        session = _session(state)
+        tool = SalesOrderNodeTool(session.auth)
         with state.provider.slot():
             if node.strip().lower() in ("list", "ls", "nodes"):
                 return {"nodes": tool.catalog(record_id)}
@@ -1101,8 +1197,9 @@ def register_tools(mcp: MCPServer, state: ServerState) -> None:
     @mcp.tool(
         name="erp_quote_update",
         description=(
-            "【会写入 ERP】修改报价需求单的表头（备注/联系人/电话/手机/传真/折扣率/"
-            "产品描述/业务员/跟单员）。内部会先发 btnModify 解锁 [保存]，再发 btnSave。"
+            "【会写入 ERP】修改报价需求单的**表头**（备注/联系人/电话/手机/传真/折扣率/"
+            "产品描述(表头 txtCPMX)/业务员/跟单员）。内部会先发 btnModify 解锁 [保存]，再发 btnSave。"
+            "⚠ 明细行的产品描述（CPMS）不在这里，请用 erp_quote_update_product(product_desc=…)。"
             "confirm=false（默认）只返回将要修改的字段，不写库。"
         ),
     )
@@ -1156,9 +1253,14 @@ def register_tools(mcp: MCPServer, state: ServerState) -> None:
     @mcp.tool(
         name="erp_quote_update_product",
         description=(
-            "【会写入 ERP】修改某条产品明细（cpid 来自 erp_quote_details）。"
-            "可改产品名称/规格/数量。confirm=false（默认）只返回待修改字段。"
-            "保存后会回读名称与产品数量复核，不一致会返回 status=failed。"
+            "【会写入 ERP】修改某条**产品明细**（cpid 来自 erp_quote_details）。"
+            "可改：产品名称 name / 规格 spec / 数量 qty / **产品描述 product_desc（txtCPMS）**，"
+            "以及 fields 里的任意明细字段（与 erp_quote_create 同一套词汇，如 "
+            "parts_desc 配件描述、modify_log 修改记录、inspection 检测项目、packing 包装方式）。"
+            "⚠ 表头字段（备注/联系人/折扣率…）用 erp_quote_update；"
+            "明细的 CPMS 只能用本工具改。"
+            "confirm=false（默认）只返回待修改字段；保存后逐个回读改动过的控件复核，"
+            "不一致返回 status=failed 并在 mismatched 里列出字段。"
         ),
     )
     @_tool_errors
@@ -1183,6 +1285,27 @@ def register_tools(mcp: MCPServer, state: ServerState) -> None:
             float | None,
             Field(description="产品数量，必须 > 0", examples=[3000]),
         ] = None,
+        product_desc: Annotated[
+            str | None,
+            Field(
+                description=(
+                    "明细的**产品描述**（ERP 字段 txtCPMS，多行长文本，可含换行）；"
+                    "不传则不修改。传空串表示清空。"
+                ),
+                examples=["皮壳：157g哑粉裱1200g灰板，270*210mm，4C+哑胶\n内文：128g双铜，4C+4C"],
+            ),
+        ] = None,
+        fields: Annotated[
+            dict[str, Any] | None,
+            Field(
+                description=(
+                    "其他明细字段（别名或控件名）：如 parts_desc=配件描述、modify_log=修改记录、"
+                    "inspection=检测项目、packing=包装方式、delivery=送货方式、pallet=台板类型。"
+                    "数量请用 qty 传；只读/自动计算的字段会被拒绝。"
+                ),
+                examples=[{"inspection": "EN71 part1/2/3"}],
+            ),
+        ] = None,
         confirm: Annotated[
             bool,
             Field(description="false（默认）只返回待修改字段；true 才写库"),
@@ -1191,7 +1314,8 @@ def register_tools(mcp: MCPServer, state: ServerState) -> None:
         session = _session(state)
         with state.provider.slot():
             return QuoteCreateService(session.auth).update_product(
-                record_id, cpid, name=name, spec=spec, qty=qty, confirm=confirm,
+                record_id, cpid, name=name, spec=spec, qty=qty,
+                product_desc=product_desc, fields=fields, confirm=confirm,
             )
 
     # ---------- 新增报价需求：删除 ----------

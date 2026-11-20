@@ -70,7 +70,7 @@ qxid:
 | `erp price-detail` | 客户报价【详情】（表头+产品+数量+部件+费用+描述） |
 | `erp price-node` | 客户报价【子数据】（数量档 / 部件 / 工序 / 辅料 / 费项 / 面板，共 22 个节点） |
 | `erp quote` | 报价需求【详情】→ ERP 订单需求 JSON |
-| `erp pages` | 三个新模块的**数据页面清单**（列表 / 详情 / 弹窗子页） |
+| `erp pages` | 四个新模块的**数据页面清单**（列表 / 详情 / 弹窗子页） |
 | `erp costing-list` | 产品核价【列表】（`BJ_KHBJ` QXID=1281，一行=一个核价产品行） |
 | `erp production-list` | 生产施工单【列表】（`SC_SCSGD` QXID=740，一行=一张施工单） |
 | `erp production-detail` | 生产施工单【详情】（字段 + 部件表 + 送货表 + 子页清单） |
@@ -78,6 +78,9 @@ qxid:
 | `erp purchase-list` | 采购订单【列表】（`CG_CGDD` QXID=266，一行=一条材料明细） |
 | `erp purchase-detail` | 采购订单【详情】（表头 + 材料明细网格 33 列） |
 | `erp purchase-node` | 采购订单子页面（供应商档案选择等弹窗） |
+| `erp sales-order-list` | 客户订单【列表】（`DD_KHDD` QXID=687，一行=一个订单产品行） |
+| `erp sales-order-detail` | 客户订单【详情】（46 字段 + 3 个网格 + 8 个文本域） |
+| `erp sales-order-node` | 客户订单【子数据】（20 个弹窗子页） |
 | `erp attendance` | 月度考勤明细 → Markdown / JSONL |
 | `erp menu` | 菜单 → 接口对照：抓菜单树 / 覆盖率 / 生成 `docs/erp-menu.md` |
 | `erp key` | 向网关换取 api-key（见 [mcp.md](mcp.md)） |
@@ -266,18 +269,19 @@ erp price-node --id <记录ID> --node list          # 列出全部节点
 - 子页里的列表和左侧编辑表单**行宽往往相同**，所以解析器找到表头后会锁定在那张表里取行；
   运费清单那种 colspan 排版抓不到“网格”，会退回按「首行标签 / 次行值」配对后放进 `fields`。
 
-### `erp pages` — 三个模块的数据页面清单
+### `erp pages` — 四个模块的数据页面清单
 
 ```powershell
-erp pages                              # 三个模块全列
+erp pages                              # 四个模块全列
 erp pages --module production          # 只看生产施工单
+erp pages --module sales_order         # 只看客户订单
 ```
 
 打印每个模块的列表页/QXID、详情页、服务端过滤下拉、日期字段和**全部弹窗子页**
 （子页名 + 打开它的按钮 + 中文说明）。代码侧见
 `src/erp_tools/tools/grid_module/README.md`。
 
-### `erp costing-list` / `erp production-list` / `erp purchase-list` — 三个列表
+### `erp costing-list` / `erp production-list` / `erp purchase-list` / `erp sales-order-list` — 四个列表
 
 参数与 `erp price` 一致：`--from/--to/--date-type/--key/--field/--where/--filter/
 --columns/--out/--jsonl/--limit/--page-size/--max-pages/--dry-run`。
@@ -286,29 +290,35 @@ erp pages --module production          # 只看生产施工单
 erp costing-list --from 2026-11-01 --to 2026-11-18 --filter 审批情况=已全审批 --out out\cphj.csv
 erp production-list --filter 工单状态=已审批 --date-type 交货日期 --out out\sgd.csv
 erp purchase-list --where 表单编号=CGDD261118031 --out out\cgdd.csv
+erp sales-order-list --date-type 订单日期 --filter 订单状态=编辑中 --out out\khdd.csv
 ```
 
 - `costing-list` 与 `price` 是**同一张 aspx**，只是 QXID 不同（1281 vs 860），
   核价页多出核价单价/利润率/各项成本列。
 - `purchase-list` 没有 `--date-type`（该页固定按制单日期），且一行=一条材料明细。
+- `sales-order-list` 的 `--date-type` 可选 `制单日期` / `订单日期` / `离厂日期` / `交货日期`，
+  一行=一个订单产品行（同一 `KHDD` 单号可能多行）。
 
-### `erp production-detail` / `erp purchase-detail` — 详情
+### `erp production-detail` / `erp purchase-detail` / `erp sales-order-detail` — 详情
 
 ```powershell
 erp production-detail --id <记录ID> --out out\sgd.json
 erp production-detail --no SGD2611180011          # 按生产单号反查
 erp purchase-detail --no CGDD261118031 --no-texts
+erp sales-order-detail --no KHDD26110043 --no-texts
 ```
 
 返回 `fields`（标签→值）、`grids`（内联网格）、`texts`（备注长文本）、
 `nodes`（这一单能点开的子页）、`self_check`（页面里的记录 ID 与请求是否一致）。
 
-### `erp production-node` / `erp purchase-node` — 子数据
+### `erp production-node` / `erp purchase-node` / `erp sales-order-node` — 子数据
 
 ```powershell
 erp production-node --id <记录ID> --node list            # 这一单能开哪些子页
 erp production-node --id <记录ID> --node part_materials --out out\fl.json
 erp production-node --id <记录ID> --node 部件辅料          # 中文别名也行
+erp sales-order-node --id <记录ID> --node quantities --out out\sl.json
+erp sales-order-node --id <记录ID> --node 需求反馈 --out out\fk.json
 ```
 
 ### `erp quote` — 报价需求详情

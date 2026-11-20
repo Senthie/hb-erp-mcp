@@ -118,6 +118,21 @@ PAGE_CAPABILITIES: dict[str, tuple[Capability, ...]] = {
         Capability("读", "子页面（供应商档案选择等弹窗）", cli="purchase-node",
                    mcp="erp_purchase_node", doc="api/erp_purchase_node.md"),
     ),
+    # ── 客户订单管理 / 客户订单 ──
+    # 与采购订单相同：「列表-客户订单」是菜单项，详情页 Add.aspx 由列表记录ID 进入，
+    # 菜单树里没有这条路径，因此详情/子页能力也登记在列表页上。
+    "dingdan/dd_khdd/index.aspx": (
+        Capability("查", "列表筛选 + 导出（一行 = 一个订单产品行，94 列）",
+                   cli="sales-order-list", mcp="erp_sales_order_list",
+                   doc="api/erp_sales_order_list.md"),
+        Capability("读", "订单详情（字段 + 选配/部件/送货网格 + 文本域）",
+                   cli="sales-order-detail", mcp="erp_sales_order_detail",
+                   doc="api/erp_sales_order_detail.md",
+                   note="入口是列表的 记录ID → DD_KHDD/Add.aspx"),
+        Capability("读", "20 个弹窗子页（产品/部件/工序/辅料/机台/数量档/费项/反馈/开版…）",
+                   cli="sales-order-node", mcp="erp_sales_order_node",
+                   doc="api/erp_sales_order_node.md"),
+    ),
     # ── 人力资源管理 / 考勤管理 ──
     "renshi/rs_kqda_m/add.aspx": (
         Capability("查", "月度考勤明细", cli="attendance",
@@ -134,7 +149,7 @@ INFRA_CAPABILITIES: tuple[Capability, ...] = (
     Capability("查", "菜单 → 接口对照（哪些菜单页已接入）",
                mcp="erp_menu", doc="api/erp_menu.md",
                note="CLI：erp menu"),
-    Capability("查", "三个模块的**数据页面清单**（列表 / 详情 / 每个弹窗子页）",
+    Capability("查", "四个模块的**数据页面清单**（列表 / 详情 / 每个弹窗子页）",
                mcp="erp_page_catalog", doc="api/erp_page_catalog.md",
                note="CLI：erp pages"),
 )

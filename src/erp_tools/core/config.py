@@ -109,6 +109,7 @@ class ErpConfig:
     qxid_costing_index: str = ""
     qxid_production_index: str = ""
     qxid_purchase_index: str = ""
+    qxid_sales_order_index: str = ""
 
     #: 单页返回的最大记录数（考勤翻页主策略：调大页大小，一次拿全）
     page_size_max: int = 5000
@@ -200,6 +201,7 @@ class ErpConfig:
             qxid_costing_index=_env_str("ERP_QXID_COST_INDEX"),
             qxid_production_index=_env_str("ERP_QXID_PRODUCTION_INDEX"),
             qxid_purchase_index=_env_str("ERP_QXID_PURCHASE_INDEX"),
+            qxid_sales_order_index=_env_str("ERP_QXID_SALES_ORDER_INDEX"),
             page_size_max=max(50, _env_int("ERP_PAGE_SIZE_MAX", 5000)),
         )
 

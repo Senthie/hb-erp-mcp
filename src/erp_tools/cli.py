@@ -633,7 +633,7 @@ def cmd_pages(args) -> int:
         print(f"\n=== {spec.label}（{spec.key}）")
         print(f"  列表 {spec.list_path}  QXID={spec.fallback_qxid}")
         print(f"  详情 {spec.detail_path or '(无)'}")
-        print(f"  一行 = {spec.row_note}")
+        print(f"  {spec.row_note}")
         if spec.filter_controls:
             print("  服务端过滤：" + "、".join(
                 f"{v}({k})" for k, v in spec.filter_controls.items()))
@@ -966,7 +966,12 @@ def build_parser() -> argparse.ArgumentParser:
                        help="查询采购订单列表（CG_CGDD/Index.aspx；一行=一条材料明细）")
     _add_list_args(p, date_type=None)
 
-    for name, label in (("production", "生产施工单"), ("purchase", "采购订单")):
+    p = sub.add_parser("sales-order-list", parents=[common],
+                       help="查询客户订单列表（DD_KHDD/Index.aspx，QXID=687）")
+    _add_list_args(p, date_type="制单日期")
+
+    for name, label in (("production", "生产施工单"), ("purchase", "采购订单"),
+                        ("sales-order", "客户订单")):
         p = sub.add_parser(f"{name}-detail", parents=[common],
                            help=f"{label}【详情】→ JSON")
         p.add_argument("--id", dest="id", help="记录 ID（列表的 记录ID）")

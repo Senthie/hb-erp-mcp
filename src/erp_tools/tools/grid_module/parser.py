@@ -329,7 +329,7 @@ def discover_nodes(html: str, catalog: dict[str, tuple[str, str, str]]) -> list[
     for node, (page, button, label) in catalog.items():
         if button not in rendered:
             continue
-        page_name = page.split("/")[-1].lower()
+        page_name = page.split("/")[-1]
         hit: NodeEntry | None = None
         for fn, (params, body) in funcs.items():
             if not fn.startswith(("Open", "OPEN")):

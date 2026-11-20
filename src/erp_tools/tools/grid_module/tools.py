@@ -6,7 +6,7 @@ CLI 用中划线（`erp production-list`），MCP 用下划线（`erp_production
 
 from __future__ import annotations
 
-from .spec import COSTING, PRODUCTION, PURCHASE
+from .spec import COSTING, PRODUCTION, PURCHASE, SALES_ORDER
 from .tool import ModuleDetailTool, ModuleListTool, ModuleNodeTool
 
 
@@ -53,6 +53,24 @@ class CostingListTool(ModuleListTool):
     spec = COSTING
 
 
+class SalesOrderListTool(ModuleListTool):
+    name = "sales-order-list"
+    summary = "查询客户订单列表（DingDan/DD_KHDD/Index.aspx，QXID=687）→ 表格 / CSV / JSONL"
+    spec = SALES_ORDER
+
+
+class SalesOrderDetailTool(ModuleDetailTool):
+    name = "sales-order-detail"
+    summary = "客户订单【详情】（DD_KHDD/Add.aspx，只读）→ 字段 + 选配/部件/送货网格 + 子页清单"
+    spec = SALES_ORDER
+
+
+class SalesOrderNodeTool(ModuleNodeTool):
+    name = "sales-order-node"
+    summary = "客户订单子数据（产品/部件/工序/辅料/数量档/费项/反馈/开版…）→ 字段 + 网格"
+    spec = SALES_ORDER
+
+
 __all__ = [
     "ProductionListTool",
     "ProductionDetailTool",
@@ -61,4 +79,7 @@ __all__ = [
     "PurchaseDetailTool",
     "PurchaseNodeTool",
     "CostingListTool",
+    "SalesOrderListTool",
+    "SalesOrderDetailTool",
+    "SalesOrderNodeTool",
 ]

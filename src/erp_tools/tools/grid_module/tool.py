@@ -368,7 +368,7 @@ class ModuleListTool(ModuleBase):
         from ...output.markdown import to_markdown_table
 
         preferred = ["表单编号", "生产单号", "订单编号", "产品名称", "客户名称",
-                     "工单状态", "材料名称", "供应商名称", "报价状态", "制单日期"]
+                     "工单状态", "订单状态", "材料名称", "供应商名称", "报价状态", "制单日期"]
         picked = [c for c in preferred if c in columns][:6] or columns[:6]
         table = to_markdown_table(
             picked, [[r.get(c) for c in picked] for r in rows[:limit]], max_col_width=24)
@@ -567,9 +567,12 @@ class ModuleNodeTool(ModuleBase):
         rows = []
         for node, (page, button, label) in self.spec.nodes.items():
             entry = {"node": node, "label": label, "page": page, "button": button}
+            if node in self.spec.dead_nodes:
+                entry["dead"] = True
+                entry["note"] = "该按钮指向的子页在 ERP 侧 404（模板遗留死链），调用会报错"
             if record_id:
                 live = available.get(node)
-                entry["available"] = live is not None
+                entry["available"] = live is not None and node not in self.spec.dead_nodes
                 if live:
                     entry["function"] = live["function"]
             rows.append(entry)
@@ -615,6 +618,13 @@ class ModuleNodeTool(ModuleBase):
         if sub.status_code >= 500:
             raise UpstreamError(f"子页打开失败（HTTP {sub.status_code}）",
                                 sub.status_code, sub.text[:300])
+        if sub.status_code == 404 or "无法找到资源" in sub.text[:4000]:
+            raise ParseError(
+                f"{self.spec.label} 的 {node} 子页在 ERP 侧不存在：按钮 {entry.button} "
+                f"指向 {entry.page}，但 {sub_url.split('?')[0]} 返回 404。"
+                "这是 ERP 页面模板遗留的死链（从别的模块拷页面时没一起带 aspx），"
+                "浏览器里点开同样是「无法找到资源」。"
+            )
 
         parsed = parse_detail(sub.text)
         sub_soup = soup_of(sub.text)

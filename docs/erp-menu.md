@@ -9,7 +9,7 @@
 > | 抓取时间 | 2026-11-18 18:18:07 |
 > | 菜单来源 | `GET /Admin/indexAjax.ashx?FunName=GetMenuTree&Value1=2069&Value2=` |
 > | 规模 | 20 个模块 · 381 个菜单页（264 个唯一路径） |
-> | 已接入 | 8 个页面 · 26 个接口 |
+> | 已接入 | 9 个页面 · 29 个接口 |
 
 ## 覆盖率
 
@@ -19,7 +19,7 @@
 | 业务报价管理 | 29 | 4 | 25 |
 | 印前制版管理 | 5 | 1 | 4 |
 | 样板管理 | 10 | 0 | 10 |
-| 客户订单管理 | 46 | 0 | 46 |
+| 客户订单管理 | 46 | 1 | 45 |
 | 生产管理 | 47 | 2 | 45 |
 | 外发管理 | 3 | 0 | 3 |
 | 采购管理 | 14 | 1 | 13 |
@@ -35,7 +35,7 @@
 | 基础资料 | 93 | 0 | 93 |
 | 发送信息 | 1 | 0 | 1 |
 | 系统管理 | 6 | 0 | 6 |
-| **合计** | **381** | **8** | **363** |
+| **合计** | **381** | **9** | **361** |
 
 标记说明：✅ 已接入（后面跟接口名与文档）、⬜ 未接入、⚠ 同一页面挂在多个菜单下。
 
@@ -277,12 +277,16 @@
     - `新增-合同评审` · `DingDan/DD_KHDD/Add.aspx` · QXID 1288 · ⚠ 同路径另有 QXID 684
       - ⬜ 未接入
     - `列表-合同评审` · `DingDan/DD_KHDD/Index.aspx` · QXID 1291 · ⚠ 同路径另有 QXID 687
-      - ⬜ 未接入
+      - ✅ 查 · 列表筛选 + 导出（一行 = 一个订单产品行，94 列） → `erp sales-order-list` · `erp_sales_order_list` · [api/erp_sales_order_list.md](api/erp_sales_order_list.md)
+      - ✅ 读 · 订单详情（字段 + 选配/部件/送货网格 + 文本域）（入口是列表的 记录ID → DD_KHDD/Add.aspx） → `erp sales-order-detail` · `erp_sales_order_detail` · [api/erp_sales_order_detail.md](api/erp_sales_order_detail.md)
+      - ✅ 读 · 20 个弹窗子页（产品/部件/工序/辅料/机台/数量档/费项/反馈/开版…） → `erp sales-order-node` · `erp_sales_order_node` · [api/erp_sales_order_node.md](api/erp_sales_order_node.md)
   - 客户订单
     - `新建-客户订单` · `DingDan/DD_KHDD/Add.aspx` · QXID 684 · ⚠ 同路径另有 QXID 1288
       - ⬜ 未接入
     - `列表-客户订单` · `DingDan/DD_KHDD/Index.aspx` · QXID 687 · ⚠ 同路径另有 QXID 1291
-      - ⬜ 未接入
+      - ✅ 查 · 列表筛选 + 导出（一行 = 一个订单产品行，94 列） → `erp sales-order-list` · `erp_sales_order_list` · [api/erp_sales_order_list.md](api/erp_sales_order_list.md)
+      - ✅ 读 · 订单详情（字段 + 选配/部件/送货网格 + 文本域）（入口是列表的 记录ID → DD_KHDD/Add.aspx） → `erp sales-order-detail` · `erp_sales_order_detail` · [api/erp_sales_order_detail.md](api/erp_sales_order_detail.md)
+      - ✅ 读 · 20 个弹窗子页（产品/部件/工序/辅料/机台/数量档/费项/反馈/开版…） → `erp sales-order-node` · `erp_sales_order_node` · [api/erp_sales_order_node.md](api/erp_sales_order_node.md)
   - 送货通知单
     - `新增-送货通知单` · `KuCun/KC_CPCRKSQ/Add.aspx` · QXID 727 · ⚠ 同路径另有 QXID 2236
       - ⬜ 未接入
@@ -1129,7 +1133,7 @@
 - ✅ 查 · 当前 api-key 对应的 ERP 身份与会话状态 → `erp_whoami` · [api/erp_whoami.md](api/erp_whoami.md)
 - ✅ 查 · 当前账号能访问哪些页面（QXID 能否探测到） → `erp_capabilities` · [api/erp_capabilities.md](api/erp_capabilities.md)
 - ✅ 查 · 菜单 → 接口对照（哪些菜单页已接入）（CLI：erp menu） → `erp_menu` · [api/erp_menu.md](api/erp_menu.md)
-- ✅ 查 · 三个模块的**数据页面清单**（列表 / 详情 / 每个弹窗子页）（CLI：erp pages） → `erp_page_catalog` · [api/erp_page_catalog.md](api/erp_page_catalog.md)
+- ✅ 查 · 四个模块的**数据页面清单**（列表 / 详情 / 每个弹窗子页）（CLI：erp pages） → `erp_page_catalog` · [api/erp_page_catalog.md](api/erp_page_catalog.md)
 - ✅ 查 · 登录 / 缓 cookie / 探测 QXID → `erp login` `erp doctor` `erp qxid` · [docs/cli.md](cli.md)
 - ✅ 其他 · 起 MCP 网关 / 换 api-key → `erp serve` `erp key` · [docs/mcp.md](mcp.md)
 
