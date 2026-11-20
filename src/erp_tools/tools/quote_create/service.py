@@ -344,6 +344,39 @@ def _find_validation_message(html: str) -> str | None:
     return None
 
 
+def _squash(text: str | None) -> str:
+    """比较文本时用：抹平换行/多个空格（ERP 存回去时常把 \\r\\n 改写成 \\n）。"""
+    return " ".join((text or "").replace("\r\n", "\n").split())
+
+
+def _same_text(expected: str | None, actual: str | None) -> bool:
+    return _squash(expected) == _squash(actual)
+
+
+def _date_part(text: str | None) -> str:
+    """`2026/12/30 0:00:00` / `2026-12-30` -> `2026-12-30`（取不出来就原样兼容）。"""
+    raw = _squash(text)
+    match = re.match(r"(\d{4})[-/](\d{1,2})[-/](\d{1,2})", raw)
+    if not match:
+        return raw
+    year, month, day = match.groups()
+    return f"{year}-{int(month):02d}-{int(day):02d}"
+
+
+def _same_value(control: str, expected: str | None, actual: str | None) -> bool:
+    """按控件类型比较：日期只比日期部分（ERP 会自动补 `0:00:00`）。"""
+    spec = pf.CONTROL_MAP.get(control)
+    if spec is not None and spec.kind == pf.KIND_DATE:
+        return _date_part(expected) == _date_part(actual)
+    return _same_text(expected, actual)
+
+
+def _control_label(control: str) -> str:
+    """控件名 -> 中文标签（拿不到就返回控件名本身）。"""
+    spec = pf.CONTROL_MAP.get(control)
+    return spec.label if spec is not None and spec.label else control
+
+
 class QuoteCreateService:
     """新增报价需求的只读抽象 + 提交体组装。"""
 
@@ -1410,12 +1443,23 @@ class QuoteCreateService:
         name: str | None = None,
         spec: str | None = None,
         qty: Any = None,
+        product_desc: str | None = None,
+        fields: dict[str, Any] | None = None,
         confirm: bool = False,
     ) -> dict[str, Any]:
-        """修改某条产品明细（点产品名称打开的那个编辑页）。
+        """修改某条产品明细（点产品名称打开的那个编辑页 `Add_CPZL.aspx`）。
 
         协议：`GET Add_CPZL.aspx?PID=<单据>&ID=<CPID>&...` → `POST btnSave`。
-        保存后回读明细行名称做复核；不一致时返回 `failed`（不假报成功）。
+
+        可改：
+          * `name`  → `txtCPMC`（产品名称）
+          * `spec`  → `txtGG`（规格）
+          * `qty`   → `txtCPSL` + `txtCPSL1`（产品数量，两处都要写）
+          * `product_desc` → `txtCPMS`（**产品描述**，明细行最常改的长文本）
+          * `fields` → 任意别名/控件名（与 `erp_quote_create` 的明细字段同一套词汇，
+             见 `fields.LEGACY_SUB_FIELD_MAP`）。数量请用 `qty` 传，别放进 fields。
+
+        保存后**逐个回读**改动过的控件做复核；不一致返回 `failed`（不假报成功）。
         """
         cpid = (cpid or "").strip()
         if not cpid:
@@ -1434,6 +1478,10 @@ class QuoteCreateService:
         if qty is not None:
             changes["txtCPSL1"] = _fmt_qty(qty)
             changes["txtCPSL"] = _fmt_qty(qty)
+        if product_desc is not None:
+            changes["txtCPMS"] = str(product_desc)
+        if fields:
+            changes.update(self._resolve_product_fields(fields))
         if not changes:
             return {"status": "no_changes", "ok": False, "cpid": cpid,
                     "message": "没有提供任何要修改的产品字段"}
@@ -1443,6 +1491,7 @@ class QuoteCreateService:
                 "status": "needs_confirmation", "ok": False,
                 "record_id": record_id, "cpid": cpid,
                 "current": target, "changes": changes,
+                "fields": {ctl: _control_label(ctl) for ctl in changes},
                 "message": "确认修改产品请传 confirm=true。",
             }
 
@@ -1463,6 +1512,9 @@ class QuoteCreateService:
         saved = self.auth.client.post(sub_url, data=body)
         if saved.status_code >= 500:
             raise ParseError(f"产品保存失败（HTTP {saved.status_code}）")
+        # ERP 保存**成功也可能残留上一次的校验提示**（页面不刷新 alert），
+        # 所以这里只把它当线索，真正的判据是下面的回读。
+        rejection_hint = _find_validation_message(saved.text)
 
         after = self.list_details(record_id)
         row = next((r for r in after["details"] if r["cpid"] == cpid), None)
@@ -1470,8 +1522,15 @@ class QuoteCreateService:
         name_ok = name is None or verified_name.strip() == str(name).strip()
         verified_qty = self._product_qty_readback(record_id, cpid) if qty is not None else None
         qty_ok = qty is None or float_or_none(verified_qty) == float_or_none(_fmt_qty(qty))
-        ok = bool(name_ok and qty_ok)
-        return {
+
+        text_changes = {ctl: val for ctl, val in changes.items()
+                        if ctl not in ("txtCPMC", "txtGG", "txtCPSL", "txtCPSL1")}
+        verified_text = (self._product_fields_readback(record_id, cpid, tuple(text_changes))
+                         if text_changes else {})
+        text_ok = all(_same_value(ctl, val, verified_text.get(ctl))
+                      for ctl, val in text_changes.items())
+        ok = bool(name_ok and qty_ok and text_ok)
+        result: dict[str, Any] = {
             "status": "updated" if ok else "failed",
             "ok": ok,
             "record_id": record_id,
@@ -1479,8 +1538,96 @@ class QuoteCreateService:
             "changes": changes,
             "verified_name": verified_name,
             "verified_qty": verified_qty,
-            "message": "已保存" if ok else "保存后回读与预期不一致，产品保存协议还没完全跑通",
+            "message": "已保存并复核一致" if ok else "保存后回读与预期不一致，请人工确认",
         }
+        if text_changes:
+            result["verified"] = verified_text
+            result["mismatched"] = [ctl for ctl, val in text_changes.items()
+                                    if not _same_value(ctl, val, verified_text.get(ctl))]
+        if rejection_hint:
+            if ok:
+                result["warning"] = (
+                    f"保存后页面仍残留提示「{rejection_hint}」，但回读已确认写入 —— "
+                    "以回读为准；若 ERP 里没生效请人工确认。"
+                )
+            else:
+                result["message"] = rejection_hint
+        return result
+
+    @staticmethod
+    def _resolve_product_fields(fields: dict[str, Any]) -> dict[str, str]:
+        """把 `fields={别名/控件名: 值}` 解析成 `{控件名: 字符串值}`。
+
+        词汇表与 `erp_quote_create` 的明细字段一致（`product_desc`/`parts_desc`/
+        `modify_log`/`inspection`/`packing`/… 以及控件名本身）。
+        读不了/写不了的控件会被拒绝，未知键会给出候选。
+        """
+        from .fields import CONTROL_MAP, resolve_control, suggest
+
+        out: dict[str, str] = {}
+        for key, value in fields.items():
+            control = resolve_control(str(key))
+            if control is None:
+                hints = suggest(str(key))
+                raise ParseError(
+                    f"未知的产品字段 {key!r}"
+                    + (f"；你是不是想写：{', '.join(hints)}" if hints else "")
+                )
+            spec = CONTROL_MAP.get(control)
+            if spec is not None and not spec.writable:
+                raise ParseError(
+                    f"字段 {key!r}（{control}）在 ERP 侧是只读/自动计算的，不能通过接口修改"
+                )
+            if control.startswith("txtCPSL"):
+                raise ParseError(
+                    f"数量请用 qty 参数传（{key!r} → {control} 需要同时写 txtCPSL 与 txtCPSL1）"
+                )
+            out[control] = "" if value is None else str(value)
+        return out
+
+    def _product_editor_html(self, record_id: str, cpid: str) -> str | None:
+        """打开产品行编辑页（`Add_CPZL.aspx?ID=<cpid>`）并返回 HTML。"""
+        try:
+            html, _ = self.open_record(record_id)
+        except ErpError:
+            return None
+        soup = soup_of(html)
+        sub_url = self._sub_page_url(
+            record_id,
+            get_input_value(soup, "txtKHID") or "",
+            get_input_value(soup, "txtZKL"),
+            cpid=cpid,
+        )
+        resp = self.auth.client.get(sub_url)
+        if resp.status_code != 200:
+            return None
+        return resp.text
+
+    def _product_fields_readback(self, record_id: str, cpid: str,
+                                 controls: tuple[str, ...]) -> dict[str, str]:
+        """回读产品编辑页上若干个控件的当前值（input / textarea / select）。"""
+        html = self._product_editor_html(record_id, cpid)
+        if not html:
+            return {}
+        return {control: _read_value(html, control) for control in controls}
+
+    def _product_qty_readback(self, record_id: str, cpid: str) -> str | None:
+        """打开产品行编辑页，读回该行的产品数量。
+
+        数量在 ERP 里有两种存储：
+          * 汇总值 `txtCPSL`（页面「产品数量：」框里算出来的那个）——校验与展示都用它；
+          * 多款/多语言明细 `txtCPSL1..10`（对应明细行上的 `OpenInputCPSLZLData('<GUID>')`）。
+        本工具只写汇总值，所以回读也优先看 `txtCPSL`。
+        """
+        html = self._product_editor_html(record_id, cpid)
+        if not html:
+            return None
+        page = soup_of(html)
+        for control in ("txtCPSL", "txtCPSL1"):
+            value = (get_input_value(page, control) or "").strip()
+            if value:
+                return value
+        return None
 
     # ══════════════════ 6. 删除单据 ══════════════════
     def _record_url(self, record_id: str) -> str:

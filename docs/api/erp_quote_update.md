@@ -5,8 +5,12 @@
 
 ## 用途
 
-改单据表头：备注 / 联系人 / 电话 / 折扣率 / 产品描述 / 业务员 / 跟单员。
+改单据**表头**：备注 / 联系人 / 电话 / 折扣率 / 产品描述（`txtCPMX`）/ 业务员 / 跟单员。
 内部先回发 `btnModify` 解锁 [保存]，再回发 `btnSave`。
+
+⚠ **改不了明细行**。明细的产品描述（CPMS）请用
+[`erp_quote_update_product`](erp_quote_update_product.md) 的 `product_desc`；
+明细的名称/规格/数量也在那个接口里。
 
 ## 参数
 
