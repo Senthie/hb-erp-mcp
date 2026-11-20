@@ -17,6 +17,7 @@ from .grid_module import (
     SalesOrderDetailTool,
     SalesOrderListTool,
     SalesOrderNodeTool,
+    SalesOrderAttachmentTool,
 )
 from .quote_index import QuoteListTool
 from .quote_price import PriceDetailTool, PriceListTool, PriceNodeTool
@@ -42,6 +43,7 @@ _TOOLS: dict[str, Type[Tool]] = {
     SalesOrderListTool.name: SalesOrderListTool,
     SalesOrderDetailTool.name: SalesOrderDetailTool,
     SalesOrderNodeTool.name: SalesOrderNodeTool,
+    SalesOrderAttachmentTool.name: SalesOrderAttachmentTool,
 }
 
 

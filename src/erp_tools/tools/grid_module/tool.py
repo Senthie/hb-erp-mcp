@@ -14,10 +14,11 @@
 
 from __future__ import annotations
 
+import re
 import sys
 from typing import Iterator
 
-from ...core.errors import ParseError, UpstreamError
+from ...core.errors import ErpError, ParseError, UpstreamError
 from ..base import Option, Tool
 from ..gridlist import (
     button_payload,
@@ -395,6 +396,239 @@ class ModuleListTool(ModuleBase):
                 sink.write(row)
         finally:
             sink.close()
+
+    # ---------- 附件（列表页「单号」单元格左击） ----------
+    #: `OnOpenFJ('文件ID','产品ID','FJNum')` / `OnOpenCPFJ('产品ID','FJNum')`
+    _FJ_RE = re.compile(
+        r"OnOpen(?P<cp>CP)?FJ\(\s*'(?P<fid>[^']*)'\s*,\s*'(?P<pid>[^']*)'"
+        r"\s*(?:,\s*'(?P<num>[^']*)'\s*)?\)"
+    )
+    #: 附件文件是 ERP 静态目录下的直链（实测无需 cookie 即可下载）
+    _FJ_URL_RE = re.compile(r"""(?:window\.open|showModalDialog)\(\s*["']([^"']+)["']""")
+
+    def scan_attachments(self, html: str) -> list[dict]:
+        """从列表页 HTML 里抽出「记录 → 附件入口」清单。
+
+        有附件的行，单号单元格带 `onclick="OnOpenFJ(...)"` 且
+        `title="左击即可以调出附件"`；没有附件的就是纯文本单元格。
+        """
+        from ...core.aspnet import soup_of
+
+        out: list[dict] = []
+        seen: set[tuple[str, str, str]] = set()
+        for tr in soup_of(html).find_all("tr"):
+            m = re.search(r"OnDBClickOpenData\(\s*'([^']+)'", tr.get("ondblclick") or "")
+            record_id = m.group(1) if m else ""
+            for td in tr.find_all("td"):
+                hit = self._FJ_RE.search(td.get("onclick") or "")
+                if not hit:
+                    continue
+                key = (record_id.lower(), hit.group("fid").lower(), hit.group("pid").lower())
+                if key in seen:      # 同一附件可能同时挂在多个单元格上
+                    continue
+                seen.add(key)
+                out.append({
+                    "记录ID": record_id,
+                    "表单编号": td.get_text(strip=True),
+                    "类型": "产品附件" if hit.group("cp") else "订单附件",
+                    "文件ID": hit.group("fid"),
+                    "产品ID": hit.group("pid"),
+                    "FJNum": hit.group("num") or "",
+                })
+        return out
+
+    def attachment_targets(self, *, record_id: str = "", number: str = "",
+                           from_date: str | None = None, to_date: str | None = None,
+                           date_type: str = "", where: str | None = None,
+                           filters=None, limit: int | None = None,
+                           page_size: int | None = None, max_pages: int = MAX_PAGES_GUARD,
+                           ) -> list[tuple[dict, str]]:
+        """查列表并收集附件入口，返回 [(入口, 那一页的 HTML)]。"""
+        d_from, d_to = default_date_range()
+        from_date = from_date or d_from
+        to_date = to_date or d_to
+        size = int(page_size or self.cfg.page_size_max)
+        extra = self.parse_filters(filters)
+        date_type = date_type or (
+            next(iter(self.spec.date_fields), "") if self.spec.date_control else "")
+        conditions: list[Condition] = list(parse_where(where))
+
+        self._log(f"[INFO] {self.spec.label} 附件 {from_date} ~ {to_date} "
+                  f"日期字段={date_type or '(固定制单日期)'}"
+                  + (f" 过滤={extra}" if extra else ""))
+        page, html = self._search(from_date=from_date, to_date=to_date, page_size=size,
+                                  date_type=date_type, filters=extra)
+        self._log(f"[INFO] 服务端命中 {page.total} 行 / {page.pages} 页")
+
+        found = [(entry, html) for entry in self.scan_attachments(html)]
+        hop = 0
+        while page.has_more_pages:
+            hop += 1
+            if hop > max_pages:
+                raise UpstreamError(f"翻页超过 {max_pages} 页，已停止（可调大 --max-pages）")
+            page, html = self._next_page(html, from_date=from_date, to_date=to_date,
+                                         page_size=size, date_type=date_type,
+                                         filters=extra)
+            found.extend((entry, html) for entry in self.scan_attachments(html))
+
+        # 列表页会把同一批数据渲染两递（打印/导出用的隐藏表），按附件 ID 再去一次重
+        uniq: list[tuple[dict, str]] = []
+        seen: set[str] = set()
+        for entry, page_html in found:
+            key = entry["文件ID"].lower()
+            if key in seen:
+                continue
+            seen.add(key)
+            uniq.append((entry, page_html))
+        found = uniq
+
+        # 目标筛选：记录 ID / 单号 / 本地条件（对 表单编号、记录ID 生效）
+        if record_id:
+            found = [(e, h) for e, h in found
+                     if e["记录ID"].lower() == record_id.strip().lower()]
+        if number:
+            target = number.strip().lower()
+            found = [(e, h) for e, h in found if e["表单编号"].lower() == target]
+        if conditions:
+            found = [(e, h) for e, h in found
+                     if apply_conditions([dict(e)], conditions, list(e))]
+        if limit:
+            found = found[: int(limit)]
+        return found
+
+    def _post_button(self, html: str, button: str, fields: dict[str, str],
+                     url: str | None = None) -> str:
+        """按页面现有隐藏控件回发一个按钮，返回响应正文。"""
+        body = form_snapshot(html)
+        body.update(fields)
+        body.update(button_payload(html, button))
+        body["__EVENTTARGET"] = ""
+        body["__EVENTARGUMENT"] = ""
+        _drop_invalid_controls(html, body)
+        target = url or self.page_url(self.spec.list_path, self.list_qxid())
+        resp = self.client.post(target, data=body)
+        if resp.status_code >= 500:
+            raise UpstreamError(f"附件回发失败（HTTP {resp.status_code}）", resp.status_code)
+        return resp.text
+
+    def _fj_page_files(self, page_url: str) -> list[dict]:
+        """附件列表页（`DD_*_FJ.aspx`）：逐个点「附件文件：有」拿直链。"""
+        from ...core.aspnet import soup_of
+
+        resp = self.client.get(page_url)
+        if resp.status_code != 200:
+            raise UpstreamError(f"附件列表页打开失败（HTTP {resp.status_code}）",
+                                resp.status_code, page_url)
+        html = resp.text
+        files: list[dict] = []
+        seen: set[str] = set()
+        for tr in soup_of(html).find_all("tr"):
+            fid = ""
+            for td in tr.find_all("td"):
+                m = re.search(r"Display_FJ\(\s*'([^']+)'\s*,\s*'([^']*)'",
+                              td.get("onclick") or "")
+                if m:
+                    fid = m.group(1)
+                    break
+            if not fid or fid.lower() in seen:      # 隐藏/打印表会重复同一行
+                continue
+            seen.add(fid.lower())
+            name = ""
+            for td in tr.find_all("td"):
+                m = re.search(r"OpenSelFieldValue\(\s*'附件名称'\s*,\s*'FJMC'\s*,\s*'([^']*)'",
+                              td.get("onclick") or "")
+                if m:
+                    name = m.group(1).strip()
+                    break
+            text = self._post_button(html, "btn_Display_FJ",
+                                     {"lblID": fid, "lblPID": ""}, page_url)
+            for url in self._FJ_URL_RE.findall(text):
+                if "/FuJian/" in url:
+                    files.append({"url": url, "名称": name})
+        return files
+
+    def resolve_attachment_files(self, html: str, entry: dict) -> list[dict]:
+        """回发附件按钮 → 文件直链列表。
+
+        实测两种分支（看单元格上的 `FJNum`）：
+        - `1` → 直接 `window.open` 一个文件直链（单附件）
+        - `2` → `window.open` 附件列表页 `DD_<模块>_FJ.aspx?PID=…`（多附件）
+          该页每行再点「附件文件：有」(`Display_FJ` → `btn_Display_FJ`) 才是文件直链
+        """
+        fields = {"lblID": entry["文件ID"], "lblPID": entry["产品ID"],
+                  "lblFJNum": entry["FJNum"]}
+        button = "Btn_CPFJ" if entry["类型"] == "产品附件" else "Btn_FJ"
+        text = self._post_button(html, button, fields)
+
+        files: list[dict] = []
+        for url in dict.fromkeys(self._FJ_URL_RE.findall(text)):
+            if "/FuJian/" in url:
+                files.append({"url": url, "名称": ""})
+            elif url.split("?")[0].lower().endswith("_fj.aspx"):
+                files.extend(self._fj_page_files(url))
+        return files
+
+    @staticmethod
+    def download_attachment(url: str, dest_dir, name: str = "") -> dict:
+        """下载附件到目录（附件是静态文件，无需 ERP 会话）。"""
+        import re as _re
+        import requests
+        from pathlib import Path
+        from urllib.parse import unquote, urlparse
+
+        path = urlparse(url).path
+        ext = ("." + path.rsplit(".", 1)[-1].lower()) if "." in path.rsplit("/", 1)[-1] else ""
+        stem = name or unquote(path.rsplit("/", 1)[-1]).rsplit(".", 1)[0] or "attachment"
+        safe = _re.sub(r'[\\/:*?"<>|]+', "_", stem).strip()[:120] or "attachment"
+        out_dir = Path(dest_dir)
+        out_dir.mkdir(parents=True, exist_ok=True)
+        dest = out_dir / f"{safe}{ext}"
+        if dest.exists():
+            # 附件名会重复（如都叫 PO），用 ERP 文件 GUID 区分，绝不覆盖已有文件
+            hint = unquote(path.rsplit("/", 1)[-1]).rsplit(".", 1)[0][:8] or "x"
+            dest = out_dir / f"{safe}_{hint}{ext}"
+            seq = 2
+            while dest.exists():
+                dest = out_dir / f"{safe}_{hint}_{seq}{ext}"
+                seq += 1
+        resp = requests.get(url, timeout=180)
+        if resp.status_code != 200:
+            raise UpstreamError(f"附件下载失败（HTTP {resp.status_code}）", resp.status_code, url)
+        dest.write_bytes(resp.content)
+        return {"文件名": dest.name, "路径": str(dest), "大小": len(resp.content),
+                "Content-Type": resp.headers.get("Content-Type", "")}
+
+    def attachments(self, **opts) -> list[dict]:
+        """查列表 → 逐个回发 → 汇总附件（可选下载）。"""
+        out_dir = opts.get("out_dir") or ""
+        rows = []
+        done: set[str] = set()
+        for entry, html in self.attachment_targets(
+            record_id=opts.get("record_id") or "",
+            number=opts.get("number") or "",
+            from_date=opts.get("from_date"), to_date=opts.get("to_date"),
+            date_type=opts.get("date_type") or "", where=opts.get("where"),
+            filters=opts.get("filters"), limit=opts.get("limit"),
+            page_size=opts.get("page_size"),
+        ):
+            files = self.resolve_attachment_files(html, entry)
+            if not files:
+                rows.append({**entry, "url": "", "note": "回发没有拿到附件地址"})
+                continue
+            for item in files:
+                key = item["url"].split("?")[0].lower()
+                if key in done:
+                    continue
+                done.add(key)
+                row = {**entry, "附件文件名": item["名称"], "url": item["url"]}
+                if out_dir:
+                    try:
+                        row.update(self.download_attachment(item["url"], out_dir,
+                                                            item["名称"]))
+                    except ErpError as exc:
+                        row["note"] = str(exc)
+                rows.append(row)
+        return rows
 
     # ---------- 单号反查 ----------
     def find_by_number(self, number: str, *, page_size: int | None = None) -> list[dict]:

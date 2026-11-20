@@ -9,7 +9,7 @@
 > | 抓取时间 | 2026-11-18 18:18:07 |
 > | 菜单来源 | `GET /Admin/indexAjax.ashx?FunName=GetMenuTree&Value1=2069&Value2=` |
 > | 规模 | 20 个模块 · 381 个菜单页（264 个唯一路径） |
-> | 已接入 | 9 个页面 · 29 个接口 |
+> | 已接入 | 9 个页面 · 30 个接口 |
 
 ## 覆盖率
 
@@ -280,6 +280,7 @@
       - ✅ 查 · 列表筛选 + 导出（一行 = 一个订单产品行，94 列） → `erp sales-order-list` · `erp_sales_order_list` · [api/erp_sales_order_list.md](api/erp_sales_order_list.md)
       - ✅ 读 · 订单详情（字段 + 选配/部件/送货网格 + 文本域）（入口是列表的 记录ID → DD_KHDD/Add.aspx） → `erp sales-order-detail` · `erp_sales_order_detail` · [api/erp_sales_order_detail.md](api/erp_sales_order_detail.md)
       - ✅ 读 · 20 个弹窗子页（产品/部件/工序/辅料/机台/数量档/费项/反馈/开版…） → `erp sales-order-node` · `erp_sales_order_node` · [api/erp_sales_order_node.md](api/erp_sales_order_node.md)
+      - ✅ 读 · 附件（列表页「表单编号」左击调出的文件，直链可下载） → `erp sales-order-attachment` · `erp_sales_order_attachment` · [api/erp_sales_order_attachment.md](api/erp_sales_order_attachment.md)
   - 客户订单
     - `新建-客户订单` · `DingDan/DD_KHDD/Add.aspx` · QXID 684 · ⚠ 同路径另有 QXID 1288
       - ⬜ 未接入
@@ -287,6 +288,7 @@
       - ✅ 查 · 列表筛选 + 导出（一行 = 一个订单产品行，94 列） → `erp sales-order-list` · `erp_sales_order_list` · [api/erp_sales_order_list.md](api/erp_sales_order_list.md)
       - ✅ 读 · 订单详情（字段 + 选配/部件/送货网格 + 文本域）（入口是列表的 记录ID → DD_KHDD/Add.aspx） → `erp sales-order-detail` · `erp_sales_order_detail` · [api/erp_sales_order_detail.md](api/erp_sales_order_detail.md)
       - ✅ 读 · 20 个弹窗子页（产品/部件/工序/辅料/机台/数量档/费项/反馈/开版…） → `erp sales-order-node` · `erp_sales_order_node` · [api/erp_sales_order_node.md](api/erp_sales_order_node.md)
+      - ✅ 读 · 附件（列表页「表单编号」左击调出的文件，直链可下载） → `erp sales-order-attachment` · `erp_sales_order_attachment` · [api/erp_sales_order_attachment.md](api/erp_sales_order_attachment.md)
   - 送货通知单
     - `新增-送货通知单` · `KuCun/KC_CPCRKSQ/Add.aspx` · QXID 727 · ⚠ 同路径另有 QXID 2236
       - ⬜ 未接入

@@ -322,3 +322,61 @@ def test_sales_order_node_aliases() -> None:
     assert tool.resolve_node("Add_CPSL.aspx") == "quantities"
     with pytest.raises(Exception):
         tool.resolve_node("不存在节点")
+
+
+# ══════════════════ 附件（列表页单号单元格） ══════════════════
+FJ_LIST_HTML = """
+<table>
+  <tr ondblclick="OnDBClickOpenData('084d1a0b-a9ab-4e7c-a06e-744fa17f3156','687',3)">
+    <td>编辑中</td>
+    <td onclick="OnOpenFJ('B4992CF6-C5FE-4EE9-838E-8C575ECD086A',
+                          '29688dab-3e6a-409c-9f44-9a5296419fbb','1')"
+        title="左击即可以调出附件">KHDD26110042</td>
+  </tr>
+  <tr ondblclick="OnDBClickOpenData('e5935f5f-3928-407c-8c60-4632b56996dd','687',3)">
+    <td>编辑中</td>
+    <td align="center">KHDD26110043</td>
+  </tr>
+</table>
+"""
+
+
+def test_scan_attachments_finds_only_rows_with_fj() -> None:
+    from erp_tools.tools.grid_module.tools import SalesOrderAttachmentTool
+
+    tool = SalesOrderAttachmentTool.__new__(SalesOrderAttachmentTool)
+    rows = tool.scan_attachments(FJ_LIST_HTML)
+    assert len(rows) == 1                      # 没有附件的行不产生入口
+    entry = rows[0]
+    assert entry["表单编号"] == "KHDD26110042"
+    assert entry["记录ID"] == "084d1a0b-a9ab-4e7c-a06e-744fa17f3156"
+    assert entry["文件ID"] == "B4992CF6-C5FE-4EE9-838E-8C575ECD086A"
+    assert entry["FJNum"] == "1"
+    assert entry["类型"] == "订单附件"
+
+
+def test_scan_attachments_dedupes_hidden_table() -> None:
+    """列表页会把同一批行渲染两次（隐藏/打印表），入口要按文件 ID 去重。"""
+    from erp_tools.tools.grid_module.tools import SalesOrderAttachmentTool
+
+    tool = SalesOrderAttachmentTool.__new__(SalesOrderAttachmentTool)
+    doubled = FJ_LIST_HTML + FJ_LIST_HTML.replace("'", "&#39;")
+    assert len(tool.scan_attachments(doubled)) == 1
+
+
+def test_attachment_url_patterns() -> None:
+    """两种弹窗分支：单文件直链 / 多附件列表页。"""
+    from erp_tools.tools.grid_module.tool import ModuleListTool
+
+    text = """
+    window.open("http://www.hbcxsoft.com");
+    window.open("http://192.168.1.199:8887/Admin/FuJian/DD_KHDD/Picture/abc.pdf?time=1");
+    showModalDialog('/Admin/DingDan/DD_KHDD/DD_KHDD_FJ.aspx?PID=x&Modify=0');
+    """
+    urls = ModuleListTool._FJ_URL_RE.findall(text)
+    files = [u for u in urls if "/FuJian/" in u]
+    pages = [u for u in urls if u.split("?")[0].lower().endswith("_fj.aspx")]
+    assert len(files) == 1 and files[0].endswith(".pdf?time=1")
+    assert len(pages) == 1 and "DD_KHDD_FJ.aspx" in pages[0]
+    # 广告弹窗不能被当成附件
+    assert all("hbcxsoft" not in u for u in files)

@@ -32,6 +32,7 @@ from ...tools.grid_module import (
     PurchaseDetailTool,
     PurchaseListTool,
     PurchaseNodeTool,
+    SalesOrderAttachmentTool,
     SalesOrderDetailTool,
     SalesOrderListTool,
     SalesOrderNodeTool,
@@ -531,7 +532,8 @@ def register_tools(mcp: MCPServer, state: ServerState) -> None:
                          "node": "erp_purchase_node"},
             "sales_order": {"list": "erp_sales_order_list",
                             "detail": "erp_sales_order_detail",
-                            "node": "erp_sales_order_node"},
+                            "node": "erp_sales_order_node",
+                            "attachment": "erp_sales_order_attachment"},
         }
         out = []
         for spec in specs:
@@ -788,7 +790,7 @@ def register_tools(mcp: MCPServer, state: ServerState) -> None:
         to_date: Annotated[str | None, Field(description="止 YYYY-MM-DD")] = None,
         date_type: Annotated[
             str,
-            Field(description="日期字段（默认制单日期）：订单日期/离厂日期/交货日期"),
+            Field(description="日期字段：制单（默认）/订单/离厂/交货"),
         ] = "制单日期",
         where: Annotated[
             str | None,
@@ -827,9 +829,8 @@ def register_tools(mcp: MCPServer, state: ServerState) -> None:
     )
     @_tool_errors
     def erp_sales_order_detail(
-        record_id: Annotated[str | None,
-                              Field(description="记录 ID（列表的 记录ID）")] = None,
-        number: Annotated[str | None, Field(description="表单编号，如 KHDD26110043")] = None,
+        record_id: Annotated[str | None, Field(description="记录 ID")] = None,
+        number: Annotated[str | None, Field(description="表单编号")] = None,
         include_texts: Annotated[bool, Field(description="是否返回备注文本域")] = True,
     ) -> dict[str, Any]:
         session = _session(state)
@@ -862,6 +863,40 @@ def register_tools(mcp: MCPServer, state: ServerState) -> None:
             if node.strip().lower() in ("list", "ls", "nodes"):
                 return {"nodes": tool.catalog(record_id)}
             return tool.fetch(record_id, tool.resolve_node(node))
+
+    @mcp.tool(
+        name="erp_sales_order_attachment",
+        description=(
+            "客户订单**附件**：列表页上「表单编号」左击调出的文件（title=左击即可以调出附件）。"
+            "返回文件名 + 直链（ERP 静态目录 `/Admin/FuJian/<模块>/Picture/<guid>.<ext>`，"
+            "可直接 HTTP GET 下载，**不需要** cookie）。"
+            "单附件一单 1 个链接；多附件（附件列表页 `DD_KHDD_FJ.aspx`）会展开成多个。"
+        ),
+    )
+    @_tool_errors
+    def erp_sales_order_attachment(
+        record_id: Annotated[str | None, Field(description="记录 ID")] = None,
+        number: Annotated[str | None, Field(description="表单编号")] = None,
+        from_date: Annotated[str | None, Field(description="起 YYYY-MM-DD")] = None,
+        to_date: Annotated[str | None, Field(description="止 YYYY-MM-DD")] = None,
+        where: Annotated[str | None, Field(description="本地过滤")] = None,
+        filters: Annotated[dict[str, str] | None,
+                           Field(description="服务端下拉（中文键）")] = None,
+        limit: Annotated[int, Field(description="最多单据数")] = 50,
+    ) -> dict[str, Any]:
+        session = _session(state)
+        with state.provider.slot():
+            rows = SalesOrderAttachmentTool(session.auth).attachments(
+                record_id=record_id or "", number=number or "",
+                from_date=from_date, to_date=to_date, where=where,
+                filters=filters, limit=_clamp(limit),
+            )
+        files = [{"表单编号": r.get("表单编号"), "记录ID": r.get("记录ID"),
+                  "名称": r.get("附件文件名") or None, "url": r.get("url"),
+                  **(({"note": r["note"]}) if r.get("note") else {})}
+                 for r in rows]
+        return {"count": len(files), "files": files,
+                "note": "url 可直接 HTTP GET 下载（静态文件，无需会话）"}
 
     # ---------- 菜单 → 接口 对照 ----------
     @mcp.tool(

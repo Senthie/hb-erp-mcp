@@ -726,6 +726,32 @@ def cmd_grid_node(args) -> int:
     return 0
 
 
+def cmd_grid_attachment(args) -> int:
+    """客户订单附件：列表页「表单编号」左击调出的文件。"""
+    cfg = _build_config(args)
+    auth = ensure_authenticated(cfg, interactive=sys.stdin.isatty())
+    tool = build_tool(args.command, auth)
+
+    rows = tool.attachments(
+        record_id=args.id or "", number=args.no or "",
+        from_date=args.from_date, to_date=args.to_date,
+        date_type=getattr(args, "date_type", "") or "",
+        where=args.where, filters=args.filter, limit=args.limit,
+        page_size=args.page_size, out_dir=args.out_dir or "",
+    )
+    if not rows:
+        _log("[WARN] 没找到附件（该区间内没有带附件的单据）")
+    for row in rows:
+        state = row.get("路径") or row.get("url") or row.get("note", "")
+        _log(f"  {row.get('表单编号', ''):14s} {row.get('类型', ''):6s} {state}")
+    _log(f"[DONE] {len(rows)} 个附件")
+    if args.out:
+        _write_json(args.out, rows)
+        _log(f"[DONE] → {args.out}")
+    return 0
+
+
+
 # ══════════════════ 服务模式 ══════════════════
 def cmd_serve(args) -> int:
     """启动 api-key 网关（认证 + 未来的 MCP Streamable HTTP 挂载点）。"""
@@ -969,6 +995,22 @@ def build_parser() -> argparse.ArgumentParser:
     p = sub.add_parser("sales-order-list", parents=[common],
                        help="查询客户订单列表（DD_KHDD/Index.aspx，QXID=687）")
     _add_list_args(p, date_type="制单日期")
+
+    p = sub.add_parser("sales-order-attachment", parents=[common],
+                       help="客户订单附件（列表页「表单编号」左击调出的文件）")
+    p.add_argument("--id", help="记录 ID（列表的 记录ID）")
+    p.add_argument("--no", help="表单编号，如 KHDD26110042")
+    p.add_argument("--from", dest="from_date", help="日期区间起 YYYY-MM-DD（默认本月1号）")
+    p.add_argument("--to", dest="to_date", help="日期区间止 YYYY-MM-DD（默认今天）")
+    p.add_argument("--date-type", dest="date_type", default="制单日期",
+                   help="日期区间作用于：制单日期（默认）/ 订单日期 / 离厂日期 / 交货日期")
+    p.add_argument("--where", help="本地过滤，如 表单编号~KHDD2611")
+    p.add_argument("--filter", action="append", help="服务端下拉过滤，如 订单状态=编辑中")
+    p.add_argument("--limit", type=int, help="最多处理多少条")
+    p.add_argument("--page-size", type=int, dest="page_size")
+    p.add_argument("--out-dir", dest="out_dir", help="下载到这个目录（不传则只返回链接）")
+    p.add_argument("--out", help="把结果清单写成 JSON")
+    p.set_defaults(func=cmd_grid_attachment)
 
     for name, label in (("production", "生产施工单"), ("purchase", "采购订单"),
                         ("sales-order", "客户订单")):

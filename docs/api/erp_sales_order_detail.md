@@ -88,6 +88,8 @@ stock            Base_CPSJKC_Select.aspx   生产库存明细（选择页）
 ## 注意
 
 - 只读接口：工具只打开详情页并解析，不点任何保存按钮。
+- **附件不在详情页**：附件入口在**列表页**的「表单编号」单元格上（`title=左击即可以调出附件`），
+  用 `erp_sales_order_attachment` / `erp sales-order-attachment` 取。
 - 文本域是无 `name` 的 `textarea1..8`，内容为封面/内文用料、装箱、拼版等工艺说明；
   `include_texts=false` 可省掉这部分体积。
 - 与「客户报价」「产品核价」共用同一套子页文件名，但订单页的按钮集合略有差异。

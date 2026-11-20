@@ -132,6 +132,9 @@ PAGE_CAPABILITIES: dict[str, tuple[Capability, ...]] = {
         Capability("读", "20 个弹窗子页（产品/部件/工序/辅料/机台/数量档/费项/反馈/开版…）",
                    cli="sales-order-node", mcp="erp_sales_order_node",
                    doc="api/erp_sales_order_node.md"),
+        Capability("读", "附件（列表页「表单编号」左击调出的文件，直链可下载）",
+                   cli="sales-order-attachment", mcp="erp_sales_order_attachment",
+                   doc="api/erp_sales_order_attachment.md"),
     ),
     # ── 人力资源管理 / 考勤管理 ──
     "renshi/rs_kqda_m/add.aspx": (

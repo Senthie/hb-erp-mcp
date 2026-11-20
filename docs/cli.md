@@ -81,6 +81,7 @@ qxid:
 | `erp sales-order-list` | 客户订单【列表】（`DD_KHDD` QXID=687，一行=一个订单产品行） |
 | `erp sales-order-detail` | 客户订单【详情】（46 字段 + 3 个网格 + 8 个文本域） |
 | `erp sales-order-node` | 客户订单【子数据】（20 个弹窗子页） |
+| `erp sales-order-attachment` | 客户订单【附件】（表单编号左击调出的文件，可下载到目录） |
 | `erp attendance` | 月度考勤明细 → Markdown / JSONL |
 | `erp menu` | 菜单 → 接口对照：抓菜单树 / 覆盖率 / 生成 `docs/erp-menu.md` |
 | `erp key` | 向网关换取 api-key（见 [mcp.md](mcp.md)） |
@@ -320,6 +321,17 @@ erp production-node --id <记录ID> --node 部件辅料          # 中文别名�
 erp sales-order-node --id <记录ID> --node quantities --out out\sl.json
 erp sales-order-node --id <记录ID> --node 需求反馈 --out out\fk.json
 ```
+
+### `erp sales-order-attachment` — 附件下载
+
+```powershell
+erp sales-order-attachment --no KHDD26110042                  # 只打印直链
+erp sales-order-attachment --no KHDD26110041 --out-dir out\fj  # 下载（多附件会展开）
+erp sales-order-attachment --from 2026-11-01 --to 2026-11-20 --out-dir out\fj --out out\fj.json
+```
+
+附件挂在 ERP 静态目录 `/Admin/FuJian/DD_KHDD/Picture/<guid>.<ext>`（**:8887** 端口），
+直链 **HTTP GET 即可下载，不需要 cookie**；重名文件自动追加 GUID 前缀，不覆盖。
 
 ### `erp quote` — 报价需求详情
 

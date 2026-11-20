@@ -27,6 +27,7 @@ from .tools import (
     PurchaseDetailTool,
     PurchaseListTool,
     PurchaseNodeTool,
+    SalesOrderAttachmentTool,
     SalesOrderDetailTool,
     SalesOrderListTool,
     SalesOrderNodeTool,
@@ -50,4 +51,5 @@ __all__ = [
     "SalesOrderListTool",
     "SalesOrderDetailTool",
     "SalesOrderNodeTool",
+    "SalesOrderAttachmentTool",
 ]

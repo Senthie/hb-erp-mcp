@@ -120,6 +120,7 @@ VS Code `mcp.json`：
 | `erp_sales_order_list` | — | **客户订单列表**（`DingDan/DD_KHDD/Index.aspx`，QXID 687，一行=一个订单产品行，92 列；日期字段可选制单/订单/离厂/交货） |
 | `erp_sales_order_detail` | — | 客户订单详情：46 个字段 + 3 个页内网格（数量档13列 / 部件16列 / 送货 `gridView` 28列）+ 8 个文本域 + 子页清单 |
 | `erp_sales_order_node` | `record_id` + `node` | **客户订单 20 个弹窗子页**：`cp` 产品资料 / `cp_process` 产品工序 / `cp_materials` 产品辅料 / `part` 部件 / `part_new` 新增部件 / `part_materials` 部件辅料 / `part_process` 部件工序 / `part_machines` 部件机台 / `product_check` 送货资料 / `quantities` 数量档 / `fees` 费项明细 / `other_fees` 其他费项 / `feedback` 需求反馈 / `sgkb` 手工开版 / `product_bg` 产品变更 / `template_product` 产品模板 / `by_template` 按模板 / `product_guide` 产品指引 / `extra_info` 附加信息 / `stock` 生产库存；`list` 列出节点 |
+| `erp_sales_order_attachment` | `record_id` / `number`（可选日期区间、`where`、`filters`） | **客户订单附件**：列表页「表单编号」左击调出的文件；返回文件名 + 静态直链（`/Admin/FuJian/…`，8887 端口，**不带 cookie 也能 GET**）。多附件自动展开成多个 |
 | `erp_attendance` | — | 月度考勤明细 |
 | `erp_quote_new_form` | — | 空白页结构：表头字段、只读标记、三个下拉、textarea 列表 |
 | `erp_quote_product_form` | — | **产品明细子页字段清单**（205 个控件，其中 51 个可上传）+ `upload` JSON Schema + `categories` 类别树 |

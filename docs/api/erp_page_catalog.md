@@ -14,7 +14,7 @@
 | 产品核价 `costing` | `BaoJia/BJ_KHBJ/Index.aspx`（QXID **1281**） | `BaoJia/BJ_KHBJ/Add.aspx` | 复用客户报价的 22 个节点 → `erp_price_node` |
 | 生产施工单 `production` | `ShengChan/SC_SCSGD/Index.aspx`（QXID **740**） | `ShengChan/SC_SCSGD/Add.aspx` | **18 个** |
 | 采购订单 `purchase` | `CaiGou/CG_CGDD/Index.aspx`（QXID **266**） | `CaiGou/CG_CGDD/Add.aspx` | **无数据子页**（明细在详情页内联网格 `gridView2`） |
-| 客户订单 `sales_order` | `DingDan/DD_KHDD/Index.aspx`（QXID **687**） | `DingDan/DD_KHDD/Add.aspx` | **20 个** → `erp_sales_order_node` |
+| 客户订单 `sales_order` | `DingDan/DD_KHDD/Index.aspx`（QXID **687**） | `DingDan/DD_KHDD/Add.aspx` | **20 个** → `erp_sales_order_node`；附件 → `erp_sales_order_attachment` |
 
 ## 参数
 

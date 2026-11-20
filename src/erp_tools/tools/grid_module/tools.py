@@ -8,6 +8,7 @@ from __future__ import annotations
 
 from .spec import COSTING, PRODUCTION, PURCHASE, SALES_ORDER
 from .tool import ModuleDetailTool, ModuleListTool, ModuleNodeTool
+from ..base import Option
 
 
 class ProductionListTool(ModuleListTool):
@@ -71,6 +72,30 @@ class SalesOrderNodeTool(ModuleNodeTool):
     spec = SALES_ORDER
 
 
+class SalesOrderAttachmentTool(ModuleListTool):
+    name = "sales-order-attachment"
+    summary = ("客户订单附件：列表页「表单编号」左击调出的文件（静态直链，可直接下载）")
+    spec = SALES_ORDER
+
+    @staticmethod
+    def options() -> list[Option]:
+        return [
+            Option("record_id", "记录 ID（列表的 记录ID）", cli="--id"),
+            Option("number", "表单编号，如 KHDD26110042", cli="--no"),
+            Option("from_date", "日期区间起（默认本月 1 号）", cli="--from"),
+            Option("to_date", "日期区间止（默认今天）", cli="--to"),
+            Option("date_type", "日期字段：制单/订单/离厂/交货日期", cli="--date-type"),
+            Option("where", "本地过滤，如 表单编号~KHDD2611", cli="--where"),
+            Option("filters", "服务端下拉过滤，如 订单状态=编辑中", cli="--filter"),
+            Option("limit", "最多处理多少条", cli="--limit"),
+            Option("page_size", "每页记录数", cli="--page-size"),
+            Option("out_dir", "下载到这个目录（不传则只返回链接）", cli="--out-dir"),
+        ]
+
+    def run(self, **opts) -> list[dict]:
+        return self.attachments(**opts)
+
+
 __all__ = [
     "ProductionListTool",
     "ProductionDetailTool",
@@ -82,4 +107,5 @@ __all__ = [
     "SalesOrderListTool",
     "SalesOrderDetailTool",
     "SalesOrderNodeTool",
+    "SalesOrderAttachmentTool",
 ]
