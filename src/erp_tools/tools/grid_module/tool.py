@@ -569,8 +569,12 @@ class ModuleListTool(ModuleBase):
         return files
 
     @staticmethod
-    def download_attachment(url: str, dest_dir, name: str = "") -> dict:
-        """下载附件到目录（附件是静态文件，无需 ERP 会话）。"""
+    def download_attachment(url: str, dest_dir, name: str = "", cfg=None) -> dict:
+        """下载附件到目录（附件是静态文件，无需 ERP 会话）。
+
+        给了 `cfg` 就在 `ERP_HOST` / 验证码端口之间回退：ERP 弹窗给的端口未必对
+        （实测报价需求给 `:8887`，文件却在 `:8889`）。
+        """
         import re as _re
         import requests
         from pathlib import Path
@@ -591,12 +595,27 @@ class ModuleListTool(ModuleBase):
             while dest.exists():
                 dest = out_dir / f"{safe}_{hint}_{seq}{ext}"
                 seq += 1
-        resp = requests.get(url, timeout=180)
-        if resp.status_code != 200:
-            raise UpstreamError(f"附件下载失败（HTTP {resp.status_code}）", resp.status_code, url)
+
+        candidates = [url]
+        if cfg is not None:
+            from ..attachments import AttachmentPageService
+
+            candidates = AttachmentPageService.candidate_urls(url, cfg)
+        last = ""
+        for candidate in candidates:
+            try:
+                resp = requests.get(candidate, timeout=180)
+            except requests.RequestException as exc:
+                last = f"{candidate} → {exc}"
+                continue
+            if resp.status_code == 200 and resp.content:
+                break
+            last = f"{candidate} → HTTP {resp.status_code}"
+        else:
+            raise UpstreamError("附件下载失败（已尝试全部候选地址）", 404, last)
         dest.write_bytes(resp.content)
         return {"文件名": dest.name, "路径": str(dest), "大小": len(resp.content),
-                "Content-Type": resp.headers.get("Content-Type", "")}
+                "Content-Type": resp.headers.get("Content-Type", ""), "url": candidate}
 
     def attachments(self, **opts) -> list[dict]:
         """查列表 → 逐个回发 → 汇总附件（可选下载）。"""
@@ -620,11 +639,17 @@ class ModuleListTool(ModuleBase):
                 if key in done:
                     continue
                 done.add(key)
-                row = {**entry, "附件文件名": item["名称"], "url": item["url"]}
+                from ..attachments import probe_download_url
+
+                working = probe_download_url(item["url"], self.auth.cfg)
+                row = {**entry, "附件文件名": item["名称"], "url": working}
+                if working != item["url"]:
+                    row["url_erp"] = item["url"]
                 if out_dir:
                     try:
-                        row.update(self.download_attachment(item["url"], out_dir,
-                                                            item["名称"]))
+                        row.update(self.download_attachment(working, out_dir,
+                                                            item["名称"],
+                                                            self.auth.cfg))
                     except ErpError as exc:
                         row["note"] = str(exc)
                 rows.append(row)

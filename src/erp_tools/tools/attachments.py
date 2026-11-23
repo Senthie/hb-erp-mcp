@@ -201,6 +201,55 @@ def _proxy_url(url: str, base: str = "", name: str = "") -> str:
         return ""
 
 
+#: 「某个模块的静态文件到底在哪个端口」的探测缓存：`/Admin/FuJian/<模块>/` → host
+_working_host: dict[str, str] = {}
+
+
+def _path_prefix(path: str) -> str:
+    parts = [p for p in path.strip("/").split("/") if p]
+    return "/" + "/".join(parts[:3]) + "/"
+
+
+def probe_download_url(url: str, cfg: Any, *, timeout: float = 10.0) -> str:
+    """在候选地址里探一个**真能下的**，返回它；全都不行就原样返回。
+
+    ERP 生成的附件直链端口不一定对：实测「客户报价需求」的弹窗给的是 `:8887`，
+    而物理文件其实挂在 `:8889` → 浏览器打开是一张 404 错误页（既不显示也不下载）。
+    所以列表里回给调用方的 `url` 先验证一次，同一模块只探一次（进程内缓存）。
+    """
+    import requests
+
+    if not url:
+        return url
+    path = re.sub(r"^https?://[^/]+", "", url)
+    key = _path_prefix(path)
+    cached = _working_host.get(key)
+
+    def _ok(candidate: str) -> bool:
+        try:
+            resp = requests.head(candidate, timeout=timeout, allow_redirects=True)
+            if resp.status_code == 405 or resp.status_code == 501:   # 不支持 HEAD
+                resp = requests.get(candidate, timeout=timeout, stream=True)
+                resp.close()
+            return resp.status_code == 200
+        except requests.RequestException:
+            return False
+
+    if cached:
+        candidate = cached + path
+        if _ok(candidate):
+            return candidate
+        _working_host.pop(key, None)
+
+    for candidate in AttachmentPageService.candidate_urls(url, cfg):
+        if not _ok(candidate):
+            continue
+        if candidate.endswith(path):
+            _working_host[key] = candidate[: -len(path)].rstrip("/")
+        return candidate
+    return url
+
+
 def _merge_stage_meta(folder: Path, item: dict[str, Any], *, total: int = 0) -> None:
     """把分片里带的 name/desc/remark/content_type/total/expected_size 记到 `_meta.json`。"""
     path = folder / "_meta.json"
@@ -522,9 +571,10 @@ class AttachmentPageService:
     def list_files(self, record_id: str, *, with_urls: bool = False) -> dict[str, Any]:
         """列出单据上的附件（附件名称/描述/备注/排序号）。
 
-        `with_urls=True` 时每行多两个链接：
+        `with_urls=True` 时每行多几个链接：
 
-        - `url`：ERP 内网静态直链（同网段可直接 GET）
+        - `url`：**已验证可用**的静态直链（ERP 弹窗给的端口可能不对，会先探一次）
+        - `url_erp`：ERP 弹窗原样给的地址（仅探不到可用地址或与原值不同时出现）
         - `proxy_url`：经网关转发的签名链接，**跨网段也能下载**（默认 30 分钟有效）
         """
         html, _url, _action = self._open(record_id)
@@ -532,11 +582,16 @@ class AttachmentPageService:
         if with_urls:
             for item in files:
                 try:
-                    item["url"] = self.file_url(record_id, item["文件ID"], html=html)
+                    raw = self.file_url(record_id, item["文件ID"], html=html)
                 except ErpError as exc:
                     item["url"] = ""
                     item["note"] = str(exc)
-                proxy = _proxy_url(item["url"], name=item["名称"]) if item["url"] else ""
+                    continue
+                working = probe_download_url(raw, self.auth.cfg)
+                item["url"] = working
+                if working != raw:
+                    item["url_erp"] = raw
+                proxy = _proxy_url(working, name=item["名称"])
                 if proxy:
                     item["proxy_url"] = proxy
         return {"record_id": record_id, "count": len(files), "files": files}
