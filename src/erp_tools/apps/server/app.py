@@ -20,9 +20,11 @@ from starlette.responses import JSONResponse
 from starlette.routing import Mount
 
 from ...core.security import SensitiveFilter
+from ...runtime import file_proxy
 from ..mcp.tools import build_mcp_server
 from .auth_routes import build_routes
 from .errors import ApiError, InternalFailure
+from .file_routes import build_file_routes
 from .middleware import BearerAuthMiddleware, send_json
 from .state import ServerState, build_state
 
@@ -68,7 +70,10 @@ def create_app(state: ServerState, *, enable_mcp: bool = True) -> Starlette:
     """组装网关应用（认证中间件 + 路由 + MCP 挂载 + 错误处理）。"""
     _install_log_filter()
 
-    routes = build_routes(state)
+    # 附件代理的签名密钥：首次启动自动生成，与 api-key 库同目录共用
+    file_proxy.configure(file_proxy.load_secret(state.server.db_path))
+
+    routes = build_routes(state) + build_file_routes(state)
 
     mcp_app = None
     if enable_mcp:

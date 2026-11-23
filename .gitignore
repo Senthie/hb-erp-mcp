@@ -56,6 +56,9 @@ auth.db
 auth.db-wal
 auth.db-shm
 /auth.db*
+# 附件代理（/v1/files）的签名密钥，与 auth.db 同目录生成
+proxy.secret
+/proxy.secret*
 
 # ── 抓取中间产物 / 临时目录 ───────────────────────────────
 /.scratch/

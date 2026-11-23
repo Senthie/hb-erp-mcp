@@ -287,6 +287,39 @@ erp serve --bind 127.0.0.1:8765 --trust-proxy `
 | `401 missing_bearer` / `invalid_api_key` | 没带 key / key 传错 | 先 `POST /v1/auth/login` 拿 key |
 | `401 erp_session_expired` | 该 key 的 ERP 会话过期 | 重新登录换新 key（服务端不存密码） |
 | `502 erp_unreachable` | 网关连不上 ERP | 查 `ERP_HOST` 与网络；这**不是**账号问题，不消耗锁定次数 |
+| 附件链接打得开但**下载不到** | ERP 直链是内网地址，跨网段不可达 | 用工具返回的 `proxy_url`（走 `/v1/files`），见 5.8 |
+
+### 5.8 附件下载代理（跨网段）
+
+ERP 附件的直链是内网静态目录 `http://<ERP_HOST>:8887/Admin/FuJian/...`，
+只有同网段能 GET。网关提供转发端点，链接里带签名、**不需要 api-key**：
+
+```
+GET /v1/files?path=/Admin/FuJian/<模块>/Picture/<guid>.zip&t=<exp>.<hmac>
+```
+
+- `erp_attachment(with_urls=true)` / `erp_sales_order_attachment` 的每一行都同时给
+  `url`（ERP 直链）与 `proxy_url`（网关链接）；AI 侧只用 `proxy_url` 即可。
+- 签名把 **路径 + 过期时间** 绑定，默认 1800 秒（`ERP_FILE_PROXY_TTL`），
+  所以链接可以贴进浏览器/IM/日志，过期就重新调工具拿。
+- 只代理 `/Admin/FuJian/` 前缀；目标主机固定取 `ERP_HOST`（再回退验证码端口），
+  不接受调用方指定 host → 不会被拿来当 SSRF 跳板。
+- 基地址优先级：`ERP_PUBLIC_BASE` → 当前请求的 `Host` → `http://127.0.0.1:8765`。
+  客户端从 `https://erp-tools.lan` 连进来，代理链接就是同一个域名。
+- 签名密钥在 `<auth.db 所在目录>/proxy.secret`（首次启动自动生成），
+  网关与 CLI 共用；**换机器要一起拷**，否则旧链接全部失效（重新调工具即可）。
+
+```powershell
+# 拿到带 proxy_url 的清单
+erp attachment --module quote_request --id <记录ID> --urls
+
+# 其它网段直接下（curl 会按 content-disposition 命名）
+curl.exe -OJ "https://erp-tools.lan/v1/files?path=/Admin/FuJian/...&t=1750000000.ab12cd34"
+```
+
+排错：`403 path_not_allowed` = 不是附件目录；`403 bad_signature` = 链接过期或被改过；
+`502 upstream_failed` = ERP 取不到（附件可能已被删）。`GET /v1/me` 的 `file_proxy`
+字段能看到当前端点、有效期和基地址。
 
 ## 6. Docker + nginx
 

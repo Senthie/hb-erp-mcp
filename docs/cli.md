@@ -366,7 +366,7 @@ erp quote --csv orders.csv --out data\quote.jsonl     # 18496 条，约 2 小时
 | `--file` | 本机文件，可重复或逗号分隔 |
 | `--text` / `--name` | 直接传文本内容 + ERP 里的附件名称 |
 | `--desc` / `--remark` | 附件描述 / 备注 |
-| `--urls` | 列表时一并取下载直链 |
+| `--urls` | 列表时一并取下载直链（同时给出 `proxy_url`：网关转发，跨网段可下） |
 | `--download` | 按名称（或文件 ID）下载一个附件 |
 | `--delete` / `--yes` | 删除指定名称（或文件 ID）的附件；不加 `--yes` 只预览 |
 | `--out-dir` | 下载目录（不传则输出 base64） |
@@ -380,6 +380,9 @@ erp attachment --module purchase --id <记录ID> --delete "旧附件.pdf" --yes 
 ```
 
 `erp quote-attachment` 是 `--module quote_request` 的兼容别名。
+
+> 直链是 ERP 内网地址，换网段不可达；`--urls` 打出的第二行 `代理 …` 是网关签名链接，
+> 任意网段都能下（详见 [api/erp_attachment.md](api/erp_attachment.md)）。
 
 > MCP 侧对应 `erp_attachment`（`--module quote_request`）；`erp_quote_create(attachments=[...])`
 > 会在建单成功后自动调用它。协议、各模块差异与限制见

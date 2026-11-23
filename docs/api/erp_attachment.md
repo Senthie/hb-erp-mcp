@@ -37,6 +37,35 @@ POST 同一个 action：
 HTTP GET 即可下载、不需要 cookie；⚠ 不同模块落在**不同端口**（客户订单 :8887、报价需求 :8889），
 下载时会在 `cfg.host` 与 `cfg.captcha_host` 之间自动回退。
 
+## 跨网段下载：网关代理链接
+
+ERP 直链是内网地址（如 `http://192.168.1.199:8887/Admin/FuJian/...`），
+不在同一网段就**连不上**。所以列表时每行会多一个 `proxy_url`，由网关自己取回再转发：
+
+```
+GET /v1/files?path=/Admin/FuJian/BJ_KHBJXQ/Picture/<guid>.zip&t=<exp>.<hmac>
+```
+
+| 特点 | 说明 |
+| --- | --- |
+| 鉴权 | **URL 里的签名**（绑定路径 + 过期时间），不含 api-key，可以直接贴浏览器 / IM / 日志 |
+| 有效期 | 默认 1800 秒，`ERP_FILE_PROXY_TTL` 可调；过期后重新调工具拿新链接 |
+| 白名单 | 只代理 `/Admin/FuJian/` 前缀，杜绝被当成任意 URL 的 SSRF 跳板 |
+| 目标主机 | 固定用 `ERP_HOST`（再回退验证码端口），**不接受调用方指定 host** |
+| 基地址 | 显式 `ERP_PUBLIC_BASE` → 当前请求的 Host → `http://127.0.0.1:8765`；客户端用哪个地址连进来就回哪个 |
+| 签名密钥 | 与 `auth.db` 同目录的 `proxy.secret`（首次启动自动生成），网关与 CLI 共用，重启不会立刻作废已发链接 |
+
+```powershell
+# 拿到链接（AI/MCP 里就是 files[].proxy_url）
+erp attachment --module quote_request --id <记录ID> --urls
+
+# 外部网段直接下载
+curl.exe -OJ "http://10.0.0.5:8765/v1/files?path=/Admin/FuJian/...&t=1750000000.ab12cd34"
+```
+
+> 网关本身要能被对端访问到：`--bind 0.0.0.0:8765`（团队模式还需 `--allow-host` / TLS）。
+> 只想让代理生效、不改绑定的话，用 `ERP_PUBLIC_BASE` 指到 nginx 之类的对外地址。
+
 ## 参数（一次调用按参数决定动作）
 
 | 参数 | 类型 | 说明 |
@@ -124,7 +153,8 @@ ERP 会老老实实存下“半截文件”，**只看附件名称是查不出�
   "files": [{"文件ID": "01bd8737-…", "名称": "PO", "排序号": "1",
              "描述": "", "备注": "", "有文件": "有",
              "行号": "0", "复选框": "gridView1$ctl02$0",
-             "url": "http://192.168.1.199:8887/Admin/FuJian/DD_KHDD/Picture/….pdf"}]
+             "url": "http://192.168.1.199:8887/Admin/FuJian/DD_KHDD/Picture/….pdf",
+             "proxy_url": "http://127.0.0.1:8765/v1/files?path=/Admin/FuJian/…&t=…"}]
 }
 ```
 
@@ -170,6 +200,7 @@ erp attachment --module quote_request --id <记录ID> --delete "旧.pdf" --yes
 ## 注意
 
 - 附件页都要求**单据已保存**；新建页（未保存）点附件不会弹窗。
+- `url` 是 ERP 内网直链；不在同一网段时用 `proxy_url`（网关转发，见上）。
 - 新增模块只要在 `tools/attachments.py` 的 `MODULES` 里加一行（或留空 `page_path` 让它自动发现）。
 - 上传/删除后都会回读核对，`ok=false` 表示 ERP 没接受，不会假报成功。
 - 上传会额外**下载回来比字节数**（`size_ok`），能揪出“存了半截文件”的假成功；大文件请用分片。

@@ -15,6 +15,7 @@ from ... import __version__
 from ...core.auth import normalize_page_path
 from ...core.errors import AuthError, ConfigError, ErpError, NetworkError, UpstreamError
 from ...core.security import hash_api_key
+from ...runtime import file_proxy
 from ...runtime.context import require_record
 from ...tools.registry import describe_tools
 from .errors import BadRequest, InternalFailure, Locked, RateLimited, Unauthorized
@@ -148,6 +149,7 @@ def build_routes(state: ServerState) -> list[Route]:
             "created_at": record.created_at,
             "last_used": record.last_used,
             "erp_alive": True,
+            "file_proxy": file_proxy.describe(),
         })
 
     # ══════════════════ 登出 ══════════════════

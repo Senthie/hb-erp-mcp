@@ -16,9 +16,10 @@ import anyio
 
 from ...core.security import is_well_formed_api_key
 from ...runtime.auth_store import AuthStore
-from ...runtime.context import reset_current, set_current
+from ...runtime.context import reset_base, reset_current, set_base, set_current
 
-PUBLIC_PATHS = frozenset({"/healthz", "/v1/auth/login"})
+#: `/v1/files` 是附件代理：鉴权靠 URL 里的签名（不含 api-key，可直接贴浏览器）
+PUBLIC_PATHS = frozenset({"/healthz", "/v1/auth/login", "/v1/files"})
 PUBLIC_PREFIXES = ("/docs", "/openapi.json")
 
 
@@ -54,6 +55,25 @@ def _is_public(method: str, path: str) -> bool:
     return path in PUBLIC_PATHS or path.startswith(PUBLIC_PREFIXES)
 
 
+def _request_base(scope: dict) -> str:
+    """从 ASGI scope 拼出 `scheme://host[:port]`（工具生成代理链接时用）。"""
+    headers = scope.get("headers") or []
+    host = ""
+    proto = ""
+    for name, value in headers:
+        key = name.lower()
+        if key == b"host" and not host:
+            host = value.decode("latin-1").strip()
+        elif key in (b"x-forwarded-proto", b"x-scheme") and not proto:
+            proto = value.decode("latin-1").split(",")[0].strip()
+    if not host:
+        server = scope.get("server") or ()
+        if len(server) == 2:
+            host = f"{server[0]}:{server[1]}"
+    scheme = proto or scope.get("scheme") or "http"
+    return f"{scheme}://{host}".rstrip("/") if host else ""
+
+
 class BearerAuthMiddleware:
     """把 api-key 解析成 `ApiKeyRecord` 并写入 contextvar。"""
 
@@ -68,6 +88,13 @@ class BearerAuthMiddleware:
 
         method = scope.get("method", "GET")
         path = scope.get("path", "")
+        base_token = set_base(_request_base(scope))
+        try:
+            await self._dispatch(scope, receive, send, method, path)
+        finally:
+            reset_base(base_token)
+
+    async def _dispatch(self, scope, receive, send, method: str, path: str) -> None:
         if _is_public(method, path):
             await self.app(scope, receive, send)
             return

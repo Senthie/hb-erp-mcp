@@ -60,6 +60,18 @@ PAGE_KEYS = {
 }
 
 
+def _proxy_url(url: str, name: str = "") -> str:
+    """内网直链 → 网关代理链接（跨网段可下载）；不可代理时返回空串。"""
+    if not url:
+        return ""
+    try:
+        from ...runtime import file_proxy
+
+        return file_proxy.build_url(url, name=name)
+    except (RuntimeError, OSError, ValueError):
+        return ""
+
+
 def _module_capabilities(pages: dict[str, str]) -> dict[str, dict[str, Any]]:
     """四个模块（核价/施工单/采购订单/客户订单）的页面权限。
 
@@ -891,12 +903,19 @@ def register_tools(mcp: MCPServer, state: ServerState) -> None:
                 from_date=from_date, to_date=to_date, where=where,
                 filters=filters, limit=_clamp(limit),
             )
-        files = [{"表单编号": r.get("表单编号"), "记录ID": r.get("记录ID"),
-                  "名称": r.get("附件文件名") or None, "url": r.get("url"),
-                  **(({"note": r["note"]}) if r.get("note") else {})}
-                 for r in rows]
+        files = []
+        for row in rows:
+            item = {"表单编号": row.get("表单编号"), "记录ID": row.get("记录ID"),
+                    "名称": row.get("附件文件名") or None, "url": row.get("url")}
+            proxy = _proxy_url(row.get("url") or "", name=(row.get("附件文件名") or ""))
+            if proxy:
+                item["proxy_url"] = proxy
+            if row.get("note"):
+                item["note"] = row["note"]
+            files.append(item)
         return {"count": len(files), "files": files,
-                "note": "url 可直接 HTTP GET 下载（静态文件，无需会话）"}
+                "note": ("url 是 ERP 内网直链（同网段可 GET）；"
+                         "proxy_url 走网关，跨网段也能下载")}
 
     # ---------- 菜单 → 接口 对照 ----------
     @mcp.tool(
@@ -1233,6 +1252,7 @@ def register_tools(mcp: MCPServer, state: ServerState) -> None:
             "files 每项 {filename, content_base64} 或 {filename, content_text}，"
             "可选 name(附件名称)/desc/remark/expected_size/sha256；也支持 {path} 本机文件。\n"
             "上传后会下载回比字节数（size_ok / size_mismatch），ok=false 不要当成功。\n"
+            "with_urls 每行给 url（ERP 内网直链）与 proxy_url（经网关转发，跨网段可下）。\n"
             "大文件用分片：每项带 {upload_key, chunk_index, total_chunks, chunk_base64}，\n"
             "未收齐返回 status=chunk_pending，继续传缺的片；收齐自动拼装上传。\n"
             "附件页路径自动发现；上传/删除后都会回读核对。单据必须先保存。"
@@ -1282,7 +1302,10 @@ def register_tools(mcp: MCPServer, state: ServerState) -> None:
                 content, ctype, used = svc.fetch_file(url)
                 import base64 as _b64
 
+                from ...runtime import file_proxy
+
                 return {"record_id": record_id, "名称": picked["名称"], "url": used,
+                        "proxy_url": file_proxy.build_url(used, name=picked["名称"]),
                         "size": len(content), "content_type": ctype,
                         "content_base64": _b64.b64encode(content).decode()}
             listing["module"] = module

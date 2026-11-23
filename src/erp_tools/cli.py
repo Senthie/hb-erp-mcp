@@ -570,6 +570,11 @@ def cmd_quote_attachment(args) -> int:
         content, ctype, used = svc.fetch_file(url)
         info = {"record_id": record_id, "名称": names[0]["名称"], "url": used,
                 "size": len(content), "content_type": ctype}
+        from .runtime import file_proxy
+
+        proxy = file_proxy.build_url(used, name=names[0]["名称"])
+        if proxy:
+            info["proxy_url"] = proxy
         if args.out_dir:
             from pathlib import Path
 
@@ -620,6 +625,8 @@ def cmd_quote_attachment(args) -> int:
             line += f" | {row['描述']}"
         if row.get("url"):
             line += f"\n       {row['url']}"
+        if row.get("proxy_url"):
+            line += f"\n       代理 {row['proxy_url']}"
         _log(line)
     if args.out_dir and listing["files"]:
         _log("[INFO] 已指定 --out-dir，逐个下载…")

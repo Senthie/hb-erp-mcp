@@ -189,6 +189,18 @@ def _safe_name(name: str) -> str:
     return re.sub(r"[^0-9A-Za-z._\u4e00-\u9fff-]+", "_", name)[:80] or "upload"
 
 
+def _proxy_url(url: str, base: str = "", name: str = "") -> str:
+    """内网直链 → 网关代理链接（跨网段可下载）；不可代理时返回空串。"""
+    if not url:
+        return ""
+    try:
+        from ..runtime import file_proxy
+
+        return file_proxy.build_url(url, base=base, name=name)
+    except (RuntimeError, OSError, ValueError):
+        return ""
+
+
 def _merge_stage_meta(folder: Path, item: dict[str, Any], *, total: int = 0) -> None:
     """把分片里带的 name/desc/remark/content_type/total/expected_size 记到 `_meta.json`。"""
     path = folder / "_meta.json"
@@ -508,7 +520,13 @@ class AttachmentPageService:
 
     # ══════════════════ 读 ══════════════════
     def list_files(self, record_id: str, *, with_urls: bool = False) -> dict[str, Any]:
-        """列出单据上的附件（附件名称/描述/备注/排序号）。"""
+        """列出单据上的附件（附件名称/描述/备注/排序号）。
+
+        `with_urls=True` 时每行多两个链接：
+
+        - `url`：ERP 内网静态直链（同网段可直接 GET）
+        - `proxy_url`：经网关转发的签名链接，**跨网段也能下载**（默认 30 分钟有效）
+        """
         html, _url, _action = self._open(record_id)
         files = self._parse_rows(html)
         if with_urls:
@@ -518,6 +536,9 @@ class AttachmentPageService:
                 except ErpError as exc:
                     item["url"] = ""
                     item["note"] = str(exc)
+                proxy = _proxy_url(item["url"], name=item["名称"]) if item["url"] else ""
+                if proxy:
+                    item["proxy_url"] = proxy
         return {"record_id": record_id, "count": len(files), "files": files}
 
     @staticmethod
