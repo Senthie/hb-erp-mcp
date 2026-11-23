@@ -37,6 +37,9 @@ services:
       # ★ 必须等于客户端实际访问的 host:port（$http_host 原样透传后逐字比对）
       ERPSRV_ALLOW_HOST: ${ERP_PUBLIC_HOST:-localhost:8443}
       ERPSRV_CONCURRENCY: ${ERPSRV_CONCURRENCY:-6}
+      # 附件代理 /v1/files 生成的链接用哪个对外地址。
+      # 留空 = 自动跟当前请求的 X-Forwarded-Proto + Host（经 nginx 进来时就是对的）
+      ERP_PUBLIC_BASE: ${ERP_PUBLIC_BASE:-}
       ERP_DATA_DIR: /data
       COOKIE_DIR: /data/cookies
       ERPSRV_DB: /data/auth.db

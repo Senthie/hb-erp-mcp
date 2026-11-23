@@ -399,6 +399,30 @@ curl --cacert certs/erp-tools.crt https://localhost:8443/healthz
   `.env` 里的 `ERP_PASSWORD` 不会被注入容器。
 - 登录发生在 `/v1/auth/login` 那一刻，密码只存在于该请求的调用栈。
 
+### 6.1 Docker 模式下不用敲 `erp serve`
+
+容器里跑的就是同一个 `erp serve`，参数**全部写在 `docker-compose.yml` 的 `environment`**，
+你只需要编辑 `.env` 然后 `bash scripts/up.sh`（或 `docker compose up -d`）：
+
+| 需求 | 改哪里 |
+| --- | --- |
+| 对外暴露 | nginx 的 `ports:`（`ERP_HTTP_PORT` / `ERP_HTTPS_PORT`），app 只 `expose: 8765` |
+| bind / 明文 | `ERPSRV_BIND=0.0.0.0:8765` + `ERPSRV_ALLOW_PLAINTEXT=1`（TLS 在 nginx） |
+| Host 白名单 | `ERPSRV_ALLOW_HOST: ${ERP_PUBLIC_HOST}`，即客户端实际写的 `host:port` |
+| 限流 IP | `ERPSRV_TRUST_PROXY=1`（确实有 nginx 才开） |
+| **附件代理基地址** | `ERP_PUBLIC_BASE`（留空 = 自动用 `X-Forwarded-Proto` + `Host`，经 nginx 进来时就是对的） |
+| 附件大小 | `docker/nginx.conf` 的 `client_max_body_size`（默认 24m） |
+
+所以 **A/B 两种玩法在 docker 里对应的是改配置，而不是在宿主机上再起一个进程**：
+
+- 只要附件代理给外部用 → 不用改任何东西，`proxy_url` 会自动是
+  `https://<ERP_PUBLIC_HOST>/v1/files?...`（nginx 的 `location /` 已经代理 `/v1/*`）。
+- 要让外部 MCP 客户端连 → 把 `ERP_PUBLIC_HOST` 设成对外地址、证书 SAN 写全，
+  `ERPSRV_ALLOW_HOST` 会自动跟着它走。
+
+> 数据都在命名卷 `erpdata`（`/data/auth.db`、`/data/cookies`、`/data/proxy.secret`），
+> 重建堆栈不丢 api-key 与代理签名密钥；`docker compose down -v` 会清空它们。
+
 **必须对齐的一处配置**
 
 ```ini
