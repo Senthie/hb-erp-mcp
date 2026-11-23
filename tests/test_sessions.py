@@ -112,6 +112,40 @@ def test_definitive_false_drops_session(tmp_path: Path) -> None:
     assert provider.get("21146") is None
 
 
+def test_is_alive_restores_session_after_restart(tmp_path: Path, monkeypatch) -> None:
+    """网关重启后内存里没有会话，但只要磁盘 cookie 还有效，就不能判成过期。
+
+    否则 `/v1/me` 会把仍然可用的 api-key 误作废（实测踩过）。
+    """
+    provider = SessionProvider(
+        make_cfg(tmp_path), login_impl=lambda u, p: fake_session(u),
+        alive_impl=lambda _auth: True,
+    )
+    provider.login("21146", "secret")
+    session = provider.get("21146")
+    assert session is not None
+
+    provider.drop("21146")                      # 模拟重启：内存清空
+    assert provider.get("21146") is None
+
+    def fake_restore(username: str):
+        provider._sessions[username] = session  # noqa: SLF001 - 复刻真实恢复行为
+        return session
+
+    monkeypatch.setattr(SessionProvider, "_restore", lambda self, username: fake_restore(username))
+    assert provider.is_alive("21146") is True
+    assert provider.get("21146") is session
+
+
+def test_is_alive_false_when_restore_fails(tmp_path: Path, monkeypatch) -> None:
+    provider = SessionProvider(
+        make_cfg(tmp_path), login_impl=lambda u, p: fake_session(u),
+        alive_impl=lambda _auth: True,
+    )
+    monkeypatch.setattr(SessionProvider, "_restore", lambda self, username: None)
+    assert provider.is_alive("21146") is False
+
+
 def test_global_concurrency_gate(tmp_path: Path) -> None:
     provider = SessionProvider(
         make_cfg(tmp_path), global_concurrency=2,

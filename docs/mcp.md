@@ -218,6 +218,28 @@ erp serve --bind 0.0.0.0:8765 `
 
 `--allow-host` 是 MCP 的 Host 白名单，**逐个写 `host:port`**，客户端可能用的每种写法都要列。
 
+> 还是**同一个进程**，不是再开一个——把平时那条启动命令换成这条即可（同时跑两个会抢 8765 端口）。
+> 只访问回环、又要给别人用附件代理时，可以继续 `--bind 127.0.0.1:8765`，
+> 只把 `ERP_PUBLIC_BASE` 指到 nginx/隧道对外地址。
+
+想让它常驻（不开着终端也在跑），三选一：
+
+```powershell
+# A. 后台窗（最简单，注销/重启后要再跑一次）
+Start-Process .\.venv\Scripts\erp.exe -WindowStyle Hidden `
+  -ArgumentList "serve","--bind","0.0.0.0:8765","--allow-host","192.168.1.226:8765"
+
+# B. 计划任务（开机自启，仍以当前用户身份跑）
+schtasks /Create /TN "erp-tools MCP" /SC ONSTART /RU $env:USERNAME /RL LIMITED `
+  /TR "\"$PWD\.venv\Scripts\erp.exe\" serve --bind 0.0.0.0:8765 --allow-host 192.168.1.226:8765"
+
+# C. Docker（见第 6 节，nginx 终止 TLS，最省心）
+docker compose up -d
+```
+
+> **重启网关不用重新换 api-key**：key 存在 `auth.db`，ERP 会话靠 `cookies/` 里的 cookie 自动恢复。
+> 只有 ERP 会话真的过期（`401 erp_session_expired`）才需要重新 `erp key` 登录。
+
 ### 5.3 放行防火墙
 
 ```powershell

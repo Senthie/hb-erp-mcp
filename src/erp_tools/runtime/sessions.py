@@ -155,6 +155,10 @@ class SessionProvider:
     def is_alive(self, username: str, *, refresh: bool = False) -> bool:
         session = self.get(username)
         if session is None:
+            # 服务刚重启：内存里还没有会话，先用磁盘 cookie 恢复。
+            # 否则 `/v1/me` 会把「还没恢复」当成「已过期」而作废掉仍然有效的 api-key。
+            session = self._restore(username)
+        if session is None:
             return False
 
         now = time.time()
