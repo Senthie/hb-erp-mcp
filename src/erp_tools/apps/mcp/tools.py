@@ -1231,7 +1231,10 @@ def register_tools(mcp: MCPServer, state: ServerState) -> None:
             "· 都不传 = 列出附件；· 传 files = 上传；· 传 download = 取回 base64；\n"
             "· 传 delete（名称或 file_id）= 删除（需 confirm=true）。\n"
             "files 每项 {filename, content_base64} 或 {filename, content_text}，"
-            "可选 name(附件名称)/desc/remark；也支持 {path} 本机文件。\n"
+            "可选 name(附件名称)/desc/remark/expected_size/sha256；也支持 {path} 本机文件。\n"
+            "上传后会下载回比字节数（size_ok / size_mismatch），ok=false 不要当成功。\n"
+            "大文件用分片：每项带 {upload_key, chunk_index, total_chunks, chunk_base64}，\n"
+            "未收齐返回 status=chunk_pending，继续传缺的片；收齐自动拼装上传。\n"
             "附件页路径自动发现；上传/删除后都会回读核对。单据必须先保存。"
         ),
     )
@@ -1245,7 +1248,7 @@ def register_tools(mcp: MCPServer, state: ServerState) -> None:
         record_id: Annotated[str, Field(description="单据记录 ID（GUID）")],
         files: Annotated[
             list[dict[str, Any]] | None,
-            Field(description="要上传的附件；不传=只列出"),
+            Field(description="要上传的附件（可带 chunk_index 分片）；不传=只列出"),
         ] = None,
         with_urls: Annotated[bool, Field(description="列表时一并取下载直链")] = False,
         download: Annotated[str, Field(description="按名称/文件ID 下载一个附件")] = "",

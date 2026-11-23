@@ -61,8 +61,55 @@ HTTP GET 即可下载、不需要 cookie；⚠ 不同模块落在**不同端口*
 | 纯文本 | `{"filename": "note.txt", "content_text": "第一行\n第二行"}` |
 | 本机文件（CLI） | `{"path": "out/a.pdf"}` |
 
-可选：`name`（ERP 附件名称，默认 `filename`）、`desc`、`remark`、`content_type`。
+可选：`name`（ERP 附件名称，默认 `filename`）、`desc`、`remark`、`content_type`、
+`expected_size`（声明的原始字节数）、`sha256`（声明的摘要）。
 单文件上限 20 MB（`ERP_ATTACH_MAX_MB` 可调）。
+
+### 大文件：分片上传（`files[]` 每项带 `chunk_index`）
+
+单个 MCP 调用的 base64 太大时，内容在**送到服务之前**就可能被截断。分片是把同一个文件
+拆成几次小调用送上来，服务端暂存到本地目录，**收齐后拼好再一次性传 ERP**：
+
+```json
+{"files": [{"filename": "样书照片.zip", "upload_key": "BJXQ261123017",
+            "chunk_index": 0, "total_chunks": 3,
+            "chunk_base64": "UEsDBBQ…",
+            "expected_size": 1929000, "sha256": "9f2c…"}]}
+```
+
+| 字段 | 说明 |
+| --- | --- |
+| `upload_key` | 同一个文件的分片用**同一个 key**（默认取 `filename`）。建议带上单号，避免与别人的同名文件撞车 |
+| `chunk_index` / `total_chunks` | 从 0 开始，必须齐全 |
+| `chunk_base64` | 这一片的字节（也接受 `chunk`） |
+| `expected_size` / `sha256` | 可选但**强烈建议**：拼装后先本地比对，不符就清空暂存重传 |
+
+- 未收齐 → `{"ok": false, "status": "chunk_pending", "chunks": [{upload_key, total,
+  received: [0,1], missing: [2]}], "message": "分片还没传完…"}`，继续传缺的即可
+- 收齐 → 自动拼装、核对 `expected_size`/`sha256`，然后走正常上传并回报 `size_ok`
+- 暂存目录：`%TEMP%\erp_tools_attach_stage`（`ERP_ATTACH_STAGE_DIR` 可改）；
+  同名 `upload_key` 的残局超过 **30 分钟**或 `total_chunks` 变了会自动清空
+
+### 上传后的大小校验（防止“假成功”）
+
+上传成功后会把文件**下回来**比对：
+
+| 字段 | 含义 |
+| --- | --- |
+| `uploaded[].size` | 本次发出去的字节数 |
+| `uploaded[].stored_size` | 从 ERP 下回来的真实字节数 |
+| `size_ok` | 全部一致才为 `true` |
+| `size_mismatch[]` | `{name, sent, stored, reason: "size"|"sha256"}` |
+
+ERP 会老老实实存下“半截文件”，**只看附件名称是查不出来的**——所以 `ok=false` 可能来自：
+
+1. 回读不到附件（`missing`）
+2. 内容比声明的 `expected_size` 短 → 直接拒传，`errors[].error` 明说是“内容在送到服务前就被截断了”
+3. 落库字节数 ≠ 发出的字节数，或 sha256 不符 → `size_mismatch`
+
+实测（2026-11-23）：直连上传 2,500,000 字节、经网关 3.18 MB 请求体上传 2,500,000 字节，
+**落库都与原件逐字节一致** —— 所以截断不是 ERP/网关，而是调用方送来的 base64 已经是半截。
+对策：单次 base64 ≤ 1 MB，更大的文件用分片或 `{"path": "…"}`。
 
 ## 返回
 
@@ -81,7 +128,8 @@ HTTP GET 即可下载、不需要 cookie；⚠ 不同模块落在**不同端口*
 }
 ```
 
-上传：`{ok, verified, count, uploaded:[…], errors:[…], files:[…]}`（**回读核对附件名称**）。
+上传：`{ok, verified, count, uploaded:[…], errors:[…], files:[…],
+verified, missing, size_ok, size_mismatch}`（**回读核对附件名称 + 字节数**）。
 
 删除预览 / 真删：
 
@@ -124,5 +172,6 @@ erp attachment --module quote_request --id <记录ID> --delete "旧.pdf" --yes
 - 附件页都要求**单据已保存**；新建页（未保存）点附件不会弹窗。
 - 新增模块只要在 `tools/attachments.py` 的 `MODULES` 里加一行（或留空 `page_path` 让它自动发现）。
 - 上传/删除后都会回读核对，`ok=false` 表示 ERP 没接受，不会假报成功。
+- 上传会额外**下载回来比字节数**（`size_ok`），能揪出“存了半截文件”的假成功；大文件请用分片。
 - 删除是**物理删除**，ERP 无回收站；同名附件请优先用 `file_id`。
 - 附件列表页会渲染两份（隐藏/打印表）：解析时按文件 ID 去重、按**右对齐列位**取值。

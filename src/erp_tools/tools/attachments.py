@@ -41,6 +41,8 @@ from __future__ import annotations
 
 import base64
 import binascii
+import hashlib
+import json
 import os
 import re
 from dataclasses import dataclass
@@ -48,11 +50,13 @@ from pathlib import Path
 from typing import Any
 
 from ..core.errors import ErpError, ParseError, UpstreamError
-from ..core.htmlutil import get_input_value
 from .gridlist import button_payload, form_snapshot
 
 #: 单个附件上限（可用 ERP_ATTACH_MAX_MB 覆盖）
 DEFAULT_MAX_MB = 20
+
+#: 分片暂存多久算过期（秒）
+CHUNK_STAGE_TTL = 1800
 
 #: 附件页里「附件文件：有」的点击入口 `Display_FJ('附件ID','PID')`
 _DISPLAY_RE = re.compile(r"Display_FJ\(\s*'([^']+)'\s*,\s*'([^']*)'\s*\)")
@@ -73,7 +77,7 @@ def max_bytes() -> int:
 _DELETE_INDEX_RE = re.compile(r"Delete\$(\d+)")
 
 #: 列表页/详情页里「附件」入口（两种写法）
-_ANCHOR_FJ_RE = re.compile(r"""<a[^>]*id=["']btnFJ["']""", re.I)
+_ANCHOR_FJ_RE = re.compile(r"""<a[^>]*id=["']btnFJ["']""", re.IGNORECASE)
 _CELL_FJ_RE = re.compile(
     r"OnOpen(?P<cp>CP)?FJ\(\s*'(?P<fid>[^']*)'\s*,\s*'(?P<pid>[^']*)'"
     r"\s*(?:,\s*'(?P<num>[^']*)'\s*)?\)"
@@ -170,6 +174,80 @@ def module_names() -> list[str]:
 _page_cache: dict[str, str] = {}
 
 
+# ══════════════════ 分片暂存 ══════════════════
+def _stage_dir() -> Path:
+    """分片暂存目录（默认系统临时目录，可用 ERP_ATTACH_STAGE_DIR 覆盖）。"""
+    import tempfile
+
+    raw = (os.getenv("ERP_ATTACH_STAGE_DIR") or "").strip()
+    folder = Path(raw) if raw else Path(tempfile.gettempdir()) / "erp_tools_attach_stage"
+    folder.mkdir(parents=True, exist_ok=True)
+    return folder
+
+
+def _safe_name(name: str) -> str:
+    return re.sub(r"[^0-9A-Za-z._\u4e00-\u9fff-]+", "_", name)[:80] or "upload"
+
+
+def _merge_stage_meta(folder: Path, item: dict[str, Any], *, total: int = 0) -> None:
+    """把分片里带的 name/desc/remark/content_type/total/expected_size 记到 `_meta.json`。"""
+    path = folder / "_meta.json"
+    meta: dict[str, Any] = {}
+    if path.is_file():
+        try:
+            meta = json.loads(path.read_text(encoding="utf-8")) or {}
+        except (OSError, ValueError):
+            meta = {}
+    changed = False
+    for field in ("filename", "name", "desc", "remark", "content_type", "sha256"):
+        value = str(item.get(field) or "").strip()
+        if value and not meta.get(field):
+            meta[field] = value
+            changed = True
+    want = int(item.get("expected_size") or item.get("total_size") or 0)
+    if want and not meta.get("expected_size"):
+        meta["expected_size"] = want
+        changed = True
+    if total and meta.get("total") != total:
+        meta["total"] = total
+        changed = True
+    if changed or not path.is_file():
+        path.write_text(json.dumps(meta, ensure_ascii=False), encoding="utf-8")
+
+
+def _read_stage_meta(folder: Path) -> dict[str, Any]:
+    path = folder / "_meta.json"
+    if not path.is_file():
+        return {}
+    try:
+        return json.loads(path.read_text(encoding="utf-8")) or {}
+    except (OSError, ValueError):
+        return {}
+
+
+def _stage_age(folder: Path) -> float:
+    """暂存目录里最新分片的“年龄”（秒）。"""
+    import time
+
+    newest = 0.0
+    for part in folder.glob("*.part"):
+        try:
+            newest = max(newest, part.stat().st_mtime)
+        except OSError:
+            continue
+    return time.time() - newest if newest else float("inf")
+
+
+def _clear_stage(folder: Path) -> None:
+    for part in folder.glob("*.part"):
+        part.unlink(missing_ok=True)
+    (folder / "_meta.json").unlink(missing_ok=True)
+    try:
+        folder.rmdir()
+    except OSError:
+        pass
+
+
 @dataclass
 class Attachment:
     """一个待上传的附件。`content` 是原始字节（AI 给的 stream 解出来的）。"""
@@ -181,14 +259,23 @@ class Attachment:
     name: str = ""
     desc: str = ""
     remark: str = ""
+    #: 调用方声明的原始字节数（可选）：用来抓“传过来的内容就已经被截断了”
+    expected_size: int = 0
+    #: 调用方声明的 sha256 十六进制（可选）：最强校验
+    sha256: str = ""
 
     @property
     def erp_name(self) -> str:
         return (self.name or self.filename).strip()
 
     def as_dict(self) -> dict[str, Any]:
-        return {"filename": self.filename, "size": len(self.content),
-                "content_type": self.content_type, "name": self.erp_name}
+        out = {"filename": self.filename, "size": len(self.content),
+               "content_type": self.content_type, "name": self.erp_name}
+        if self.expected_size:
+            out["expected_size"] = self.expected_size
+        if self.sha256:
+            out["sha256"] = self.sha256
+        return out
 
 
 def _guess_type(filename: str) -> str:
@@ -274,6 +361,8 @@ def decode_attachment(item: dict[str, Any] | Attachment, *,
         name=str(item.get("name") or "").strip(),
         desc=str(item.get("desc") or item.get("description") or "").strip(),
         remark=str(item.get("remark") or "").strip(),
+        expected_size=int(item.get("expected_size") or item.get("size") or 0),
+        sha256=str(item.get("sha256") or "").strip().lower(),
     )
 
 
@@ -311,7 +400,7 @@ class AttachmentPageService:
     module: AttachmentModule | None = None
 
     @classmethod
-    def for_module(cls, auth: Any, key: str) -> "AttachmentPageService":
+    def for_module(cls, auth: Any, key: str) -> AttachmentPageService:
         module = get_module(key)
         return cls(auth, page_path=_page_cache.get(module.key, module.page_path),
                    label=f"{module.label}附件", module=module)
@@ -349,12 +438,10 @@ class AttachmentPageService:
         if self.module is None:
             raise ParseError("没有指定 page_path，也没有 module 可用来发现附件页")
         module = self.module
-        from ..core.aspnet import soup_of
 
         if module.entry == "cell":
             if not module.list_path:
                 raise ParseError(f"{module.label} 的附件入口在列表页，但注册表没配 list_path")
-            uid = getattr(self.auth, "user_id", "") or ""
             list_url = f"/Admin/{module.list_path}?QXID={module.list_qxid}"
             resp = self.auth.client.get(list_url)
             entry = self.discover_entry(resp.text)
@@ -368,7 +455,6 @@ class AttachmentPageService:
             body["__EVENTARGUMENT"] = ""
             text = self.auth.client.post(list_url, data=body).text
         else:
-            uid = getattr(self.auth, "user_id", "") or ""
             detail_url = (f"/Admin/{module.detail_path}?QXID={module.detail_qxid}"
                           f"&id={record_id}&Option=3")
             resp = self.auth.client.get(detail_url)
@@ -480,7 +566,7 @@ class AttachmentPageService:
                 continue
             seen.add(fid.lower())
 
-            def cell(name: str) -> str:
+            def cell(name: str, tds=tds, headers=headers, index=index) -> str:
                 """按列名取值。
 
                 行首的「选择」复选框单元格并非每行都有（老数据行会少/多一格），
@@ -639,8 +725,25 @@ class AttachmentPageService:
         return action
 
     def upload(self, record_id: str, items: list[Attachment] | list[dict[str, Any]],
-               *, verify: bool = True) -> dict[str, Any]:
-        """上传 1..N 个附件，返回已上传/失败清单（有回读核对）。"""
+               *, verify: bool = True, verify_size: bool = True,
+               auto_chunk: bool = True) -> dict[str, Any]:
+        """上传 1..N 个附件，返回已上传/失败清单（回读核对名称 + 大小）。
+
+        `verify_size` 会再把文件**下回来比字节数**——base64 在传输链上被截断时，
+        ERP 仍会存下完整的“半截文件”，只看名称是查不出来的。
+        """
+        items = list(items)
+        pending = [it for it in items
+                   if isinstance(it, dict) and it.get("chunk_index") is not None]
+        if pending and auto_chunk:
+            staged = self.stage_chunks(pending)
+            if not staged["complete"]:
+                return {"ok": False, "status": "chunk_pending", **staged,
+                        "record_id": record_id}
+            items = [it for it in items if not (isinstance(it, dict)
+                                                 and it.get("chunk_index") is not None)]
+            items.extend(staged["files"])
+
         decoded = decode_attachments(items)
         if not decoded:
             raise ParseError("没有要上传的附件")
@@ -652,6 +755,14 @@ class AttachmentPageService:
         next_no = len(existing) + 1
 
         for offset, att in enumerate(decoded):
+            if att.expected_size and att.expected_size != len(att.content):
+                errors.append({
+                    "filename": att.filename,
+                    "error": (f"收到的内容只有 {len(att.content)} 字节，"
+                              f"与声明的 {att.expected_size} 字节不符"
+                              "（内容在送到服务前就被截断了）"),
+                })
+                continue
             try:
                 html = self._post_one(record_id, att, action=action,
                                       order=next_no + offset)
@@ -667,21 +778,173 @@ class AttachmentPageService:
             "errors": errors,
             "verified": False,
             "missing": [],
+            "size_ok": None,
+            "size_mismatch": [],
         }
         if verify and uploaded:
-            names = {row["名称"] for row in self._parse_rows(
-                self._open(record_id)[0])}
-            missing = [item["name"] for item in uploaded if item["name"] not in names]
+            rows = self._parse_rows(self._open(record_id)[0])
+            by_name = {}
+            for row in rows:
+                by_name.setdefault(row["名称"], row)
+            missing = [item["name"] for item in uploaded if item["name"] not in by_name]
             result["verified"] = not missing
             result["missing"] = missing
-            result["count"] = len(names)
+            result["count"] = len(rows)
             if missing:
                 result["ok"] = False
                 result["message"] = (
                     "回读没有找到这些附件：" + "、".join(missing)
                     + "；请到 ERP 里确认（可能被服务端过滤）"
                 )
+
+            if verify_size and not missing:
+                mismatched = []
+                for item in uploaded:
+                    row = by_name.get(item["name"])
+                    info = self._stored_info(record_id, row) if row else None
+                    item["stored_size"] = info["size"] if info else None
+                    if info is None:
+                        continue
+                    if info["size"] != item["size"]:
+                        mismatched.append({
+                            "filename": item["filename"], "name": item["name"],
+                            "sent": item["size"], "stored": info["size"],
+                            "reason": "size",
+                        })
+                    elif item.get("sha256") and info["sha256"] != item["sha256"]:
+                        mismatched.append({
+                            "filename": item["filename"], "name": item["name"],
+                            "sent": item["size"], "stored": info["size"],
+                            "reason": "sha256",
+                            "expected_sha256": item["sha256"],
+                            "stored_sha256": info["sha256"],
+                        })
+                result["size_ok"] = not mismatched
+                result["size_mismatch"] = mismatched
+                if mismatched:
+                    result["ok"] = False
+                    detail = "、".join(
+                        f"{m['name']}（发送 {m['sent']} / 落库 {m['stored']} 字节）"
+                        for m in mismatched)
+                    result["message"] = (
+                        "附件内容不一致：" + detail
+                        + "。ERP 只是存下了半截文件；请改用分片上传"
+                        "（files 里带 chunk_index/total_chunks）或传 {path}"
+                    )
         return result
+
+    def _stored_info(self, record_id: str, row: dict[str, str]) -> dict[str, Any] | None:
+        """把落库的附件下回来，返回 `{size, sha256}`（失败返回 None）。"""
+        try:
+            url = self.file_url(record_id, row["文件ID"])
+            content, _ctype, _used = self.fetch_file(url)
+        except ErpError:
+            return None
+        return {"size": len(content), "sha256": hashlib.sha256(content).hexdigest()}
+
+    def _stored_size(self, record_id: str, row: dict[str, str]) -> int | None:
+        """把落库的附件下回来，返回真实字节数（失败返回 None）。"""
+        info = self._stored_info(record_id, row)
+        return info["size"] if info else None
+
+    # ══════════════════ 分片上传 ══════════════════
+    def stage_chunks(self, items: list[dict[str, Any]]) -> dict[str, Any]:
+        """把 `chunk_index/chunk_base64` 的分片暂存到本地目录，齐了再拼。
+
+        每片写法：`{"filename": "a.zip", "chunk_index": 0, "total_chunks": 5,
+                   "chunk_base64": "…", "upload_key": "可选"}`
+
+        - 分片按 `upload_key`（默认=filename）分组；同一个 key 的分片必须来自同一文件
+        - 未收齐时返回 `{"complete": False, "received": [...], "missing": [...]}`
+        - 收齐后返回 `{"complete": True, "files": [{filename, content_base64, name…}]}`，
+          并清掉暂存文件
+        """
+        groups: dict[str, list[dict[str, Any]]] = {}
+        for item in items:
+            key = str(item.get("upload_key") or item.get("filename") or "").strip()
+            if not key:
+                raise ParseError("分片缺少 filename/upload_key")
+            groups.setdefault(key, []).append(item)
+
+        results: list[dict[str, Any]] = []
+        files: list[dict[str, Any]] = []
+        for key, group in groups.items():
+            total = int(group[0].get("total_chunks") or 0)
+            if total <= 0:
+                raise ParseError(f"分片 {key} 缺少 total_chunks")
+            folder = _stage_dir() / _safe_name(key)
+            folder.mkdir(parents=True, exist_ok=True)
+            # 上次没收完的残局：total 不一致 / 超过 30 分钟就整目录清掉
+            stale = _read_stage_meta(folder)
+            if stale and (int(stale.get("total") or 0) not in (0, total)
+                          or _stage_age(folder) > CHUNK_STAGE_TTL):
+                _clear_stage(folder)
+                folder.mkdir(parents=True, exist_ok=True)
+                stale = {}
+            # 之前几次调用已经落盘的分片也算数
+            parts: dict[int, Path] = {}
+            for part in folder.glob("*.part"):
+                try:
+                    idx = int(part.stem)
+                except ValueError:
+                    continue
+                if 0 <= idx < total:
+                    parts[idx] = part
+            for item in group:
+                idx = int(item.get("chunk_index", -1))
+                if not 0 <= idx < total:
+                    raise ParseError(f"分片 {key} 的 chunk_index={idx} 超出 0..{total-1}")
+                blob = str(item.get("chunk_base64") or item.get("chunk") or "")
+                if not blob:
+                    raise ParseError(f"分片 {key}#{idx} 没有内容")
+                raw = base64.b64decode(re.sub(r"\s+", "", blob), validate=False)
+                target = folder / f"{idx:05d}.part"
+                target.write_bytes(raw)
+                parts[idx] = target
+                _merge_stage_meta(folder, item, total=total)
+
+            missing = [i for i in range(total) if i not in parts]
+            entry = {"upload_key": key, "total": total,
+                     "received": sorted(parts), "missing": missing,
+                     "complete": not missing}
+            results.append(entry)
+            if missing:
+                continue
+
+            content = b"".join(parts[i].read_bytes() for i in range(total))
+            meta = _read_stage_meta(folder)
+            _clear_stage(folder)
+            want = int(meta.get("expected_size") or 0)
+            digest = hashlib.sha256(content).hexdigest()
+            if (want and len(content) != want) or (meta.get("sha256")
+                                                   and digest != meta["sha256"]):
+                entry["complete"] = False
+                entry["reason"] = (f"拼起来的文件是 {len(content)} 字节，"
+                                   f"与声明的不符，分片可能缺了或被截断；已清空暂存，请重传")
+                continue
+            files.append({
+                "filename": meta.get("filename") or key,
+                "content_base64": base64.b64encode(content).decode(),
+                "name": meta.get("name") or "",
+                "desc": meta.get("desc") or "",
+                "remark": meta.get("remark") or "",
+                "content_type": meta.get("content_type") or "",
+                "sha256": digest,
+                "expected_size": len(content),
+            })
+
+        complete = bool(results) and all(r["complete"] for r in results)
+        reasons = [r["reason"] for r in results if r.get("reason")]
+        if reasons:
+            message = "；".join(reasons)
+        elif complete:
+            message = ""
+        else:
+            message = "分片还没传完，继续传缺的那几片"
+        return {"complete": complete, "chunks": results,
+                "files": files if complete else [],
+                "message": message}
+
 
     def _post_one(self, record_id: str, att: Attachment, *, action: str,
                   order: int) -> str:
@@ -761,7 +1024,7 @@ class AttachmentPageService:
         for candidate in self.candidate_urls(url, self.auth.cfg):
             try:
                 resp = requests.get(candidate, timeout=180)
-            except requests.RequestException as exc:      # noqa: PERF203
+            except requests.RequestException as exc:
                 last = f"{candidate} → {exc}"
                 continue
             if resp.status_code == 200 and resp.content:
