@@ -70,7 +70,7 @@ qxid:
 | `erp price-detail` | 客户报价【详情】（表头+产品+数量+部件+费用+描述） |
 | `erp price-node` | 客户报价【子数据】（数量档 / 部件 / 工序 / 辅料 / 费项 / 面板，共 22 个节点） |
 | `erp quote` | 报价需求【详情】→ ERP 订单需求 JSON |
-| `erp quote-attachment` | 报价需求【附件】：列表 / 上传（`--file` / `--text`）/ 下载 |
+| `erp quote-attachment` | 报价需求【附件】：列表 / 上传（`--file` / `--text`）/ 删除（`--delete`）/ 下载 |
 | `erp pages` | 四个新模块的**数据页面清单**（列表 / 详情 / 弹窗子页） |
 | `erp costing-list` | 产品核价【列表】（`BJ_KHBJ` QXID=1281，一行=一个核价产品行） |
 | `erp production-list` | 生产施工单【列表】（`SC_SCSGD` QXID=740，一行=一张施工单） |
@@ -366,12 +366,15 @@ erp quote --csv orders.csv --out data\quote.jsonl     # 18496 条，约 2 小时
 | `--desc` / `--remark` | 附件描述 / 备注 |
 | `--urls` | 列表时一并取下载直链 |
 | `--download` | 按名称（或文件 ID）下载一个附件 |
+| `--delete` / `--yes` | 删除指定名称（或文件 ID）的附件；不加 `--yes` 只预览 |
 | `--out-dir` | 下载目录（不传则输出 base64） |
 
 ```powershell
 erp quote-attachment --id <记录ID> --urls
 erp quote-attachment --id <记录ID> --file out\报价单.pdf --name "客户报价单"
 erp quote-attachment --id <记录ID> --download "客户报价单.pdf" --out-dir out\fj
+erp quote-attachment --id <记录ID> --delete "旧附件.pdf"          # 只预览
+erp quote-attachment --id <记录ID> --delete "旧附件.pdf" --yes     # 真删
 ```
 
 > MCP 侧对应 `erp_quote_attachment`；`erp_quote_create(attachments=[...])` 会在建单成功后

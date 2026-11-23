@@ -131,6 +131,7 @@ VS Code `mcp.json`：
 | `erp_quote_update` | ✅ | 改**表头**（备注/联系人/电话/手机/传真/折扣率/表头产品描述/业务员/跟单员）；⚠ 改不了明细 |
 | `erp_quote_update_product` | ✅ | 改**产品明细**：名称/规格/数量 + **产品描述 `product_desc`（CPMS）** + `fields`（配件描述/修改记录/检测项目…）；保存后逐个回读复核 |
 | `erp_quote_attachment` | ✅ | **报价需求附件**：不传 `files` = 列出现有附件（可带直链）；传 `files` = 上传（`{filename, content_base64}` / `{filename, content_text}` / `{path}`），上传后回读核对；`download` = 取回 base64 |
+| `erp_quote_attachment_delete` | ✅ | **删附件**（按名称或文件ID）：`confirm=false` 只预览（`would_delete`），`confirm=true` 才删，并回读确认该行已消失 |
 | `erp_quote_delete` | ✅ | 删单据（不可恢复） |
 
 **写入工具全部默认 `confirm=false` 只预演**，必须显式 `confirm=true` 才落库，

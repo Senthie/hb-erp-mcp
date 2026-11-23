@@ -81,6 +81,10 @@ PAGE_CAPABILITIES: dict[str, tuple[Capability, ...]] = {
                    mcp="erp_quote_attachment",
                    doc="api/erp_quote_attachment.md",
                    note="CLI：erp quote-attachment"),
+        Capability("删", "删除附件（按名称/文件ID，confirm=true 才删）",
+                   mcp="erp_quote_attachment_delete",
+                   doc="api/erp_quote_attachment_delete.md",
+                   note="CLI：erp quote-attachment --delete 名称 --yes"),
     ),
     # ── 业务报价管理 / 客户报价 ──
     "baojia/bj_khbj/index.aspx": (

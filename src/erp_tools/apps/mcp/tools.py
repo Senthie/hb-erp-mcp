@@ -1229,7 +1229,8 @@ def register_tools(mcp: MCPServer, state: ServerState) -> None:
             "报价需求**附件**（`BJ_KHBJXQ_FJ.aspx`）：不传 files = 列出当前附件；"
             "传 files = 上传（每项 {filename, content_base64} 或 {filename, content_text}，"
             "可选 name/desc/remark；也支持 {path} 本机文件）。上传后回读核对名称。"
-            "download 传附件名称或文件ID 可拿回 base64（小文件）。"
+            "download 传附件名称或文件ID 可拿回 base64（小文件）；"
+            "删除用 erp_quote_attachment_delete。"
             "⚠ 单据必须先保存（附件页按记录 ID 组织）。"
         ),
     )
@@ -1253,6 +1254,28 @@ def register_tools(mcp: MCPServer, state: ServerState) -> None:
             if download.strip():
                 return svc.download_attachment(record_id, name=download.strip())
             return svc.list_attachments(record_id, with_urls=with_urls)
+
+    @mcp.tool(
+        name="erp_quote_attachment_delete",
+        description=(
+            "【会写入 ERP】删除报价需求单上的**一个附件**（按附件名称或文件ID 定位）。"
+            "confirm=false（默认）只返回「将会删除哪一条」（would_delete），不写库；"
+            "confirm=true 才真正删，并回读确认该行已消失（ok=false 表示没删掉）。"
+        ),
+    )
+    @_tool_errors
+    def erp_quote_attachment_delete(
+        record_id: Annotated[str, Field(description="报价需求记录 ID（GUID）")],
+        name: Annotated[str, Field(description="附件名称（可只写一部分）")] = "",
+        file_id: Annotated[str, Field(description="附件文件ID（列表里的 文件ID）")] = "",
+        confirm: Annotated[
+            bool, Field(description="false 只预览；true 才真正删除"),
+        ] = False,
+    ) -> dict[str, Any]:
+        session = _session(state)
+        with state.provider.slot():
+            return QuoteCreateService(session.auth).delete_attachment(
+                record_id, name=name, file_id=file_id, confirm=confirm)
 
     @mcp.tool(
         name="erp_quote_details",

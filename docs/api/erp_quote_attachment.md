@@ -12,6 +12,8 @@
 2. **上传附件**——AI 可以直接把 stream 传上来（base64 / 纯文本 / 本机路径）
 3. **下载附件**——回传 base64，或另存到本机目录（CLI）
 
+删除请用 [`erp_quote_attachment_delete`](erp_quote_attachment_delete.md)。
+
 `erp_quote_create` 的 `attachments` 参数内部就是调这套东西，所以「建单 + 传附件」一次调用就能完成。
 
 ## 页面协议（实测 2026-11-23，账号 15627）
@@ -104,7 +106,7 @@ erp quote-attachment --id <记录ID> --download "AI摘要.txt" --out-dir out\fj
 
 ## 注意
 
-- 上传是**写操作**（会真的往 ERP 里加附件），但没有删除接口——删附件要回 ERP 界面。
+- 上传是**写操作**（会真的往 ERP 里加附件）；删除走 `erp_quote_attachment_delete`。
 - 同名附件可以重复上传（ERP 不会去重），核对时按名称匹配，重名会导致 `verified` 判断偏松。
 - 「附件列表页」会渲染两份（隐藏/打印表），解析时按文件 ID 去重、按**右对齐列位置**取值，
   否则行首「选择」复选框缺失的老数据行会错列。

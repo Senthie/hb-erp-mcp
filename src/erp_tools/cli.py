@@ -543,6 +543,20 @@ def cmd_quote_attachment(args) -> int:
     svc = QuoteCreateService(auth)
     record_id = (args.id or "").strip()
 
+    if args.delete:
+        for target in args.delete:
+            result = svc.delete_attachment(record_id, name=target, confirm=args.yes)
+            if result.get("status") == "needs_confirmation":
+                item = result["would_delete"]
+                _log(f"  [预览] {item['名称']} ({item['文件ID']}) 将被删除；加 --yes 才执行")
+                continue
+            if result.get("ok"):
+                _log(f"  [DEL] {result['deleted']['名称']}（剩 {result.get('count')} 个）")
+            else:
+                _log(f"  [FAIL] {target}: {result.get('message') or '删除未生效'}")
+                return 1
+        return 0
+
     if args.download:
         data = svc.download_attachment(record_id, name=args.download,
                                        out_dir=args.out_dir or "")
@@ -972,6 +986,9 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--remark", help="备注", default="")
     p.add_argument("--urls", action="store_true", help="列表时一并取下载直链")
     p.add_argument("--download", help="按附件名称（或文件ID）下载一个附件")
+    p.add_argument("--delete", action="append",
+                   help="删除指定名称（或文件ID）的附件，可重复；需配 --yes 才真删")
+    p.add_argument("--yes", action="store_true", help="确认删除（配合 --delete）")
     p.add_argument("--out-dir", dest="out_dir", help="下载到目录（不传则输出 base64）")
     p.set_defaults(func=cmd_quote_attachment)
 

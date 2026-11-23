@@ -52,6 +52,10 @@ def max_bytes() -> int:
     return int(max(mb, 0.1) * 1024 * 1024)
 
 
+#: 行内删除：`__doPostBack('gridView1','Delete$<行号>')`（只有 Modify=1 的页面才有该列）
+_DELETE_INDEX_RE = re.compile(r"Delete\$(\d+)")
+
+
 @dataclass
 class Attachment:
     """一个待上传的附件。`content` 是原始字节（AI 给的 stream 解出来的）。"""
@@ -294,6 +298,12 @@ class AttachmentPageService:
                     if m:
                         name = m.group(1).strip()
                         break
+            row_index = ""
+            for el in tr.find_all("input"):
+                m = _DELETE_INDEX_RE.search(el.get("onclick") or "")
+                if m:
+                    row_index = m.group(1)
+                    break
             rows.append({
                 "文件ID": fid,
                 "名称": name,
@@ -301,8 +311,96 @@ class AttachmentPageService:
                 "描述": cell("附件描述"),
                 "备注": cell("备注"),
                 "有文件": cell("附件文件"),
+                "行号": row_index,
             })
         return rows
+
+    # ══════════════════ 删 ══════════════════
+    def _pick(self, rows: list[dict[str, str]], *, name: str = "",
+              file_id: str = "") -> dict[str, str]:
+        files = "、".join(r["名称"] for r in rows) or "（空）"
+        target = None
+        for row in rows:
+            if file_id and row["文件ID"].lower() == file_id.strip().lower():
+                target = row
+                break
+        if target is None and name:
+            for row in rows:
+                if row["名称"].strip() == name.strip():
+                    target = row
+                    break
+        if target is None and name:
+            for row in rows:                      # 名字记不全时允许包含匹配
+                if name.strip() in row["名称"]:
+                    target = row
+                    break
+        if target is None:
+            raise ParseError(f"没找到附件 {name or file_id!r}；现有：{files}")
+        return target
+
+    def delete_file(self, record_id: str, *, name: str = "", file_id: str = "",
+                    confirm: bool = False) -> dict[str, Any]:
+        """删除一个附件。`confirm=False` 只返回「将会删除哪一条」，不写库。
+
+        协议（实测 2026-11-23）：附件页 `Modify=1` 才有删除列，
+        行内删除 = `__doPostBack('gridView1','Delete$<行号>')`，
+        也就是 POST 时 `__EVENTTARGET=gridView1` + `__EVENTARGUMENT=Delete$N`。
+        """
+        html, url, _action = self._open(record_id, modify="1")
+        rows = self._parse_rows(html)
+        if not rows:
+            raise ParseError(f"{self.label}：单据上没有附件")
+        target = self._pick(rows, name=name, file_id=file_id)
+        if not target.get("行号"):
+            raise ParseError(
+                "当前页面没有删除入口（Modify=1 下没渲染 Delete 索引）；"
+                "可能是账号无权限，或该模块的附件页不支持删除"
+            )
+        from ..core.aspnet import soup_of
+
+        if not confirm:
+            return {
+                "ok": False, "status": "needs_confirmation", "record_id": record_id,
+                "would_delete": {k: target[k] for k in ("名称", "文件ID", "排序号")},
+                "count": len(rows),
+                "message": "确认删除请传 confirm=true",
+            }
+
+        body = form_snapshot(html)
+        body["__EVENTTARGET"] = "gridView1"
+        body["__EVENTARGUMENT"] = f"Delete${target['行号']}"
+        resp = self.auth.client.post(url, data=body)
+        if resp.status_code >= 500:
+            raise UpstreamError(f"{self.label}删除失败（HTTP {resp.status_code}）",
+                                resp.status_code, resp.text[:300])
+        if not soup_of(resp.text).find("form"):
+            raise ParseError(f"{self.label}删除后返回的不是附件页，协议可能变了")
+
+        after = self._parse_rows(self._open(record_id)[0])
+        gone = all(r["文件ID"].lower() != target["文件ID"].lower() for r in after)
+        return {
+            "ok": gone,
+            "status": "deleted" if gone else "failed",
+            "record_id": record_id,
+            "deleted": {k: target[k] for k in ("名称", "文件ID", "排序号")},
+            "count": len(after),
+            "remaining": [r["名称"] for r in after],
+            "message": "" if gone else "回读里还能看到这条附件，删除可能没有生效",
+        }
+
+    def delete_files(self, record_id: str, names: list[str], *,
+                     confirm: bool = False) -> dict[str, Any]:
+        """批量删除（ERP 一次只删一行，所以逐个删并每次重新打开取行号）。"""
+        results = []
+        for name in names:
+            try:
+                results.append(self.delete_file(record_id, name=name, confirm=confirm))
+            except ErpError as exc:
+                results.append({"ok": False, "status": "error", "name": name,
+                                "message": str(exc)})
+        ok = all(item.get("ok") for item in results) if confirm else True
+        return {"ok": ok, "record_id": record_id, "results": results,
+                "count": len(results)}
 
     # ══════════════════ 写 ══════════════════
     def _action_url(self, action: str) -> str:

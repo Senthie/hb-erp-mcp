@@ -410,6 +410,17 @@ class QuoteCreateService:
             raise ParseError("没有要上传的附件")
         return self.attachment_service().upload(record_id, attachments)
 
+    def delete_attachment(self, record_id: str, *, name: str = "", file_id: str = "",
+                          confirm: bool = False) -> dict[str, Any]:
+        """删一个附件；`confirm=False` 只预览「会删哪一条」。"""
+        return self.attachment_service().delete_file(
+            record_id, name=name, file_id=file_id, confirm=confirm)
+
+    def delete_attachments(self, record_id: str, names: list[str], *,
+                           confirm: bool = False) -> dict[str, Any]:
+        return self.attachment_service().delete_files(
+            record_id, names, confirm=confirm)
+
     def download_attachment(self, record_id: str, *, name: str = "",
                             file_id: str = "", out_dir: str = "") -> dict[str, Any]:
         """按附件名称（或文件 ID）下载一个附件。"""
