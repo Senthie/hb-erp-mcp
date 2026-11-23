@@ -1,23 +1,40 @@
-"""ERP 通用「上传附件」页（`*_FJ.aspx`）的读写抽象。
+"""ERP 通用「附件」能力的读写抽象（各模块复用同一套协议）。
 
-客户订单 `DingDan/DD_KHDD/DD_KHDD_FJ.aspx`、客户报价需求
-`BaoJia/BJ_KHBJXQ/BJ_KHBJXQ_FJ.aspx` 用的是**同一套模板**，所以这里做成一个
-可复用的 `AttachmentPageService`：换一个 `page_path` 就能用。
+## 结论：附件页是同一套模板，只有「入口」和「删除方式」有差别
 
-实测协议（2026-11-23，账号 15627）：
+实测（2026-11-23，账号 15627）四个模块：
+
+| 模块 | 附件页（`*_FJ.aspx`） | 入口 | 上传页 | 删除 |
+| --- | --- | --- | --- | --- |
+| 客户报价需求 | `BaoJia/BJ_KHBJXQ/BJ_KHBJXQ_FJ.aspx` | 详情页 `<a id=btnFJ>` | 同模板 | `Modify=1` 行内 `Delete$N` |
+| 客户报价 / 产品核价 | `BaoJia/BJ_KHBJ/BJ_KHBJ_FJ.aspx` | 详情页 `<a id=btnFJ>` | 同模板 | checkbox + `Btn_DeleteFJ` |
+| 生产施工单 | `ShengChan/SC_SCSGD/SC_SCSGD_FJ.aspx` | 详情页 `<a id=btnFJ>` | 同模板（多 `Btn_OtherMessage`） | checkbox + `Btn_DeleteFJ` |
+| 采购订单 | `CaiGou/CG_CGDD/CG_CGDD_FJ.aspx` | 详情页 `<a id=btnFJ>` | 同模板 | checkbox + `Btn_DeleteFJ` |
+| 客户订单 | `DingDan/DD_KHDD/DD_KHDD_FJ.aspx` | **列表页**单号单元格 `OnOpenFJ(FID,PID,N)` | 同模板 | checkbox + `Btn_DeleteFJ` |
+
+**上传页完全一致**：
 
 ```
 GET  /Admin/<模块>/<X>_FJ.aspx?PID=<记录ID>&Modify=0&LoginUserID=<uid>
-     → form1 是 multipart/form-data，字段：
+     → form1（multipart/form-data）：
         txtPXH(排序号) txtFJMC(附件名称) txtFJMS(附件描述) txtRemark(备注)
         lblPID(记录ID) lblID(已有附件行ID) btnPostFile(提交) FileUploadExcel(文件)
-POST 同一个 action（multipart），原样带上 __VIEWSTATE/__EVENTVALIDATION：
+POST 同一个 action（multipart + __VIEWSTATE/__EVENTVALIDATION）：
         txtPXH=1 & txtFJMC=名称 & btnPostFile= & FileUploadExcel=<文件名,字节>
-     → 200，页面列表里多一行；记录页的 `[附件(无)]` 变成 `[附件(有)]`
+     → 200，列表多一行；单据页的 `[附件(无)]` 变成 `[附件(有)]`
+```
 
-文件本体在静态目录 `/Admin/FuJian/<模块>/Picture/<guid>.<ext>`：
-。⚠ 实测**不同模块落在不同端口**（客户订单在 :8887，报价需求在 :8889），
-  所以下载时会在 `cfg.host` 与 `cfg.captcha_host` 之间回退。
+**入口只有两种**：详情页锚点 `<a id="btnFJ">` → `__EVENTTARGET=btnFJ`；
+或列表页单元格 `OnOpenFJ('文件ID','产品ID','FJNum')` → 回发 `Btn_FJ`。
+本模块的 `discover_entry()` / `resolve_page()` 会自动识别并拿到附件页路径，
+所以上层只需要「模块 + 记录 ID」。
+
+**删除也有两种**（自动降级）：`Modify=1` 有行内 `Delete$<行号>` 就点它，
+否则勾选该行 checkbox 再回发 `Btn_DeleteFJ`。
+
+文件本体在静态目录 `/Admin/FuJian/<模块>/Picture/<guid>.<ext>`；
+⚠ 不同模块落在不同端口（客户订单 :8887、报价需求 :8889），
+下载时会在 `cfg.host` 与 `cfg.captcha_host` 之间回退。
 """
 
 from __future__ import annotations
@@ -54,6 +71,103 @@ def max_bytes() -> int:
 
 #: 行内删除：`__doPostBack('gridView1','Delete$<行号>')`（只有 Modify=1 的页面才有该列）
 _DELETE_INDEX_RE = re.compile(r"Delete\$(\d+)")
+
+#: 列表页/详情页里「附件」入口（两种写法）
+_ANCHOR_FJ_RE = re.compile(r"""<a[^>]*id=["']btnFJ["']""", re.I)
+_CELL_FJ_RE = re.compile(
+    r"OnOpen(?P<cp>CP)?FJ\(\s*'(?P<fid>[^']*)'\s*,\s*'(?P<pid>[^']*)'"
+    r"\s*(?:,\s*'(?P<num>[^']*)'\s*)?\)"
+)
+
+
+# ══════════════════ 模块注册表 ══════════════════
+@dataclass(frozen=True)
+class AttachmentModule:
+    """一个「有附件功能」的模块。
+
+    `page_path` 是实测出来的附件页（相对 `/Admin/`）；留空时由 `resolve_page()`
+    从详情页/列表页的入口自动发现。
+    """
+
+    key: str
+    label: str
+    #: 详情页（`anchor` 型入口用）；相对 /Admin/
+    detail_path: str = ""
+    detail_qxid: str = ""
+    #: 列表页（`cell` 型入口用，如客户订单）
+    list_path: str = ""
+    list_qxid: str = ""
+    #: 入口类型：anchor（详情页 <a id=btnFJ>）/ cell（列表页单号单元格 OnOpenFJ）
+    entry: str = "anchor"
+    #: 已实测的附件页；空=自动发现
+    page_path: str = ""
+
+    @property
+    def usable(self) -> bool:
+        return bool(self.page_path or self.detail_path or self.list_path)
+
+    def as_dict(self) -> dict[str, str]:
+        return {
+            "module": self.key, "label": self.label, "entry": self.entry,
+            "detail_page": f"/Admin/{self.detail_path}" if self.detail_path else "",
+            "list_page": f"/Admin/{self.list_path}" if self.list_path else "",
+            "attachment_page": f"/Admin/{self.page_path}" if self.page_path else "",
+        }
+
+
+#: 实测清单（2026-11-23，账号 15627）。新增模块只要在这里加一行。
+MODULES: dict[str, AttachmentModule] = {
+    m.key: m for m in (
+        AttachmentModule(
+            key="quote_request", label="客户报价需求",
+            detail_path="BaoJia/BJ_KHBJXQ/Add.aspx", detail_qxid="876",
+            page_path="BaoJia/BJ_KHBJXQ/BJ_KHBJXQ_FJ.aspx"),
+        AttachmentModule(
+            key="price", label="客户报价 / 产品核价",
+            detail_path="BaoJia/BJ_KHBJ/Add.aspx", detail_qxid="857",
+            page_path="BaoJia/BJ_KHBJ/BJ_KHBJ_FJ.aspx"),
+        AttachmentModule(
+            key="production", label="生产施工单",
+            detail_path="ShengChan/SC_SCSGD/Add.aspx", detail_qxid="740",
+            page_path="ShengChan/SC_SCSGD/SC_SCSGD_FJ.aspx"),
+        AttachmentModule(
+            key="purchase", label="采购订单",
+            detail_path="CaiGou/CG_CGDD/Add.aspx", detail_qxid="266",
+            page_path="CaiGou/CG_CGDD/CG_CGDD_FJ.aspx"),
+        AttachmentModule(
+            key="sales_order", label="客户订单",
+            list_path="DingDan/DD_KHDD/Index.aspx", list_qxid="687",
+            entry="cell",
+            page_path="DingDan/DD_KHDD/DD_KHDD_FJ.aspx"),
+    )
+}
+
+_ALIASES = {
+    "报价需求": "quote_request", "客户报价需求": "quote_request", "bjxq": "quote_request",
+    "报价": "price", "客户报价": "price", "核价": "price", "产品核价": "price",
+    "khbj": "price", "cphj": "price",
+    "施工单": "production", "生产施工单": "production", "sgd": "production",
+    "采购": "purchase", "采购订单": "purchase", "cgdd": "purchase",
+    "订单": "sales_order", "客户订单": "sales_order", "khdd": "sales_order",
+}
+
+
+def get_module(key: str) -> AttachmentModule:
+    """模块名/中文别名 -> `AttachmentModule`。"""
+    name = (key or "").strip()
+    low = name.lower()
+    name = _ALIASES.get(name, _ALIASES.get(low, low))
+    if name not in MODULES:
+        raise ParseError(f"未知附件模块 {key!r}；可用：{', '.join(MODULES)}")
+    return MODULES[name]
+
+
+def module_names() -> list[str]:
+    return list(MODULES)
+
+
+#: 附件页路径缓存（自动发现一次即可）
+_page_cache: dict[str, str] = {}
 
 
 @dataclass
@@ -183,20 +297,106 @@ def decode_attachments(items: Any, *, base_dir: str | Path | None = None) -> lis
 
 @dataclass
 class AttachmentPageService:
-    """`*_FJ.aspx` 附件页：列表 / 上传 / 取文件直链。
+    """`*_FJ.aspx` 附件页：列表 / 上传 / 取文件直链 / 删除。
 
     `page_path` 形如 `BaoJia/BJ_KHBJXQ/BJ_KHBJXQ_FJ.aspx`（相对 `/Admin/`）。
+    不传 `page_path` 时用 `module=` 自动发现（见 `discover_page`）。
     """
 
     auth: Any
-    page_path: str
+    page_path: str = ""
     #: 返回给调用方的标签（用于日志/错误信息）
     label: str = "附件"
+    #: 模块描述（给 module 入口用）
+    module: AttachmentModule | None = None
+
+    @classmethod
+    def for_module(cls, auth: Any, key: str) -> "AttachmentPageService":
+        module = get_module(key)
+        return cls(auth, page_path=_page_cache.get(module.key, module.page_path),
+                   label=f"{module.label}附件", module=module)
+
+    # ══════════════════ 入口发现 ══════════════════
+    @staticmethod
+    def discover_entry(html: str) -> dict[str, str]:
+        """在详情页/列表页 HTML 里找附件入口。
+
+        返回 `{"kind": "anchor"}` 或
+        `{"kind": "cell", "文件ID":…, "产品ID":…, "FJNum":…}`；找不到返回 `{}`。
+        """
+        if _ANCHOR_FJ_RE.search(html):
+            return {"kind": "anchor"}
+        m = _CELL_FJ_RE.search(html)
+        if m:
+            return {"kind": "cell", "文件ID": m.group("fid"),
+                    "产品ID": m.group("pid"), "FJNum": m.group("num") or ""}
+        return {}
+
+    def _popup_page_path(self, response_text: str) -> str:
+        """从回发响应里取出附件页路径（去掉 host 与查询串）。"""
+        for url in _POPUP_RE.findall(response_text):
+            if "_fj.aspx" not in url.lower():
+                continue
+            path = re.sub(r"^https?://[^/]+", "", url.split("?")[0])
+            return path.lstrip("/").replace("Admin/", "", 1)
+        raise ParseError(
+            f"{self.label}：回发后没拿到附件页地址（页面可能不允许查看附件，"
+            "或该单据还没保存）"
+        )
+
+    def discover_page(self, record_id: str) -> str:
+        """自动发现附件页路径：点一下入口，从弹窗地址里取。"""
+        if self.module is None:
+            raise ParseError("没有指定 page_path，也没有 module 可用来发现附件页")
+        module = self.module
+        from ..core.aspnet import soup_of
+
+        if module.entry == "cell":
+            if not module.list_path:
+                raise ParseError(f"{module.label} 的附件入口在列表页，但注册表没配 list_path")
+            uid = getattr(self.auth, "user_id", "") or ""
+            list_url = f"/Admin/{module.list_path}?QXID={module.list_qxid}"
+            resp = self.auth.client.get(list_url)
+            entry = self.discover_entry(resp.text)
+            if not entry:
+                raise ParseError(f"{module.label}：列表页里没有找到附件入口")
+            body = form_snapshot(resp.text)
+            body.update({"lblID": entry["文件ID"], "lblPID": entry["产品ID"],
+                         "lblFJNum": entry["FJNum"]})
+            body.update(button_payload(resp.text, "Btn_FJ"))
+            body["__EVENTTARGET"] = ""
+            body["__EVENTARGUMENT"] = ""
+            text = self.auth.client.post(list_url, data=body).text
+        else:
+            uid = getattr(self.auth, "user_id", "") or ""
+            detail_url = (f"/Admin/{module.detail_path}?QXID={module.detail_qxid}"
+                          f"&id={record_id}&Option=3")
+            resp = self.auth.client.get(detail_url)
+            if not self.discover_entry(resp.text):
+                raise ParseError(f"{module.label}：详情页里没有「附件」入口")
+            body = form_snapshot(resp.text)
+            body["__EVENTTARGET"] = "btnFJ"
+            body["__EVENTARGUMENT"] = ""
+            text = self.auth.client.post(detail_url, data=body).text
+        return self._popup_page_path(text)
 
     # ══════════════════ 地址 / 打开 ══════════════════
+    def resolve_page_path(self, record_id: str) -> str:
+        if self.page_path:
+            return self.page_path
+        if self.module is not None and self.module.key in _page_cache:
+            self.page_path = _page_cache[self.module.key]
+            return self.page_path
+        path = self.discover_page(record_id)
+        if self.module is not None:
+            _page_cache[self.module.key] = path
+        self.page_path = path
+        return path
+
     def page_url(self, record_id: str, *, modify: str = "0") -> str:
+        path = self.resolve_page_path(record_id)
         uid = getattr(self.auth, "user_id", "") or ""
-        url = f"/Admin/{self.page_path}?PID={record_id}&Modify={modify}"
+        url = f"/Admin/{path}?PID={record_id}&Modify={modify}"
         return f"{url}&LoginUserID={uid}" if uid else url
 
     def _open(self, record_id: str, *, modify: str = "0") -> tuple[str, str, str]:
@@ -209,6 +409,9 @@ class AttachmentPageService:
         if resp.status_code >= 500:
             raise UpstreamError(f"{self.label}页打开失败（HTTP {resp.status_code}）",
                                 resp.status_code, resp.text[:300])
+        if resp.status_code == 404:
+            raise ParseError(
+                f"{self.label}页不存在：/Admin/{self.page_path}（可能模块没配 page_path）")
         if "__VIEWSTATE" not in resp.text:
             raise ParseError(f"{self.label}页没有 __VIEWSTATE，可能会话过期或权限不足")
         from ..core.aspnet import soup_of
@@ -299,11 +502,13 @@ class AttachmentPageService:
                         name = m.group(1).strip()
                         break
             row_index = ""
+            checkbox = ""
             for el in tr.find_all("input"):
                 m = _DELETE_INDEX_RE.search(el.get("onclick") or "")
-                if m:
+                if m and not row_index:
                     row_index = m.group(1)
-                    break
+                if el.get("type") == "checkbox" and (el.get("name") or "").startswith("gridView"):
+                    checkbox = el.get("name") or ""
             rows.append({
                 "文件ID": fid,
                 "名称": name,
@@ -312,6 +517,7 @@ class AttachmentPageService:
                 "备注": cell("备注"),
                 "有文件": cell("附件文件"),
                 "行号": row_index,
+                "复选框": checkbox,
             })
         return rows
 
@@ -339,21 +545,33 @@ class AttachmentPageService:
         return target
 
     def delete_file(self, record_id: str, *, name: str = "", file_id: str = "",
-                    confirm: bool = False) -> dict[str, Any]:
+                    confirm: bool = False, strategy: str = "auto") -> dict[str, Any]:
         """删除一个附件。`confirm=False` 只返回「将会删除哪一条」，不写库。
 
-        协议（实测 2026-11-23）：附件页 `Modify=1` 才有删除列，
-        行内删除 = `__doPostBack('gridView1','Delete$<行号>')`，
-        也就是 POST 时 `__EVENTTARGET=gridView1` + `__EVENTARGUMENT=Delete$N`。
+        ERP 有两套删除入口（实测 2026-11-23），`strategy="auto"` 会自动选：
+
+        - `row`（行内）：`Modify=1` 页有 `Delete$<行号>` 图标
+          → `__EVENTTARGET=gridView1` + `__EVENTARGUMENT=Delete$N`
+          （客户报价需求的附件页是这个）
+        - `button`（勾选 + 按钮）：没有行内图标，但每行有 checkbox
+          → 勾上该行 `gridView1$ctlXX$N` 再回发 `Btn_DeleteFJ`
+          （客户报价 / 生产施工单 / 采购订单 / 客户订单 是这个）
         """
         html, url, _action = self._open(record_id, modify="1")
         rows = self._parse_rows(html)
         if not rows:
             raise ParseError(f"{self.label}：单据上没有附件")
         target = self._pick(rows, name=name, file_id=file_id)
-        if not target.get("行号"):
+
+        if strategy == "row" or (strategy == "auto" and target.get("行号")):
+            how = "row" if target.get("行号") else ""
+        elif strategy in ("auto", "button"):
+            how = "button" if target.get("复选框") else ""
+        else:
+            how = ""
+        if not how:
             raise ParseError(
-                "当前页面没有删除入口（Modify=1 下没渲染 Delete 索引）；"
+                "当前页面没有删除入口（Modify=1 下既没渲染 Delete 索引也没复选框）；"
                 "可能是账号无权限，或该模块的附件页不支持删除"
             )
         from ..core.aspnet import soup_of
@@ -363,12 +581,19 @@ class AttachmentPageService:
                 "ok": False, "status": "needs_confirmation", "record_id": record_id,
                 "would_delete": {k: target[k] for k in ("名称", "文件ID", "排序号")},
                 "count": len(rows),
+                "strategy": how,
                 "message": "确认删除请传 confirm=true",
             }
 
         body = form_snapshot(html)
-        body["__EVENTTARGET"] = "gridView1"
-        body["__EVENTARGUMENT"] = f"Delete${target['行号']}"
+        if how == "row":
+            body["__EVENTTARGET"] = "gridView1"
+            body["__EVENTARGUMENT"] = f"Delete${target['行号']}"
+        else:
+            body[target["复选框"]] = "on"
+            body.update(button_payload(html, "Btn_DeleteFJ"))
+            body["__EVENTTARGET"] = ""
+            body["__EVENTARGUMENT"] = ""
         resp = self.auth.client.post(url, data=body)
         if resp.status_code >= 500:
             raise UpstreamError(f"{self.label}删除失败（HTTP {resp.status_code}）",
@@ -385,6 +610,7 @@ class AttachmentPageService:
             "deleted": {k: target[k] for k in ("名称", "文件ID", "排序号")},
             "count": len(after),
             "remaining": [r["名称"] for r in after],
+            "strategy": how,
             "message": "" if gone else "回读里还能看到这条附件，删除可能没有生效",
         }
 

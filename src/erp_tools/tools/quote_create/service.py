@@ -397,8 +397,8 @@ class QuoteCreateService:
 
     # ══════════════════ 附件（通用 *_FJ.aspx 页）══════════════════
     def attachment_service(self) -> AttachmentPageService:
-        """报价需求的附件页服务（`BJ_KHBJXQ_FJ.aspx`）。"""
-        return AttachmentPageService(self.auth, ATTACHMENT_PATH, label="报价需求附件")
+        """报价需求的附件页服务（走 `attachments` 模块注册表，自动发现页面）。"""
+        return AttachmentPageService.for_module(self.auth, "quote_request")
 
     def list_attachments(self, record_id: str, *, with_urls: bool = False) -> dict[str, Any]:
         return self.attachment_service().list_files(record_id, with_urls=with_urls)

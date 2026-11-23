@@ -77,14 +77,9 @@ PAGE_CAPABILITIES: dict[str, tuple[Capability, ...]] = {
                    note="入口是 Add.aspx，流程从列表的记录ID 进"),
         Capability("删", "删除整张报价需求单",
                    mcp="erp_quote_delete", doc="api/erp_quote_delete.md"),
-        Capability("读/写", "附件（列出现有 / 上传 stream / 下载）",
-                   mcp="erp_quote_attachment",
-                   doc="api/erp_quote_attachment.md",
-                   note="CLI：erp quote-attachment"),
-        Capability("删", "删除附件（按名称/文件ID，confirm=true 才删）",
-                   mcp="erp_quote_attachment_delete",
-                   doc="api/erp_quote_attachment_delete.md",
-                   note="CLI：erp quote-attachment --delete 名称 --yes"),
+        Capability("读/写", "附件：列出 / 上传 stream / 下载 / 删除（五模块通用）",
+                   mcp="erp_attachment", doc="api/erp_attachment.md",
+                   note="CLI：erp attachment（旧名 erp quote-attachment）"),
     ),
     # ── 业务报价管理 / 客户报价 ──
     "baojia/bj_khbj/index.aspx": (
@@ -163,6 +158,8 @@ INFRA_CAPABILITIES: tuple[Capability, ...] = (
     Capability("查", "四个模块的**数据页面清单**（列表 / 详情 / 每个弹窗子页）",
                mcp="erp_page_catalog", doc="api/erp_page_catalog.md",
                note="CLI：erp pages"),
+    Capability("查", "有附件功能的模块与各自附件页 / 入口 / 删除方式",
+               mcp="erp_attachment_modules", doc="api/erp_attachment_modules.md"),
 )
 
 
@@ -344,3 +341,4 @@ __all__ = [
     "module_stats",
     "render_markdown",
 ]
+

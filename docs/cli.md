@@ -354,13 +354,15 @@ erp quote --csv orders.csv --out data\quote.jsonl     # 18496 条，约 2 小时
 `--bdbh` 会用单号里编码的制单日期（`BJXQ` + `YYMMDD` + 流水号）自动定位记录 ID，
 不需要先跑列表。字段说明见 [quote_request/README.md](../src/erp_tools/tools/quote_request/README.md)。
 
-### `erp quote-attachment` — 报价需求附件
+### `erp attachment` — 通用附件（五模块复用）
 
-新增/编辑页上的 `[附件(有/无)]` 链接对应的「上传附件」页（`BJ_KHBJXQ_FJ.aspx`）。
+客户报价需求 / 客户报价·产品核价 / 生产施工单 / 采购订单 / 客户订单共用同一套
+`*_FJ.aspx` 附件页，用 `--module` 切换；附件页路径会自动发现。
 
 | 选项 | 说明 |
 | --- | --- |
-| `--id` | 报价需求记录 ID（**必填**，单据必须先保存） |
+| `--module` | `quote_request`（默认）/ `price` / `production` / `purchase` / `sales_order` |
+| `--id` | 单据记录 ID（**必填**，单据必须先保存） |
 | `--file` | 本机文件，可重复或逗号分隔 |
 | `--text` / `--name` | 直接传文本内容 + ERP 里的附件名称 |
 | `--desc` / `--remark` | 附件描述 / 备注 |
@@ -370,15 +372,18 @@ erp quote --csv orders.csv --out data\quote.jsonl     # 18496 条，约 2 小时
 | `--out-dir` | 下载目录（不传则输出 base64） |
 
 ```powershell
-erp quote-attachment --id <记录ID> --urls
-erp quote-attachment --id <记录ID> --file out\报价单.pdf --name "客户报价单"
-erp quote-attachment --id <记录ID> --download "客户报价单.pdf" --out-dir out\fj
-erp quote-attachment --id <记录ID> --delete "旧附件.pdf"          # 只预览
-erp quote-attachment --id <记录ID> --delete "旧附件.pdf" --yes     # 真删
+erp attachment --module sales_order --id <记录ID> --urls
+erp attachment --module quote_request --id <记录ID> --file out\报价单.pdf --name "客户报价单"
+erp attachment --module production --id <记录ID> --download "图纸.pdf" --out-dir out\fj
+erp attachment --module purchase --id <记录ID> --delete "旧附件.pdf"          # 只预览
+erp attachment --module purchase --id <记录ID> --delete "旧附件.pdf" --yes     # 真删
 ```
 
-> MCP 侧对应 `erp_quote_attachment`；`erp_quote_create(attachments=[...])` 会在建单成功后
-> 自动调用它。协议与限制见 [api/erp_quote_attachment.md](api/erp_quote_attachment.md)。
+`erp quote-attachment` 是 `--module quote_request` 的兼容别名。
+
+> MCP 侧对应 `erp_attachment`（`--module quote_request`）；`erp_quote_create(attachments=[...])`
+> 会在建单成功后自动调用它。协议、各模块差异与限制见
+> [api/erp_attachment.md](api/erp_attachment.md)。
 
 ### `erp attendance` — 月度考勤
 

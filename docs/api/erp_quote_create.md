@@ -23,7 +23,7 @@
 | `discount` | str | — | 折扣率如 `0.45`；为空取客户默认 |
 | `remark` | str | — | 备注（表头 `txtRemark`） |
 | `product_memo` | str | — | 产品描述（表头 `txtCPMX`） |
-| `attachments` | list | — | 附件，**建单成功后自动上传**；每项 `{filename, content_base64}` 或 `{filename, content_text}`，可选 `name`/`desc`/`remark`。详见 [erp_quote_attachment.md](erp_quote_attachment.md) |
+| `attachments` | list | — | 附件，**建单成功后自动上传**；每项 `{filename, content_base64}` 或 `{filename, content_text}`，可选 `name`/`desc`/`remark`。详见 [erp_attachment.md](erp_attachment.md) |
 | `confirm` | bool | — | `false` 只预览；`true` 才保存 |
 
 ## 返回

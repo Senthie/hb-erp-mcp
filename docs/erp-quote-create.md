@@ -134,7 +134,7 @@
 | `remark` | `txtRemark` | 表头备注 | 与明细备注 `fields.remark`（`txtRemark`，明细子页同名控件）不是同一个 |
 | `product_memo` | `txtCPMX` | 表头「产品描述」 | 与明细产品描述 `fields.product_desc`（`txtCPMS`）是两个字段 |
 | `confirm` | —（不提交） | 落库开关 | `false`（默认）只校验并返回 `needs_confirmation`；`true` 才真正保存。不会写进 ERP |
-| `attachments` | —（子页 `BJ_KHBJXQ_FJ.aspx`） | 附件 | 每项 `{filename, content_base64}` 或 `{filename, content_text}`，可选 `name`/`desc`/`remark`。**单据落库成功后**自动上传（附件页要记录 ID），会回读核对附件名称。详见 [api/erp_quote_attachment.md](api/erp_quote_attachment.md) |
+| `attachments` | —（子页 `BJ_KHBJXQ_FJ.aspx`） | 附件 | 每项 `{filename, content_base64}` 或 `{filename, content_text}`，可选 `name`/`desc`/`remark`。**单据落库成功后**自动上传（附件页要记录 ID），会回读核对附件名称。详见 [api/erp_attachment.md](api/erp_attachment.md) |
 
 > **客户单号不在表头**。`Add.aspx` 实测 103 个控件里没有客户单号输入框（2026-11-12 核对），
 > 它是**明细级**字段 `txtKHCPMC`，见 3.3 的 `customer_order_no`。

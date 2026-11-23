@@ -534,21 +534,24 @@ def cmd_query(args) -> int:
 
 
 def cmd_quote_attachment(args) -> int:
-    """报价需求附件：--list（默认）/ 上传 / 下载。"""
-    from .tools.attachments import decode_attachments
-    from .tools.quote_create.service import QuoteCreateService
+    """通用附件命令（`erp attachment`；`quote-attachment` 为兼容别名）。"""
+    from .tools.attachments import AttachmentPageService, decode_attachments, get_module
 
     cfg = _build_config(args)
     auth = ensure_authenticated(cfg, interactive=sys.stdin.isatty())
-    svc = QuoteCreateService(auth)
+    module_key = getattr(args, "module", None) or "quote_request"
+    module = get_module(module_key)
+    svc = AttachmentPageService.for_module(auth, module.key)
     record_id = (args.id or "").strip()
+    _log(f"[INFO] {module.label} 附件（{module.key}）记录={record_id}")
 
     if args.delete:
         for target in args.delete:
-            result = svc.delete_attachment(record_id, name=target, confirm=args.yes)
+            result = svc.delete_file(record_id, name=target, confirm=args.yes)
             if result.get("status") == "needs_confirmation":
                 item = result["would_delete"]
-                _log(f"  [预览] {item['名称']} ({item['文件ID']}) 将被删除；加 --yes 才执行")
+                _log(f"  [预览] {item['名称']} ({item['文件ID']}) 将被删除"
+                     f"（策略 {result.get('strategy')}）；加 --yes 才执行")
                 continue
             if result.get("ok"):
                 _log(f"  [DEL] {result['deleted']['名称']}（剩 {result.get('count')} 个）")
@@ -558,12 +561,30 @@ def cmd_quote_attachment(args) -> int:
         return 0
 
     if args.download:
-        data = svc.download_attachment(record_id, name=args.download,
-                                       out_dir=args.out_dir or "")
-        _log(f"[DONE] {data['名称']} ({data['size']} 字节) → "
-             f"{data.get('path') or 'base64（见 JSON）'}")
+        names = [r for r in svc.list_files(record_id)["files"]
+                 if args.download in (r["名称"], r["文件ID"])]
+        if not names:
+            _log(f"[ERROR] 没找到附件 {args.download}")
+            return 1
+        url = svc.file_url(record_id, names[0]["文件ID"])
+        content, ctype, used = svc.fetch_file(url)
+        info = {"record_id": record_id, "名称": names[0]["名称"], "url": used,
+                "size": len(content), "content_type": ctype}
+        if args.out_dir:
+            from pathlib import Path
+
+            folder = Path(args.out_dir)
+            folder.mkdir(parents=True, exist_ok=True)
+            dest = folder / (names[0]["名称"] or Path(used.split("?")[0]).name)
+            dest.write_bytes(content)
+            info["path"] = str(dest)
+        _log(f"[DONE] {names[0]['名称']} ({len(content)} 字节) → "
+             f"{info.get('path') or 'base64（见 JSON）'}")
         if not args.out_dir:
-            print(json.dumps(data, ensure_ascii=False, indent=2))
+            import base64 as _b64
+
+            info["content_base64"] = _b64.b64encode(content).decode()
+            print(json.dumps(info, ensure_ascii=False, indent=2))
         return 0
 
     items = []
@@ -581,7 +602,7 @@ def cmd_quote_attachment(args) -> int:
         for item in items:
             item.desc = item.desc or (args.desc or "")
             item.remark = item.remark or (args.remark or "")
-        result = svc.upload_attachments(record_id, items)
+        result = svc.upload(record_id, items)
         for item in result.get("uploaded") or []:
             _log(f"  [OK]   {item['name']}  ({item['size']} 字节)")
         for item in result.get("errors") or []:
@@ -591,8 +612,8 @@ def cmd_quote_attachment(args) -> int:
         if not result.get("ok"):
             return 1
 
-    listing = svc.list_attachments(record_id, with_urls=args.urls)
-    _log(f"[INFO] 当前 {listing['count']} 个附件")
+    listing = svc.list_files(record_id, with_urls=args.urls)
+    _log(f"[INFO] 当前 {listing['count']} 个附件（页 /Admin/{svc.page_path}）")
     for row in listing["files"]:
         line = f"  {row['排序号']:>2s} {row['名称']}"
         if row.get("描述"):
@@ -602,9 +623,17 @@ def cmd_quote_attachment(args) -> int:
         _log(line)
     if args.out_dir and listing["files"]:
         _log("[INFO] 已指定 --out-dir，逐个下载…")
+        folder = None
+        from pathlib import Path
+
+        folder = Path(args.out_dir)
+        folder.mkdir(parents=True, exist_ok=True)
         for row in listing["files"]:
-            svc.download_attachment(record_id, file_id=row["文件ID"],
-                                    out_dir=args.out_dir)
+            url = row.get("url") or svc.file_url(record_id, row["文件ID"])
+            content, _ctype, used = svc.fetch_file(url)
+            dest = folder / (row["名称"] or Path(used.split("?")[0]).name)
+            dest.write_bytes(content)
+            _log(f"  [GET] {dest}")
     return 0
 
 
@@ -974,8 +1003,30 @@ def build_parser() -> argparse.ArgumentParser:
                    help="只看条件和命中数，不写文件")
     p.set_defaults(func=cmd_query)
 
+    p = sub.add_parser("attachment", parents=[common],
+                       help="通用附件（客户报价需求/客户报价·核价/生产施工单/采购订单/客户订单）")
+    p.add_argument("--module", default="quote_request",
+                   help="模块：quote_request / price / production / purchase / sales_order"
+                        "（默认 quote_request，也可写中文别名）")
+    p.add_argument("--id", required=True, dest="id", help="单据记录 ID（必须先保存）")
+    p.add_argument("--file", action="append",
+                   help="要上传的本地文件，可重复或逗号分隔；也可用 --text 传文本")
+    p.add_argument("--text", help="直接作为附件的文本内容（配合 --name）")
+    p.add_argument("--name", help="ERP 里的附件名称（默认用文件名）")
+    p.add_argument("--desc", help="附件描述", default="")
+    p.add_argument("--remark", help="备注", default="")
+    p.add_argument("--urls", action="store_true", help="列表时一并取下载直链")
+    p.add_argument("--download", help="按附件名称（或文件ID）下载一个附件")
+    p.add_argument("--delete", action="append",
+                   help="删除指定名称（或文件ID）的附件，可重复；需配 --yes 才真删")
+    p.add_argument("--yes", action="store_true", help="确认删除（配合 --delete）")
+    p.add_argument("--out-dir", dest="out_dir", help="下载到目录（不传则输出 base64）")
+    p.set_defaults(func=cmd_quote_attachment)
+
+    # 兼容别名：等同 `erp attachment --module quote_request`
     p = sub.add_parser("quote-attachment", parents=[common],
-                       help="报价需求附件：列表 / 上传 / 下载")
+                       help="报价需求附件（= erp attachment --module quote_request）")
+    p.add_argument("--module", default="quote_request", help=argparse.SUPPRESS)
     p.add_argument("--id", required=True, dest="id",
                    help="报价需求记录 ID（单据必须先保存）")
     p.add_argument("--file", action="append",

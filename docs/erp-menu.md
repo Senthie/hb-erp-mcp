@@ -134,8 +134,7 @@
         - ✅ 查 · 列出产品明细行（拿 cpid，供改/删单行） → `erp_quote_details` · [api/erp_quote_details.md](api/erp_quote_details.md)
         - ✅ 改 · 改单条产品明细（名称 / 规格 / 数量）（入口是 Add.aspx，流程从列表的记录ID 进） → `erp_quote_update_product` · [api/erp_quote_update_product.md](api/erp_quote_update_product.md)
         - ✅ 删 · 删除整张报价需求单 → `erp_quote_delete` · [api/erp_quote_delete.md](api/erp_quote_delete.md)
-        - ✅ 读/写 · 附件（列出现有 / 上传 stream / 下载）（CLI：erp quote-attachment） → `erp_quote_attachment` · [api/erp_quote_attachment.md](api/erp_quote_attachment.md)
-        - ✅ 删 · 删除附件（按名称/文件ID，confirm=true 才删）（CLI：erp quote-attachment --delete 名称 --yes） → `erp_quote_attachment_delete` · [api/erp_quote_attachment_delete.md](api/erp_quote_attachment_delete.md)
+        - ✅ 读/写 · 附件：列出 / 上传 stream / 下载 / 删除（五模块通用）（CLI：erp attachment（旧名 erp quote-attachment）） → `erp_attachment` · [api/erp_attachment.md](api/erp_attachment.md)
     - 制版需求单
       - `新增-制版需求单` · `BaoJia/BJ_KHBJXQ/Add.aspx` · QXID 1531 · ⚠ 同路径另有 QXID 873/1541
         - ✅ 增 · 新建报价需求（主表 + 产品明细 + 产品数量） → `erp_quote_create` · [api/erp_quote_create.md](api/erp_quote_create.md)
@@ -150,8 +149,7 @@
         - ✅ 查 · 列出产品明细行（拿 cpid，供改/删单行） → `erp_quote_details` · [api/erp_quote_details.md](api/erp_quote_details.md)
         - ✅ 改 · 改单条产品明细（名称 / 规格 / 数量）（入口是 Add.aspx，流程从列表的记录ID 进） → `erp_quote_update_product` · [api/erp_quote_update_product.md](api/erp_quote_update_product.md)
         - ✅ 删 · 删除整张报价需求单 → `erp_quote_delete` · [api/erp_quote_delete.md](api/erp_quote_delete.md)
-        - ✅ 读/写 · 附件（列出现有 / 上传 stream / 下载）（CLI：erp quote-attachment） → `erp_quote_attachment` · [api/erp_quote_attachment.md](api/erp_quote_attachment.md)
-        - ✅ 删 · 删除附件（按名称/文件ID，confirm=true 才删）（CLI：erp quote-attachment --delete 名称 --yes） → `erp_quote_attachment_delete` · [api/erp_quote_attachment_delete.md](api/erp_quote_attachment_delete.md)
+        - ✅ 读/写 · 附件：列出 / 上传 stream / 下载 / 删除（五模块通用）（CLI：erp attachment（旧名 erp quote-attachment）） → `erp_attachment` · [api/erp_attachment.md](api/erp_attachment.md)
     - 合同评审需求单
       - `新增-合同评审需求单` · `BaoJia/BJ_KHBJXQ/Add.aspx` · QXID 1541 · ⚠ 同路径另有 QXID 873/1531
         - ✅ 增 · 新建报价需求（主表 + 产品明细 + 产品数量） → `erp_quote_create` · [api/erp_quote_create.md](api/erp_quote_create.md)
@@ -166,8 +164,7 @@
         - ✅ 查 · 列出产品明细行（拿 cpid，供改/删单行） → `erp_quote_details` · [api/erp_quote_details.md](api/erp_quote_details.md)
         - ✅ 改 · 改单条产品明细（名称 / 规格 / 数量）（入口是 Add.aspx，流程从列表的记录ID 进） → `erp_quote_update_product` · [api/erp_quote_update_product.md](api/erp_quote_update_product.md)
         - ✅ 删 · 删除整张报价需求单 → `erp_quote_delete` · [api/erp_quote_delete.md](api/erp_quote_delete.md)
-        - ✅ 读/写 · 附件（列出现有 / 上传 stream / 下载）（CLI：erp quote-attachment） → `erp_quote_attachment` · [api/erp_quote_attachment.md](api/erp_quote_attachment.md)
-        - ✅ 删 · 删除附件（按名称/文件ID，confirm=true 才删）（CLI：erp quote-attachment --delete 名称 --yes） → `erp_quote_attachment_delete` · [api/erp_quote_attachment_delete.md](api/erp_quote_attachment_delete.md)
+        - ✅ 读/写 · 附件：列出 / 上传 stream / 下载 / 删除（五模块通用）（CLI：erp attachment（旧名 erp quote-attachment）） → `erp_attachment` · [api/erp_attachment.md](api/erp_attachment.md)
     - 订单需求单
       - `列表-订单需求单` · `BaoJia/BJ_KHBJXQ/Index.aspx` · QXID 1554 · ⚠ 同路径另有 QXID 876/1534/1544
         - ✅ 查 · 列表筛选 + 导出 CSV → `erp query` · `erp_quote_list` · [api/erp_quote_list.md](api/erp_quote_list.md)
@@ -175,8 +172,7 @@
         - ✅ 查 · 列出产品明细行（拿 cpid，供改/删单行） → `erp_quote_details` · [api/erp_quote_details.md](api/erp_quote_details.md)
         - ✅ 改 · 改单条产品明细（名称 / 规格 / 数量）（入口是 Add.aspx，流程从列表的记录ID 进） → `erp_quote_update_product` · [api/erp_quote_update_product.md](api/erp_quote_update_product.md)
         - ✅ 删 · 删除整张报价需求单 → `erp_quote_delete` · [api/erp_quote_delete.md](api/erp_quote_delete.md)
-        - ✅ 读/写 · 附件（列出现有 / 上传 stream / 下载）（CLI：erp quote-attachment） → `erp_quote_attachment` · [api/erp_quote_attachment.md](api/erp_quote_attachment.md)
-        - ✅ 删 · 删除附件（按名称/文件ID，confirm=true 才删）（CLI：erp quote-attachment --delete 名称 --yes） → `erp_quote_attachment_delete` · [api/erp_quote_attachment_delete.md](api/erp_quote_attachment_delete.md)
+        - ✅ 读/写 · 附件：列出 / 上传 stream / 下载 / 删除（五模块通用）（CLI：erp attachment（旧名 erp quote-attachment）） → `erp_attachment` · [api/erp_attachment.md](api/erp_attachment.md)
   - 客户报价
     - 客户报价
       - `新增-客户报价` · `BaoJia/BJ_KHBJ/Add.aspx` · QXID 857 · ⚠ 同路径另有 QXID 1278
@@ -1144,6 +1140,7 @@
 - ✅ 查 · 当前账号能访问哪些页面（QXID 能否探测到） → `erp_capabilities` · [api/erp_capabilities.md](api/erp_capabilities.md)
 - ✅ 查 · 菜单 → 接口对照（哪些菜单页已接入）（CLI：erp menu） → `erp_menu` · [api/erp_menu.md](api/erp_menu.md)
 - ✅ 查 · 四个模块的**数据页面清单**（列表 / 详情 / 每个弹窗子页）（CLI：erp pages） → `erp_page_catalog` · [api/erp_page_catalog.md](api/erp_page_catalog.md)
+- ✅ 查 · 有附件功能的模块与各自附件页 / 入口 / 删除方式 → `erp_attachment_modules` · [api/erp_attachment_modules.md](api/erp_attachment_modules.md)
 - ✅ 查 · 登录 / 缓 cookie / 探测 QXID → `erp login` `erp doctor` `erp qxid` · [docs/cli.md](cli.md)
 - ✅ 其他 · 起 MCP 网关 / 换 api-key → `erp serve` `erp key` · [docs/mcp.md](mcp.md)
 

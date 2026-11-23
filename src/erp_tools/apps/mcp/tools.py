@@ -496,8 +496,8 @@ def register_tools(mcp: MCPServer, state: ServerState) -> None:
                         row.pop("公式", None)
             tree = result.get("nodes")
             if isinstance(tree, dict):
-                for node in tree.values():
-                    for group in (node or {}).get("groups", []):
+                for branch in tree.values():
+                    for group in (branch or {}).get("groups", []):
                         for rows in group.get("fees", {}).values():
                             for row in rows:
                                 row.pop("公式", None)
@@ -1222,61 +1222,88 @@ def register_tools(mcp: MCPServer, state: ServerState) -> None:
             )
 
 
-    # ---------- 报价需求：明细行 / 修改 ----------
+    # ---------- 通用附件（各模块复用同一套协议） ----------
     @mcp.tool(
-        name="erp_quote_attachment",
+        name="erp_attachment",
         description=(
-            "报价需求**附件**（`BJ_KHBJXQ_FJ.aspx`）：不传 files = 列出当前附件；"
-            "传 files = 上传（每项 {filename, content_base64} 或 {filename, content_text}，"
-            "可选 name/desc/remark；也支持 {path} 本机文件）。上传后回读核对名称。"
-            "download 传附件名称或文件ID 可拿回 base64（小文件）；"
-            "删除用 erp_quote_attachment_delete。"
-            "⚠ 单据必须先保存（附件页按记录 ID 组织）。"
+            "**通用附件**（客户报价需求 / 客户报价·产品核价 / 生产施工单 / 采购订单 / 客户订单\n"
+            "共用同一套 `*_FJ.aspx` 附件页）。一次调用按参数决定动作：\n"
+            "· 都不传 = 列出附件；· 传 files = 上传；· 传 download = 取回 base64；\n"
+            "· 传 delete（名称或 file_id）= 删除（需 confirm=true）。\n"
+            "files 每项 {filename, content_base64} 或 {filename, content_text}，"
+            "可选 name(附件名称)/desc/remark；也支持 {path} 本机文件。\n"
+            "附件页路径自动发现；上传/删除后都会回读核对。单据必须先保存。"
         ),
     )
     @_tool_errors
-    def erp_quote_attachment(
-        record_id: Annotated[str, Field(description="报价需求记录 ID（GUID）")],
+    def erp_attachment(
+        module: Annotated[
+            str,
+            Field(description="模块：quote_request / price / production / purchase / sales_order",
+                  examples=["quote_request"]),
+        ],
+        record_id: Annotated[str, Field(description="单据记录 ID（GUID）")],
         files: Annotated[
             list[dict[str, Any]] | None,
-            Field(description="要上传的附件；不传=只列出现有附件"),
+            Field(description="要上传的附件；不传=只列出"),
         ] = None,
         with_urls: Annotated[bool, Field(description="列表时一并取下载直链")] = False,
         download: Annotated[str, Field(description="按名称/文件ID 下载一个附件")] = "",
+        delete: Annotated[str, Field(description="要删除的附件名称（或文件ID）")] = "",
+        file_id: Annotated[str, Field(description="附件文件ID（比名称精确）")] = "",
+        confirm: Annotated[bool, Field(description="删除时 false 只预览，true 才删")] = False,
     ) -> dict[str, Any]:
+        from ...tools.attachments import AttachmentPageService
+
         session = _session(state)
-        svc = QuoteCreateService(session.auth)
         with state.provider.slot():
+            svc = AttachmentPageService.for_module(session.auth, module)
             if files:
-                result = svc.upload_attachments(record_id, files)
-                result["files"] = svc.list_attachments(record_id)["files"]
+                result = svc.upload(record_id, files)
+                result["page"] = f"/Admin/{svc.resolve_page_path(record_id)}"
+                result["files"] = svc.list_files(record_id)["files"]
                 return result
+            if delete.strip() or file_id.strip():
+                return svc.delete_file(record_id, name=delete.strip(),
+                                       file_id=file_id.strip(), confirm=confirm)
+            listing = svc.list_files(record_id, with_urls=with_urls)
             if download.strip():
-                return svc.download_attachment(record_id, name=download.strip())
-            return svc.list_attachments(record_id, with_urls=with_urls)
+                target = download.strip()
+                picked = next((r for r in listing["files"]
+                               if target in (r["名称"], r["文件ID"])), None)
+                if picked is None:
+                    raise ToolError(
+                        "没找到附件 " + target + "；现有："
+                        + "、".join(r["名称"] for r in listing["files"]))
+                url = svc.file_url(record_id, picked["文件ID"])
+                content, ctype, used = svc.fetch_file(url)
+                import base64 as _b64
+
+                return {"record_id": record_id, "名称": picked["名称"], "url": used,
+                        "size": len(content), "content_type": ctype,
+                        "content_base64": _b64.b64encode(content).decode()}
+            listing["module"] = module
+            listing["page"] = f"/Admin/{svc.resolve_page_path(record_id)}"
+            return listing
 
     @mcp.tool(
-        name="erp_quote_attachment_delete",
+        name="erp_attachment_modules",
         description=(
-            "【会写入 ERP】删除报价需求单上的**一个附件**（按附件名称或文件ID 定位）。"
-            "confirm=false（默认）只返回「将会删除哪一条」（would_delete），不写库；"
-            "confirm=true 才真正删，并回读确认该行已消失（ok=false 表示没删掉）。"
+            "【只读】列出「有附件功能」的模块与它们实测的附件页、入口形态"
+            "（详情页 `[附件]` 锚点 / 列表页单号单元格）、删除方式。"
+            "用于确认 erp_attachment 的 module 取值。"
         ),
     )
-    @_tool_errors
-    def erp_quote_attachment_delete(
-        record_id: Annotated[str, Field(description="报价需求记录 ID（GUID）")],
-        name: Annotated[str, Field(description="附件名称（可只写一部分）")] = "",
-        file_id: Annotated[str, Field(description="附件文件ID（列表里的 文件ID）")] = "",
-        confirm: Annotated[
-            bool, Field(description="false 只预览；true 才真正删除"),
-        ] = False,
-    ) -> dict[str, Any]:
-        session = _session(state)
-        with state.provider.slot():
-            return QuoteCreateService(session.auth).delete_attachment(
-                record_id, name=name, file_id=file_id, confirm=confirm)
+    def erp_attachment_modules() -> dict[str, Any]:
+        from ...tools.attachments import MODULES
 
+        return {
+            "modules": [m.as_dict() for m in MODULES.values()],
+            "count": len(MODULES),
+            "note": "上传页全部是同一套模板；差别只在入口与删除按钮",
+        }
+
+    # ---------- 报价需求：明细行 / 修改 ----------
     @mcp.tool(
         name="erp_quote_details",
         description=(
