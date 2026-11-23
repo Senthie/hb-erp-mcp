@@ -9,7 +9,7 @@
 > | 抓取时间 | 2026-11-18 18:18:07 |
 > | 菜单来源 | `GET /Admin/indexAjax.ashx?FunName=GetMenuTree&Value1=2069&Value2=` |
 > | 规模 | 20 个模块 · 381 个菜单页（264 个唯一路径） |
-> | 已接入 | 9 个页面 · 32 个接口 |
+> | 已接入 | 9 个页面 · 33 个接口 |
 
 ## 覆盖率
 
@@ -237,6 +237,7 @@
   - 制版申请单
     - `列表-制版申请单` · `ShengChan/SC_SCSGD/Index.aspx` · QXID 983 · ⚠ 同路径另有 QXID 740
       - ✅ 查 · 列表筛选 + 导出（一行 = 一张施工单） → `erp production-list` · `erp_production_list` · [api/erp_production_list.md](api/erp_production_list.md)
+      - ✅ 读 · 行内点击事件（电子稿袋/文件跟进/跟进信息/做货指引/专色油墨/临时材料清单/打印）（行上的图标/链接；info·部件备注·核价否 在 ERP 侧不可读） → `erp production-row` · `erp_production_row` · [api/erp_production_row.md](api/erp_production_row.md)
   - 产品风险评估
     - `新增-产品风险评估` · `ShengChan/SC_CPFXPG/Add.aspx` · QXID 12118
       - ⬜ 未接入
@@ -397,6 +398,7 @@
       - ✅ 读 · 20 个弹窗子页（产品/部件/工序/辅料/机台/送货/D10/开版…） → `erp production-node` · `erp_production_node` · [api/erp_production_node.md](api/erp_production_node.md)
     - `列表-生产施工单` · `ShengChan/SC_SCSGD/Index.aspx` · QXID 740 · ⚠ 同路径另有 QXID 983
       - ✅ 查 · 列表筛选 + 导出（一行 = 一张施工单） → `erp production-list` · `erp_production_list` · [api/erp_production_list.md](api/erp_production_list.md)
+      - ✅ 读 · 行内点击事件（电子稿袋/文件跟进/跟进信息/做货指引/专色油墨/临时材料清单/打印）（行上的图标/链接；info·部件备注·核价否 在 ERP 侧不可读） → `erp production-row` · `erp_production_row` · [api/erp_production_row.md](api/erp_production_row.md)
   - 补数管理
     - 补数申请
       - `新增-补数申请` · `PinZhi/PZ_BSBG_M/Add.aspx` · QXID 6778

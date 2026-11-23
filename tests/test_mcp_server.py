@@ -191,11 +191,11 @@ def test_create_tool_declares_product_structure(mcp_client) -> None:
 def test_tools_list_schema_budget(mcp_client) -> None:
     """tools/list 每次对话都会全量下发，体积涨上去就是常驻成本。
 
-    预算 33000（2026-11 从 22000 → 30000 → 31000 → 33000）：31 个工具里
+    预算 36000（2026-11 从 22000 → 30000 → 31000 → 33000 → 36000）：33 个工具里
     `erp_quote_create` 一个就占 11.5K（51 个产品字段的结构化 schema，是它存在的理由）；
     四个模块的列表/详情/子页（`erp_*_list` / `erp_*_detail` / `erp_*_node` /
     `erp_page_catalog`）是「参数即文档」的扁平工具，合计约 8K；
-    新增的附件能力（`erp_quote_create.attachments` + `erp_quote_attachment`）约 1.5K。
+    新增的附件能力约 1.5K；`erp_production_row`（列表行内点击事件）约 0.5K。
     再加工具前先看 `tmp/schema-size.py` 的分布，别让列表类工具把余量吃掉。
     """
     client, _state = mcp_client
@@ -205,7 +205,7 @@ def test_tools_list_schema_budget(mcp_client) -> None:
         len(json.dumps(t["inputSchema"], ensure_ascii=False))
         for t in list_tools(client, key)
     )
-    assert total <= 33_000, f"inputSchema 合计 {total} 字符，超预算 33000"
+    assert total <= 36_000, f"inputSchema 合计 {total} 字符，超预算 36000"
 
 
 # ══════════════════ 工具调用 ══════════════════

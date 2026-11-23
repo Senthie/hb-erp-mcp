@@ -100,6 +100,10 @@ PAGE_CAPABILITIES: dict[str, tuple[Capability, ...]] = {
     "shengchan/sc_scsgd/index.aspx": (
         Capability("查", "列表筛选 + 导出（一行 = 一张施工单）", cli="production-list",
                    mcp="erp_production_list", doc="api/erp_production_list.md"),
+        Capability("读", "行内点击事件（电子稿袋/文件跟进/跟进信息/做货指引/专色油墨/"
+                         "临时材料清单/打印）", cli="production-row",
+                   mcp="erp_production_row", doc="api/erp_production_row.md",
+                   note="行上的图标/链接；info·部件备注·核价否 在 ERP 侧不可读"),
     ),
     "shengchan/sc_scsgd/add.aspx": (
         Capability("读", "施工单详情（字段 + 部件表 + 送货表 + 子页清单）",

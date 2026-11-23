@@ -14,6 +14,7 @@
 
 from __future__ import annotations
 
+import json
 import re
 import sys
 from typing import Iterator
@@ -37,6 +38,12 @@ from .parser import (
     node_payload,
     parse_detail,
     popup_url,
+)
+from .row_action import (
+    PRODUCTION_ROW_ACTIONS,
+    build_url,
+    parse_popup,
+    resolve_action,
 )
 from .spec import ModuleSpec, get_module
 
@@ -926,3 +933,153 @@ class ModuleNodeTool(ModuleBase):
                 yield row
             return
         yield self.fetch(record_id, self.resolve_node(node))
+
+
+# ══════════════════ 列表行内动作（点击事件）══════════════════
+class ModuleRowTool(ModuleBase):
+    """列表页「行内点击事件」：电子稿袋 / 跟进信息 / 做货指引 / 材料清单 / 打印 …
+
+    与 `ModuleNodeTool` 的区别：节点是**详情页**里的弹窗子页（靠回发 `btnSelect*`），
+    行内动作是**列表页**每一行上的图标/链接（靠行里的 `产品ID` 拼 GET 直链）。
+    """
+
+    name = "row"
+    summary = "打开列表页行内点击事件对应的子页 → 标题 + 表格 + 链接 + 文本域"
+
+    @staticmethod
+    def options() -> list[Option]:
+        return [
+            Option("record_id", "记录 ID（列表的 记录ID）", cli="--id"),
+            Option("action", "动作名；actions=列出这一行能点什么", cli="--action"),
+            Option("product_id", "产品行 ID（列表的 产品ID；行内子页都要它）", cli="--cpid"),
+            Option("max_rows", "每个表格最多返回多少行（默认 100）", cli="--max-rows"),
+        ]
+
+    def row_of(self, record_id: str, *, number: str = "") -> dict:
+        """在列表里定位这一行，拿到 `产品ID` 与它挂了的动作。"""
+        lister = ModuleListTool(self.auth, self.spec.key)
+        rows: list[dict] = []
+        if number and not record_id:
+            rows = lister.find_by_number(number)
+        if not rows:
+            rows = lister.collect(limit=None)[0]
+        target = (record_id or "").strip().lower()
+        for row in rows:
+            if str(row.get("记录ID", "")).lower() == target:
+                return row
+        raise ParseError(f"{self.spec.label} 列表里找不到记录 {record_id}"
+                         f"（时间范围外的单据请用 record_id 直接指定）")
+
+    def catalog(self, record_id: str, *, product_id: str = "") -> list[dict]:
+        """列出这一行能点的动作（注册表 ∩ 行里实际出现的事件）。"""
+        row = self.row_of(record_id)
+        present = set(row.get("可点动作") or [])
+        cpid = product_id or row.get("产品ID") or ""
+        out = []
+        for key, spec in PRODUCTION_ROW_ACTIONS.items():
+            entry = spec.as_dict()
+            entry["on_this_row"] = (key in present) if present else None
+            if spec.usable:
+                try:
+                    entry["url"] = build_url(
+                        key, pid=row.get("记录ID", ""), cpid=cpid,
+                        qxid=self.list_qxid(), uid=getattr(self.auth, "user_id", "") or "",
+                    )
+                except ParseError as exc:
+                    entry["usable"] = False
+                    entry["note"] = str(exc)
+            out.append(entry)
+        return out
+
+    def fetch(self, record_id: str, action: str, *, product_id: str = "",
+              max_rows: int = 100) -> dict:
+        row = self.row_of(record_id)
+        present = set(row.get("可点动作") or [])
+        key = resolve_action(action)
+        if present and key not in present:
+            raise ParseError(
+                f"这一行没有挂 {key} 这个动作（行里实际有：{'、'.join(sorted(present))}）")
+        cpid = product_id or row.get("产品ID") or ""
+        url = build_url(key, pid=row.get("记录ID", ""), cpid=cpid,
+                        qxid=self.list_qxid(),
+                        uid=getattr(self.auth, "user_id", "") or "")
+        resp = self.client.get(url)
+        if resp.status_code >= 500:
+            raise UpstreamError(
+                f"{PRODUCTION_ROW_ACTIONS[key].label} 打开失败（HTTP {resp.status_code}）",
+                resp.status_code, resp.text[:300])
+        if resp.status_code == 404:
+            raise ParseError(f"{PRODUCTION_ROW_ACTIONS[key].label} 页面不存在：{url}")
+
+        base_path = "/Admin/" + url.split("?", 1)[0].split("/Admin/", 1)[-1]
+        base_path = base_path.rsplit("/", 1)[0] + "/"
+        parsed = parse_popup(resp.text, base_path=base_path, max_rows=max_rows)
+        result = {
+            "module": self.spec.key,
+            "label": self.spec.label,
+            "action": key,
+            "action_label": PRODUCTION_ROW_ACTIONS[key].label,
+            "record_id": row.get("记录ID", ""),
+            "number": row.get(self.spec.number_column) or "",
+            "product_id": cpid,
+            "url": url,
+            "title": parsed["title"],
+            "tables": parsed["tables"],
+            "links": parsed["links"],
+            "texts": parsed["texts"],
+            "size": len(resp.text),
+        }
+        if key == "esign":
+            result.update(self._esign_files(resp.text, pid=row.get("记录ID", ""), cpid=cpid))
+        return result
+
+    def _esign_files(self, html: str, *, pid: str, cpid: str) -> dict:
+        """电子稿袋：真正的文件清单在 `/Ajax/ElecbagOption.ashx?FunName=GetFileList`。
+
+        页面上「文件类别」下拉（产品制作说明/大版/箱唛/刀线/修改/EVA胶水模/扫描检查报表）
+        每个类别一次 JSONP。⚠ 需要 `lblElecbagUrl`（稿袋文件服务器地址）——
+        这套 ERP 上它是空的，说明服务端没配稿袋服务器，此时只能拿到类别列表。
+        """
+        m = re.search(r'id="lblElecbagUrl"[^>]*value="([^"]*)"', html)
+        base = (m.group(1) if m else "").strip()
+        select = re.search(r'<select[^>]*name="txtMRMLLB"[^>]*>(.*?)</select>', html, re.S)
+        cats: list[str] = []
+        if select is not None:
+            cats = [value for value, _label in re.findall(
+                r'<option[^>]*value="([^"]*)"[^>]*>([^<]*)</option>', select.group(1))
+                if value and value != "-0-"]
+        if not base:
+            return {
+                "categories": cats,
+                "files": [],
+                "note": ("电子稿袋文件服务器未配置（页面里 lblElecbagUrl 为空），"
+                         "所以只能列出文件类别，拿不到文件清单；"
+                         "ERP 网页上点这些类别同样是空列表。"),
+            }
+        files: list[dict] = []
+        for category in cats:
+            try:
+                resp = self.client.get(
+                    base.rstrip("/") + "/Ajax/ElecbagOption.ashx",
+                    params={"callback": "cb", "Value1": pid, "Value2": cpid,
+                            "Value3": category, "FunName": "GetFileList"},
+                )
+                payload = re.sub(r"^\s*cb\(", "", resp.text.strip()).rstrip(");")
+                for item in json.loads(payload or "[]"):
+                    files.append({**item, "类别": category})
+            except (ErpError, ValueError, TypeError):
+                continue
+        return {"categories": cats, "files": files, "count": len(files)}
+
+    def run(self, **opts) -> Iterator[dict]:
+        record_id = (opts.get("record_id") or "").strip()
+        if not record_id:
+            raise ParseError("record_id 必填")
+        action = (opts.get("action") or "actions").strip()
+        product_id = (opts.get("product_id") or "").strip()
+        if action.lower() in ("actions", "list", "ls"):
+            for row in self.catalog(record_id, product_id=product_id):
+                yield row
+            return
+        yield self.fetch(record_id, action, product_id=product_id,
+                         max_rows=int(opts.get("max_rows") or 100))

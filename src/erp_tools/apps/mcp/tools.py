@@ -29,6 +29,7 @@ from ...tools.grid_module import (
     ProductionDetailTool,
     ProductionListTool,
     ProductionNodeTool,
+    ProductionRowTool,
     PurchaseDetailTool,
     PurchaseListTool,
     PurchaseNodeTool,
@@ -103,17 +104,28 @@ def _module_capabilities(pages: dict[str, str]) -> dict[str, dict[str, Any]]:
     return out
 
 
+#: 列表返回里「不是表格列、但下游接口要用」的附加键（始终带上，不受 columns 影响）
+EXTRA_ROW_KEYS = ("记录ID", "产品ID", "可点动作")
+
+
 def _grid_response(rows: list[dict], headers: list[str], page, note: str,
                    columns: str | None = None) -> dict[str, Any]:
-    """列表类工具的统一返回形状（与 erp_price_list 保持一致）。"""
+    """列表类工具的统一返回形状（与 erp_price_list 保持一致）。
+
+    `记录ID` / `产品ID` / `可点动作` 是「点开详情 / 行内子页」要用的**句柄**，
+    不是业务列，所以无论 `columns` 怎么选都会带上（`columns` 里只反映业务列）。
+    """
     available = [h for h in headers if h not in ACTION_COLUMNS]
     if "记录ID" not in available:
         available.append("记录ID")
     picked, unknown = _pick_columns(columns, available)
+    extra = [k for k in EXTRA_ROW_KEYS if k != "记录ID"]
     return {
         "columns": picked,
+        "extra_columns": [k for k in extra if any(row.get(k) for row in rows)],
         "unknown_columns": unknown,
-        "records": [{c: row.get(c) for c in picked} for row in rows],
+        "records": [{**{c: row.get(c) for c in picked},
+                     **{k: row.get(k) for k in extra if row.get(k)}} for row in rows],
         "count": len(rows),
         "total": getattr(page, "total", 0),
         "pages": getattr(page, "pages", 1),
@@ -704,6 +716,32 @@ def register_tools(mcp: MCPServer, state: ServerState) -> None:
             if node.strip().lower() in ("list", "ls", "nodes"):
                 return {"nodes": tool.catalog(record_id)}
             return tool.fetch(record_id, tool.resolve_node(node))
+
+    @mcp.tool(
+        name="erp_production_row",
+        description=(
+            "生产施工单**列表行内点击事件**（不是详情页的弹窗节点）。"
+            "action=actions 列出这一行能点什么；也可直接给："
+            "esign=电子稿袋(文件浏览)、gjqk=产品跟进信息、zhzy=做货指引、"
+            "wjqk=文件跟进情况、zszm=专色油墨、clqd=临时材料清单、print=打印报表列表。"
+            "返回 {title, tables, links, texts}；info/部件备注/核价否 在 ERP 侧不可读（会说明原因）。"
+            "行内子页需要「产品ID」——erp_production_list 的每行已经带上 产品ID 与 可点动作。"
+        ),
+    )
+    @_tool_errors
+    def erp_production_row(
+        record_id: Annotated[str, Field(description="记录 ID（列表的 记录ID）")],
+        action: Annotated[str, Field(description="动作名；actions=列出可用动作")] = "actions",
+        product_id: Annotated[str, Field(description="产品行 ID（默认用列表行里的 产品ID）")] = "",
+        max_rows: Annotated[int, Field(description="每个表格最多返回多少行", le=500)] = 100,
+    ) -> dict[str, Any]:
+        session = _session(state)
+        tool = ProductionRowTool(session.auth)
+        with state.provider.slot():
+            if action.strip().lower() in ("actions", "list", "ls"):
+                return {"actions": tool.catalog(record_id, product_id=product_id or "")}
+            return tool.fetch(record_id, action, product_id=product_id or "",
+                              max_rows=int(max_rows or 100))
 
     # ---------- 采购订单 ----------
     @mcp.tool(

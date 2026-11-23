@@ -76,6 +76,7 @@ qxid:
 | `erp production-list` | 生产施工单【列表】（`SC_SCSGD` QXID=740，一行=一张施工单） |
 | `erp production-detail` | 生产施工单【详情】（字段 + 部件表 + 送货表 + 子页清单） |
 | `erp production-node` | 生产施工单【子数据】（20 个弹窗子页） |
+| `erp production-row` | 生产施工单【列表行内点击事件】（电子稿袋/跟进信息/材料清单/打印…） |
 | `erp purchase-list` | 采购订单【列表】（`CG_CGDD` QXID=266，一行=一条材料明细） |
 | `erp purchase-detail` | 采购订单【详情】（表头 + 材料明细网格 33 列） |
 | `erp purchase-node` | 采购订单子页面（供应商档案选择等弹窗） |
@@ -322,6 +323,21 @@ erp production-node --id <记录ID> --node 部件辅料          # 中文别名�
 erp sales-order-node --id <记录ID> --node quantities --out out\sl.json
 erp sales-order-node --id <记录ID> --node 需求反馈 --out out\fk.json
 ```
+
+### `erp production-row` — 列表行内点击事件
+
+列表页每一行上的图标/链接（不是详情页的弹窗节点）：
+
+```powershell
+erp production-row --id <记录ID>                     # 列出这一行能点什么
+erp production-row --id <记录ID> --action 材料清单    # clqd
+erp production-row --id <记录ID> --action print --out out\rp.json
+erp production-row --id <记录ID> --action esign --cpid <产品ID>
+```
+
+动作：`esign` 电子稿袋 / `gjqk` 产品跟进信息 / `zhzy` 做货指引 / `wjqk` 文件跟进情况 /
+`zszm` 专色油墨 / `clqd` 临时材料清单 / `print` 打印报表列表；
+`info`、部件备注、核价否 在 ERP 侧不可读（会直接告诉原因）。
 
 ### `erp sales-order-attachment` — 附件下载
 

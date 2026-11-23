@@ -29,6 +29,28 @@ ID_PATTERNS = (
 #: 表格最左侧的 3 个操作列（选择 / 信息 / 打印），默认不导出
 ACTION_COLUMNS = ("选择", "信息", "打印")
 
+#: 行内「产品行 ID」(cpid)：这些点击事件的**第一个参数**就是它
+CPID_PATTERNS = (
+    re.compile(r"OpenSelectWJQK\(\s*'([^']+)'"),
+    re.compile(r"OpenLinkGJQK\(\s*'([^']+)'"),
+    re.compile(r"OpenLinkZHZY\(\s*'([^']+)'"),
+    re.compile(r"OpenSelectCPHJ\(\s*'([^']+)'"),
+)
+
+#: 行内点击事件 → 动作名（决定这一行能调哪些子页）
+ROW_ACTION_MARKERS = (
+    ("esign", ("OpenDirFileList(",)),
+    ("gjqk", ("OpenLinkGJQK(",)),
+    ("zhzy", ("OpenLinkZHZY(",)),
+    ("wjqk", ("OpenSelectWJQK(",)),
+    ("zszm", ("OpenLinkZSYM(",)),
+    ("clqd", ("LinCLQD(",)),
+    ("print", ("IndexPrint(",)),
+    ("info", ("showMessagePop(",)),
+    ("bjremark", ("OpenModifyBJWindow(",)),
+    ("cphj", ("OpenSelectCPHJ(",)),
+)
+
 _WS_RE = re.compile(r"[\s\u3000\u00a0\u200b\ufeff]+")
 
 
@@ -83,6 +105,29 @@ def extract_record_id(tr) -> str | None:
             if m:
                 return m.group(1)
     return None
+
+
+def extract_row_actions(tr) -> dict:
+    """这一行上的点击事件 → `{cpid, actions}`。
+
+    `cpid` 是「产品行 ID」（行内多个 GUID 之一），行内子页（电子稿袋、
+    跟进信息、做货指引…）都要它；`actions` 是这一行实际挂了的动作名。
+    """
+    html = str(tr)
+    cpid = ""
+    for pattern in CPID_PATTERNS:
+        m = pattern.search(html)
+        if m:
+            cpid = m.group(1)
+            break
+    actions = [key for key, markers in ROW_ACTION_MARKERS
+               if any(marker in html for marker in markers)]
+    out: dict = {}
+    if cpid:
+        out["产品ID"] = cpid
+    if actions:
+        out["可点动作"] = actions
+    return out
 
 
 def form_snapshot(html: str) -> dict[str, str]:
@@ -246,6 +291,7 @@ def parse_grid_page(
         record_id = extract_record_id(tr)
         if record_id:
             record["记录ID"] = record_id
+        record.update(extract_row_actions(tr))
         if any(not record.get(col) for col in required):
             continue
         rows.append(record)

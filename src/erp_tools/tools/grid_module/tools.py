@@ -7,7 +7,7 @@ CLI 用中划线（`erp production-list`），MCP 用下划线（`erp_production
 from __future__ import annotations
 
 from .spec import COSTING, PRODUCTION, PURCHASE, SALES_ORDER
-from .tool import ModuleDetailTool, ModuleListTool, ModuleNodeTool
+from .tool import ModuleDetailTool, ModuleListTool, ModuleNodeTool, ModuleRowTool
 from ..base import Option
 
 
@@ -26,6 +26,13 @@ class ProductionDetailTool(ModuleDetailTool):
 class ProductionNodeTool(ModuleNodeTool):
     name = "production-node"
     summary = "生产施工单子数据（产品/部件/工序/辅料/机台/送货/D10/开版…）→ 字段 + 网格"
+    spec = PRODUCTION
+
+
+class ProductionRowTool(ModuleRowTool):
+    name = "production-row"
+    summary = ("生产施工单**列表行内点击事件**（电子稿袋/文件跟进/产品跟进/做货指引/"
+               "专色油墨/临时材料清单/打印）→ 子页表格 + 链接")
     spec = PRODUCTION
 
 
@@ -100,6 +107,7 @@ __all__ = [
     "ProductionListTool",
     "ProductionDetailTool",
     "ProductionNodeTool",
+    "ProductionRowTool",
     "PurchaseListTool",
     "PurchaseDetailTool",
     "PurchaseNodeTool",

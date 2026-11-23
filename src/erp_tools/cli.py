@@ -837,6 +837,27 @@ def cmd_grid_node(args) -> int:
     return 0
 
 
+def cmd_grid_row(args) -> int:
+    """列表行内点击事件（电子稿袋/文件跟进/跟进信息/做货指引/材料清单/打印）。"""
+    cfg = _build_config(args)
+    auth = ensure_authenticated(cfg, interactive=sys.stdin.isatty())
+    tool = build_tool(args.command, auth)
+
+    action = (args.action or "actions").strip()
+    if action.lower() in ("actions", "list", "ls"):
+        rows = tool.catalog(args.id, product_id=args.cpid or "")
+        print(json.dumps({"actions": rows}, ensure_ascii=False, indent=2, default=str))
+        return 0
+    data = tool.fetch(args.id, action, product_id=args.cpid or "",
+                      max_rows=args.max_rows or 100)
+    if args.out:
+        _write_json(args.out, data)
+        _log(f"[DONE] → {args.out}")
+    else:
+        print(json.dumps(data, ensure_ascii=False, indent=2, default=str))
+    return 0
+
+
 def cmd_grid_attachment(args) -> int:
     """客户订单附件：列表页「表单编号」左击调出的文件。"""
     cfg = _build_config(args)
@@ -1183,6 +1204,17 @@ def build_parser() -> argparse.ArgumentParser:
         p.add_argument("--node", required=True, help="节点名；list=列出全部节点")
         p.add_argument("--out", help="输出 JSON 路径")
         p.set_defaults(func=cmd_grid_node)
+
+    p = sub.add_parser("production-row", parents=[common],
+                       help="生产施工单列表【行内点击事件】→ 子页表格 + 链接")
+    p.add_argument("--id", dest="id", required=True, help="记录 ID（列表的 记录ID）")
+    p.add_argument("--action", default="actions",
+                   help="动作：actions(默认)/esign/gjqk/zhzy/wjqk/zszm/clqd/print")
+    p.add_argument("--cpid", help="产品行 ID（默认取列表行里的 产品ID）")
+    p.add_argument("--max-rows", type=int, default=100, dest="max_rows",
+                   help="每个表格最多返回多少行")
+    p.add_argument("--out", help="输出 JSON 路径")
+    p.set_defaults(func=cmd_grid_row)
 
     p = sub.add_parser("attendance", parents=[common], help="查询月度考勤")
     p.add_argument("--month", "-m", required=True, help="月份，如 2026-11")
