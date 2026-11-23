@@ -1131,6 +1131,8 @@ def register_tools(mcp: MCPServer, state: ServerState) -> None:
             "折叠面板里的隐藏字段会被拒绝；键名拼错也会直接报错。"
             "写完后会回读校验（明细行 CPMC + 产品数量）；任一项不符就返回 status=partial，"
             "detail_error 说明卡在哪一步，不会假报成功。"
+            "传了 attachments 时，单据落库成功后会自动把附件传到该单据上"
+            "（附件页要记录 ID，所以只能建完再传）。"
             "已知限制：多语言数量明细不落库（只写汇总值 txtCPSL）。"
         ),
     )
@@ -1193,6 +1195,13 @@ def register_tools(mcp: MCPServer, state: ServerState) -> None:
             str | None,
             Field(description="产品描述（表头 txtCPMX）"),
         ] = None,
+        attachments: Annotated[
+            list[dict[str, Any]] | None,
+            Field(description=(
+                "附件（建单后自动上传）：{filename, content_base64|content_text}，"
+                "可选 name/desc/remark"
+            )),
+        ] = None,
         confirm: Annotated[
             bool,
             Field(description="false（默认）只校验并返回 needs_confirmation，不落库；true 才真正保存"),
@@ -1208,11 +1217,43 @@ def register_tools(mcp: MCPServer, state: ServerState) -> None:
                 customer=customer, sales=sales, merchandiser=merchandiser,
                 price_system=price_system, products=items, contact=contact,
                 phone=phone, mobile=mobile, fax=fax, discount=discount,
-                remark=remark, product_memo=product_memo, confirm=confirm,
+                remark=remark, product_memo=product_memo, attachments=attachments,
+                confirm=confirm,
             )
 
 
     # ---------- 报价需求：明细行 / 修改 ----------
+    @mcp.tool(
+        name="erp_quote_attachment",
+        description=(
+            "报价需求**附件**（`BJ_KHBJXQ_FJ.aspx`）：不传 files = 列出当前附件；"
+            "传 files = 上传（每项 {filename, content_base64} 或 {filename, content_text}，"
+            "可选 name/desc/remark；也支持 {path} 本机文件）。上传后回读核对名称。"
+            "download 传附件名称或文件ID 可拿回 base64（小文件）。"
+            "⚠ 单据必须先保存（附件页按记录 ID 组织）。"
+        ),
+    )
+    @_tool_errors
+    def erp_quote_attachment(
+        record_id: Annotated[str, Field(description="报价需求记录 ID（GUID）")],
+        files: Annotated[
+            list[dict[str, Any]] | None,
+            Field(description="要上传的附件；不传=只列出现有附件"),
+        ] = None,
+        with_urls: Annotated[bool, Field(description="列表时一并取下载直链")] = False,
+        download: Annotated[str, Field(description="按名称/文件ID 下载一个附件")] = "",
+    ) -> dict[str, Any]:
+        session = _session(state)
+        svc = QuoteCreateService(session.auth)
+        with state.provider.slot():
+            if files:
+                result = svc.upload_attachments(record_id, files)
+                result["files"] = svc.list_attachments(record_id)["files"]
+                return result
+            if download.strip():
+                return svc.download_attachment(record_id, name=download.strip())
+            return svc.list_attachments(record_id, with_urls=with_urls)
+
     @mcp.tool(
         name="erp_quote_details",
         description=(

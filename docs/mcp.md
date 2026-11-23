@@ -126,10 +126,11 @@ VS Code `mcp.json`：
 | `erp_quote_product_form` | — | **产品明细子页字段清单**（205 个控件，其中 51 个可上传）+ `upload` JSON Schema + `categories` 类别树 |
 | `erp_quote_options` | — | 业务员 / 跟单员 / 单价体系选项 + `employees` 合并名单 |
 | `erp_quote_customer_search` | — | 客户检索（返回 `customer_id` 与该客户默认业务员/折扣率） |
-| `erp_quote_create` | ✅ | 新建单据：主表 + 1 条产品明细（**含产品数量**）。`confirm=false` 即预览 |
+| `erp_quote_create` | ✅ | 新建单据：主表 + 1 条产品明细（**含产品数量**）。`confirm=false` 即预览；传 `attachments` 时建单成功后**自动上传附件** |
 | `erp_quote_details` | — | 列明细行，拿 `cpid`（改/删该行要用） |
 | `erp_quote_update` | ✅ | 改**表头**（备注/联系人/电话/手机/传真/折扣率/表头产品描述/业务员/跟单员）；⚠ 改不了明细 |
 | `erp_quote_update_product` | ✅ | 改**产品明细**：名称/规格/数量 + **产品描述 `product_desc`（CPMS）** + `fields`（配件描述/修改记录/检测项目…）；保存后逐个回读复核 |
+| `erp_quote_attachment` | ✅ | **报价需求附件**：不传 `files` = 列出现有附件（可带直链）；传 `files` = 上传（`{filename, content_base64}` / `{filename, content_text}` / `{path}`），上传后回读核对；`download` = 取回 base64 |
 | `erp_quote_delete` | ✅ | 删单据（不可恢复） |
 
 **写入工具全部默认 `confirm=false` 只预演**，必须显式 `confirm=true` 才落库，

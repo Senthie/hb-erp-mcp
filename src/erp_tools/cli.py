@@ -533,6 +533,67 @@ def cmd_query(args) -> int:
     return 0
 
 
+def cmd_quote_attachment(args) -> int:
+    """报价需求附件：--list（默认）/ 上传 / 下载。"""
+    from .tools.attachments import decode_attachments
+    from .tools.quote_create.service import QuoteCreateService
+
+    cfg = _build_config(args)
+    auth = ensure_authenticated(cfg, interactive=sys.stdin.isatty())
+    svc = QuoteCreateService(auth)
+    record_id = (args.id or "").strip()
+
+    if args.download:
+        data = svc.download_attachment(record_id, name=args.download,
+                                       out_dir=args.out_dir or "")
+        _log(f"[DONE] {data['名称']} ({data['size']} 字节) → "
+             f"{data.get('path') or 'base64（见 JSON）'}")
+        if not args.out_dir:
+            print(json.dumps(data, ensure_ascii=False, indent=2))
+        return 0
+
+    items = []
+    if args.file:
+        items.extend(decode_attachments(args.file))
+    if args.text:
+        items.extend(decode_attachments([{"filename": args.name or "note.txt",
+                                          "content_text": args.text,
+                                          "name": args.name or "",
+                                          "desc": args.desc or "",
+                                          "remark": args.remark or ""}]))
+    if items:
+        if args.name and len(items) == 1:
+            items[0].name = args.name
+        for item in items:
+            item.desc = item.desc or (args.desc or "")
+            item.remark = item.remark or (args.remark or "")
+        result = svc.upload_attachments(record_id, items)
+        for item in result.get("uploaded") or []:
+            _log(f"  [OK]   {item['name']}  ({item['size']} 字节)")
+        for item in result.get("errors") or []:
+            _log(f"  [FAIL] {item['filename']}: {item['error']}")
+        _log(f"[DONE] 上传 {len(result.get('uploaded') or [])} 个，"
+             f"回读{'成功' if result.get('verified') else '未通过'}")
+        if not result.get("ok"):
+            return 1
+
+    listing = svc.list_attachments(record_id, with_urls=args.urls)
+    _log(f"[INFO] 当前 {listing['count']} 个附件")
+    for row in listing["files"]:
+        line = f"  {row['排序号']:>2s} {row['名称']}"
+        if row.get("描述"):
+            line += f" | {row['描述']}"
+        if row.get("url"):
+            line += f"\n       {row['url']}"
+        _log(line)
+    if args.out_dir and listing["files"]:
+        _log("[INFO] 已指定 --out-dir，逐个下载…")
+        for row in listing["files"]:
+            svc.download_attachment(record_id, file_id=row["文件ID"],
+                                    out_dir=args.out_dir)
+    return 0
+
+
 def cmd_price(args) -> int:
     cfg = _build_config(args)
     auth = ensure_authenticated(cfg, interactive=sys.stdin.isatty())
@@ -898,6 +959,21 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--dry-run", action="store_true", dest="dry_run",
                    help="只看条件和命中数，不写文件")
     p.set_defaults(func=cmd_query)
+
+    p = sub.add_parser("quote-attachment", parents=[common],
+                       help="报价需求附件：列表 / 上传 / 下载")
+    p.add_argument("--id", required=True, dest="id",
+                   help="报价需求记录 ID（单据必须先保存）")
+    p.add_argument("--file", action="append",
+                   help="要上传的本地文件，可重复或逗号分隔；也可用 --text 传文本")
+    p.add_argument("--text", help="直接作为附件的文本内容（配合 --name）")
+    p.add_argument("--name", help="ERP 里的附件名称（默认用文件名）")
+    p.add_argument("--desc", help="附件描述", default="")
+    p.add_argument("--remark", help="备注", default="")
+    p.add_argument("--urls", action="store_true", help="列表时一并取下载直链")
+    p.add_argument("--download", help="按附件名称（或文件ID）下载一个附件")
+    p.add_argument("--out-dir", dest="out_dir", help="下载到目录（不传则输出 base64）")
+    p.set_defaults(func=cmd_quote_attachment)
 
     p = sub.add_parser("price", parents=[common],
                        help="查询客户报价列表（BJ_KHBJ；一行=一个报价产品行）")

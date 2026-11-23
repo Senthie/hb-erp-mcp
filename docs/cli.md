@@ -70,6 +70,7 @@ qxid:
 | `erp price-detail` | 客户报价【详情】（表头+产品+数量+部件+费用+描述） |
 | `erp price-node` | 客户报价【子数据】（数量档 / 部件 / 工序 / 辅料 / 费项 / 面板，共 22 个节点） |
 | `erp quote` | 报价需求【详情】→ ERP 订单需求 JSON |
+| `erp quote-attachment` | 报价需求【附件】：列表 / 上传（`--file` / `--text`）/ 下载 |
 | `erp pages` | 四个新模块的**数据页面清单**（列表 / 详情 / 弹窗子页） |
 | `erp costing-list` | 产品核价【列表】（`BJ_KHBJ` QXID=1281，一行=一个核价产品行） |
 | `erp production-list` | 生产施工单【列表】（`SC_SCSGD` QXID=740，一行=一张施工单） |
@@ -352,6 +353,29 @@ erp quote --csv orders.csv --out data\quote.jsonl     # 18496 条，约 2 小时
 
 `--bdbh` 会用单号里编码的制单日期（`BJXQ` + `YYMMDD` + 流水号）自动定位记录 ID，
 不需要先跑列表。字段说明见 [quote_request/README.md](../src/erp_tools/tools/quote_request/README.md)。
+
+### `erp quote-attachment` — 报价需求附件
+
+新增/编辑页上的 `[附件(有/无)]` 链接对应的「上传附件」页（`BJ_KHBJXQ_FJ.aspx`）。
+
+| 选项 | 说明 |
+| --- | --- |
+| `--id` | 报价需求记录 ID（**必填**，单据必须先保存） |
+| `--file` | 本机文件，可重复或逗号分隔 |
+| `--text` / `--name` | 直接传文本内容 + ERP 里的附件名称 |
+| `--desc` / `--remark` | 附件描述 / 备注 |
+| `--urls` | 列表时一并取下载直链 |
+| `--download` | 按名称（或文件 ID）下载一个附件 |
+| `--out-dir` | 下载目录（不传则输出 base64） |
+
+```powershell
+erp quote-attachment --id <记录ID> --urls
+erp quote-attachment --id <记录ID> --file out\报价单.pdf --name "客户报价单"
+erp quote-attachment --id <记录ID> --download "客户报价单.pdf" --out-dir out\fj
+```
+
+> MCP 侧对应 `erp_quote_attachment`；`erp_quote_create(attachments=[...])` 会在建单成功后
+> 自动调用它。协议与限制见 [api/erp_quote_attachment.md](api/erp_quote_attachment.md)。
 
 ### `erp attendance` — 月度考勤
 

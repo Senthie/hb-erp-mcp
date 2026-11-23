@@ -77,6 +77,10 @@ PAGE_CAPABILITIES: dict[str, tuple[Capability, ...]] = {
                    note="入口是 Add.aspx，流程从列表的记录ID 进"),
         Capability("删", "删除整张报价需求单",
                    mcp="erp_quote_delete", doc="api/erp_quote_delete.md"),
+        Capability("读/写", "附件（列出现有 / 上传 stream / 下载）",
+                   mcp="erp_quote_attachment",
+                   doc="api/erp_quote_attachment.md",
+                   note="CLI：erp quote-attachment"),
     ),
     # ── 业务报价管理 / 客户报价 ──
     "baojia/bj_khbj/index.aspx": (

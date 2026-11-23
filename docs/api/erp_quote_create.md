@@ -23,6 +23,7 @@
 | `discount` | str | — | 折扣率如 `0.45`；为空取客户默认 |
 | `remark` | str | — | 备注（表头 `txtRemark`） |
 | `product_memo` | str | — | 产品描述（表头 `txtCPMX`） |
+| `attachments` | list | — | 附件，**建单成功后自动上传**；每项 `{filename, content_base64}` 或 `{filename, content_text}`，可选 `name`/`desc`/`remark`。详见 [erp_quote_attachment.md](erp_quote_attachment.md) |
 | `confirm` | bool | — | `false` 只预览；`true` 才保存 |
 
 ## 返回
@@ -40,6 +41,28 @@
 ```
 
 `status` 取值：`needs_confirmation`（预览）/ `created` / `partial`（写了但回读不符）/ `failed`。
+
+传了 `attachments` 时：
+
+```json
+{
+  "status": "created",
+  "record_id": "0c3e32d9-…",
+  "bdbh": "BJXQ261123006",
+  "attachments": {
+    "ok": true, "verified": true, "count": 2,
+    "uploaded": [
+      {"filename": "AI生成摘要.txt", "name": "AI生成摘要.txt", "size": 59, "content_type": "text/plain"},
+      {"filename": "报价示意图.pdf", "name": "报价示意图.pdf", "size": 193, "content_type": "application/pdf"}
+    ],
+    "errors": []
+  }
+}
+```
+
+预览（`confirm=false`）时只会返回 `attachments_planned`（文件名/字节数/Content-Type），不会上传。
+附件失败**不会**把已落库的单据标成失败，而是 `attachments.ok=false` +
+`attachments_error`，并追加一条 warning。
 
 ## 注意
 

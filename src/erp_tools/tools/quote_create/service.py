@@ -23,6 +23,7 @@ from ...core.aspnet import soup_of
 from ...core.auth import AuthManager
 from ...core.errors import ErpError, ParseError
 from ...core.htmlutil import get_input_value
+from ..attachments import AttachmentPageService, decode_attachments
 from ..quote_index.tool import form_snapshot
 from . import fields as pf
 from .parser import (
@@ -43,6 +44,7 @@ from .parser import (
 
 PAGE_PATH = "BaoJia/BJ_KHBJXQ/Add.aspx"
 SUB_PAGE_PATH = "BaoJia/BJ_KHBJXQ/Add_CPZL.aspx"
+ATTACHMENT_PATH = "BaoJia/BJ_KHBJXQ/BJ_KHBJXQ_FJ.aspx"
 CUSTOMER_PICKER_PATH = "Base_Select/Base_KHZL_Select.aspx"
 PRODUCT_PICKER_PATH = "Base_Select/Base_CPZL_Select.aspx"
 
@@ -392,6 +394,67 @@ class QuoteCreateService:
 
     def _picker_url(self) -> str:
         return f"/Admin/{CUSTOMER_PICKER_PATH}"
+
+    # ══════════════════ 附件（通用 *_FJ.aspx 页）══════════════════
+    def attachment_service(self) -> AttachmentPageService:
+        """报价需求的附件页服务（`BJ_KHBJXQ_FJ.aspx`）。"""
+        return AttachmentPageService(self.auth, ATTACHMENT_PATH, label="报价需求附件")
+
+    def list_attachments(self, record_id: str, *, with_urls: bool = False) -> dict[str, Any]:
+        return self.attachment_service().list_files(record_id, with_urls=with_urls)
+
+    def upload_attachments(self, record_id: str, items: Any) -> dict[str, Any]:
+        """把附件（bytes/base64/text/path）传上单据，并回读核对。"""
+        attachments = decode_attachments(items)
+        if not attachments:
+            raise ParseError("没有要上传的附件")
+        return self.attachment_service().upload(record_id, attachments)
+
+    def download_attachment(self, record_id: str, *, name: str = "",
+                            file_id: str = "", out_dir: str = "") -> dict[str, Any]:
+        """按附件名称（或文件 ID）下载一个附件。"""
+        listing = self.list_attachments(record_id)
+        files = listing["files"]
+        if not files:
+            raise ParseError(f"单据 {record_id} 上没有任何附件")
+        picked = None
+        for row in files:
+            if file_id and row["文件ID"].lower() == file_id.strip().lower():
+                picked = row
+                break
+            if name and name.strip() in (row["名称"], row["名称"].strip()):
+                picked = row
+                break
+        if picked is None:
+            if name or file_id:
+                raise ParseError(
+                    "没找到附件；现有：" + "、".join(r["名称"] for r in files))
+            picked = files[0]
+
+        svc = self.attachment_service()
+        url = svc.file_url(record_id, picked["文件ID"])
+        content, content_type, used = svc.fetch_file(url)
+        result: dict[str, Any] = {
+            "record_id": record_id, "名称": picked["名称"], "url": used,
+            "size": len(content), "content_type": content_type,
+        }
+        if out_dir:
+            from pathlib import Path
+
+            folder = Path(out_dir)
+            folder.mkdir(parents=True, exist_ok=True)
+            filename = picked["名称"] or Path(url.split("?")[0]).name
+            ext = Path(url.split("?")[0]).suffix
+            if ext and not filename.lower().endswith(ext.lower()):
+                filename += ext
+            dest = folder / filename
+            dest.write_bytes(content)
+            result["path"] = str(dest)
+        else:
+            import base64
+
+            result["content_base64"] = base64.b64encode(content).decode()
+        return result
 
     # ══════════════════ 1. 空白页 ══════════════════
     def _open_form_html(self) -> tuple[str, str]:
@@ -1085,11 +1148,13 @@ class QuoteCreateService:
         discount: str | None = None,
         remark: str | None = None,
         product_memo: str | None = None,
+        attachments: Any = None,
         confirm: bool = False,
     ) -> dict[str, Any]:
         """在 ERP 里真正新建一条报价需求（主表 + 1 条产品明细）。
 
         `confirm=False` 时只做校验与预览，不写库。
+        `attachments` 传了就**在单据落库成功后**自动上传（附件页需要记录 ID）。
         """
         prepared = self.prepare(
             customer=customer, sales=sales, merchandiser=merchandiser,
@@ -1107,10 +1172,18 @@ class QuoteCreateService:
                 "message": "当前实现一次只支持 1 条产品明细；多条请分次调用。",
             }
         if not confirm:
-            return {
+            preview = {
                 **prepared, "status": "needs_confirmation",
                 "message": "校验已通过。确认真正写入 ERP 请传 confirm=true。",
             }
+            if attachments:
+                try:
+                    planned = decode_attachments(attachments)
+                    preview["attachments_planned"] = [a.as_dict() for a in planned]
+                except ErpError as exc:
+                    preview["attachments_planned"] = []
+                    preview["attachments_error"] = str(exc)
+            return preview
 
         header: dict[str, str] = dict(prepared["header"])
         khid = header.get("txtKHID", "")
@@ -1289,7 +1362,7 @@ class QuoteCreateService:
         })
 
         status = "created" if detail_saved else ("partial" if row_created else "failed")
-        return {
+        result: dict[str, Any] = {
             "status": status,
             "ok": status == "created",
             "record_id": record_id,
@@ -1313,6 +1386,25 @@ class QuoteCreateService:
                 else "主表已落库，但产品明细未保存成功；请到 ERP 里手工补一行，或等明细协议修复后重试"
             ),
         }
+
+        if attachments:
+            result["attachments"] = self._upload_after_create(record_id, attachments)
+            if not result["attachments"].get("ok"):
+                result["attachments_error"] = result["attachments"].get("message") or \
+                    "附件上传失败"
+                result.setdefault("warnings", []).append(
+                    "单据已建立，但附件没有全部上传成功："
+                    + result["attachments_error"])
+        return result
+
+    def _upload_after_create(self, record_id: str, attachments: Any) -> dict[str, Any]:
+        """建单之后立刻上传附件（失败不影响已落库的单据）。"""
+        try:
+            return self.upload_attachments(record_id, attachments)
+        except ErpError as exc:
+            return {"ok": False, "record_id": record_id, "uploaded": [],
+                    "errors": [{"filename": "", "error": str(exc)}],
+                    "message": str(exc)}
 
 
     # ══════════════════ 5c. 修改（先 btnModify 再 btnSave）══════════════════
