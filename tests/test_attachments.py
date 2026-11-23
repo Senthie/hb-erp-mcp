@@ -105,7 +105,33 @@ def test_size_limit(tmp_path, monkeypatch) -> None:
     with pytest.raises(Exception) as exc:
         decode_attachment({"filename": "big.bin",
                            "content_base64": base64.b64encode(b"x" * 200_000).decode()})
-    assert "超过上限" in str(exc.value)
+    assert "超过当前上限" in str(exc.value)
+    assert "硬限是 10 MB" in str(exc.value)
+
+
+def test_hard_limit_is_10mb_and_cannot_be_raised(monkeypatch) -> None:
+    """ERP 实测 10MB 能传、10.5MB 被静默丢弃：环境变量只允许往小调。"""
+    from erp_tools.tools.attachments import HARD_LIMIT_BYTES, max_bytes
+
+    monkeypatch.delenv("ERP_ATTACH_MAX_MB", raising=False)
+    assert max_bytes() == HARD_LIMIT_BYTES == 10 * 1024 * 1024
+
+    monkeypatch.setenv("ERP_ATTACH_MAX_MB", "50")
+    assert max_bytes() == HARD_LIMIT_BYTES, "调大也不能超过 ERP 硬限"
+
+    monkeypatch.setenv("ERP_ATTACH_MAX_MB", "3")
+    assert max_bytes() == 3 * 1024 * 1024
+
+
+def test_over_limit_message_tells_how_to_split(monkeypatch) -> None:
+    monkeypatch.delenv("ERP_ATTACH_MAX_MB", raising=False)
+    blob = base64.b64encode(b"x" * (10 * 1024 * 1024 + 1)).decode()
+    with pytest.raises(Exception) as exc:
+        decode_attachment({"filename": "大文件.zip", "content_base64": blob})
+    msg = str(exc.value)
+    assert "10 MB" in msg
+    assert "分卷" in msg and "多个附件" in msg
+    assert "分片上传只解决传输截断" in msg
 
 
 # ══════════════════ 列表解析 ══════════════════

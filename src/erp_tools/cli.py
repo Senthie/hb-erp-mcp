@@ -1017,7 +1017,8 @@ def build_parser() -> argparse.ArgumentParser:
                         "（默认 quote_request，也可写中文别名）")
     p.add_argument("--id", required=True, dest="id", help="单据记录 ID（必须先保存）")
     p.add_argument("--file", action="append",
-                   help="要上传的本地文件，可重复或逗号分隔；也可用 --text 传文本")
+                   help="要上传的本地文件，可重复或逗号分隔；也可用 --text 传文本。"
+                        "⚠ ERP 单附件硬限 10MB，更大请切成分卷分别上传")
     p.add_argument("--text", help="直接作为附件的文本内容（配合 --name）")
     p.add_argument("--name", help="ERP 里的附件名称（默认用文件名）")
     p.add_argument("--desc", help="附件描述", default="")
@@ -1037,7 +1038,8 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--id", required=True, dest="id",
                    help="报价需求记录 ID（单据必须先保存）")
     p.add_argument("--file", action="append",
-                   help="要上传的本地文件，可重复或逗号分隔；也可用 --text 传文本")
+                   help="要上传的本地文件，可重复或逗号分隔；也可用 --text 传文本。"
+                        "⚠ ERP 单附件硬限 10MB，更大请切成分卷分别上传")
     p.add_argument("--text", help="直接作为附件的文本内容（配合 --name）")
     p.add_argument("--name", help="ERP 里的附件名称（默认用文件名）")
     p.add_argument("--desc", help="附件描述", default="")

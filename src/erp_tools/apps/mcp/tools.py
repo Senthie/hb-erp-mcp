@@ -1252,6 +1252,8 @@ def register_tools(mcp: MCPServer, state: ServerState) -> None:
             "files 每项 {filename, content_base64} 或 {filename, content_text}，"
             "可选 name(附件名称)/desc/remark/expected_size/sha256；也支持 {path} 本机文件。\n"
             "上传后会下载回比字节数（size_ok / size_mismatch），ok=false 不要当成功。\n"
+            "⚠ 单附件上限 10MB（ERP 硬限，超了静默丢弃）：更大请切成多个 ≤10MB 分卷分别上传；\n"
+            "分片（chunk_index）只解决传输截断，不能突破这个上限。\n"
             "with_urls 每行给 url（ERP 内网直链）与 proxy_url（经网关转发，跨网段可下）。\n"
             "大文件用分片：每项带 {upload_key, chunk_index, total_chunks, chunk_base64}，\n"
             "未收齐返回 status=chunk_pending，继续传缺的片；收齐自动拼装上传。\n"
@@ -1321,12 +1323,15 @@ def register_tools(mcp: MCPServer, state: ServerState) -> None:
         ),
     )
     def erp_attachment_modules() -> dict[str, Any]:
-        from ...tools.attachments import MODULES
+        from ...tools.attachments import ERP_MAX_MB, HARD_LIMIT_BYTES, MODULES
 
         return {
             "modules": [m.as_dict() for m in MODULES.values()],
             "count": len(MODULES),
-            "note": "上传页全部是同一套模板；差别只在入口与删除按钮",
+            "max_mb": ERP_MAX_MB,
+            "max_bytes": HARD_LIMIT_BYTES,
+            "note": ("上传页全部是同一套模板；差别只在入口与删除按钮。"
+                     f"单附件硬限 {ERP_MAX_MB} MB，更大请切成多个分卷分别上传"),
         }
 
     # ---------- 报价需求：明细行 / 修改 ----------

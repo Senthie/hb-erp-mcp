@@ -52,8 +52,13 @@ from typing import Any
 from ..core.errors import ErpError, ParseError, UpstreamError
 from .gridlist import button_payload, form_snapshot
 
-#: 单个附件上限（可用 ERP_ATTACH_MAX_MB 覆盖）
-DEFAULT_MAX_MB = 20
+#: **ERP 单附件硬限**：实测 10,485,760 字节（10 MB）成功、10.5 MB 被静默丢弃
+#: （2026-11-23 在同一台 ERP 上逐个尺寸试过）
+ERP_MAX_MB = 10
+HARD_LIMIT_BYTES = ERP_MAX_MB * 1024 * 1024
+
+#: 默认上限（`ERP_ATTACH_MAX_MB` 只能往小调，调大也超不过 ERP 硬限）
+DEFAULT_MAX_MB = ERP_MAX_MB
 
 #: 分片暂存多久算过期（秒）
 CHUNK_STAGE_TTL = 1800
@@ -65,12 +70,23 @@ _POPUP_RE = re.compile(r"""(?:window\.open|showModalDialog)\(\s*["']([^"']+)["']
 
 
 def max_bytes() -> int:
+    """单附件上限：`ERP_ATTACH_MAX_MB` 只能**往小**调，不会超过 ERP 硬限 10 MB。"""
     raw = (os.getenv("ERP_ATTACH_MAX_MB") or "").strip()
     try:
         mb = float(raw) if raw else DEFAULT_MAX_MB
     except ValueError:
         mb = DEFAULT_MAX_MB
-    return int(max(mb, 0.1) * 1024 * 1024)
+    return min(int(max(mb, 0.1) * 1024 * 1024), HARD_LIMIT_BYTES)
+
+
+def too_big_hint(filename: str, size: int) -> str:
+    """超过 ERP 上限时的统一提示：告诉对方**怎么拆**，而不只是拒收。"""
+    return (
+        f"附件 {filename} 有 {size:,} 字节，超过 ERP 单附件上限 "
+        f"{ERP_MAX_MB} MB（{HARD_LIMIT_BYTES:,} 字节）——ERP 会直接把它丢掉。\n"
+        f"做法：把大文件切成多个 ≤{ERP_MAX_MB} MB 的分卷（zip 分卷 / 拆成多个文件），"
+        "作为**多个附件**分别上传；分片上传只解决传输截断，不能突破这个上限。"
+    )
 
 
 #: 行内删除：`__doPostBack('gridView1','Delete$<行号>')`（只有 Modify=1 的页面才有该列）
@@ -410,8 +426,12 @@ def decode_attachment(item: dict[str, Any] | Attachment, *,
         filename = "attachment.bin"
     limit = max_bytes()
     if len(raw) > limit:
-        raise ParseError(f"附件 {filename} 有 {len(raw)} 字节，超过上限 {limit} 字节"
-                         f"（可用 ERP_ATTACH_MAX_MB 调整）")
+        if limit >= HARD_LIMIT_BYTES:
+            raise ParseError(too_big_hint(filename, len(raw)))
+        raise ParseError(
+            f"附件 {filename} 有 {len(raw):,} 字节，超过当前上限 {limit:,} 字节"
+            f"（ERP_ATTACH_MAX_MB 设的值；ERP 硬限是 {ERP_MAX_MB} MB）"
+        )
     if not raw:
         raise ParseError(f"附件 {filename} 是空文件")
 
@@ -1061,6 +1081,9 @@ class AttachmentPageService:
             m = re.search(r"alert\(\s*['\"]([^'\"]{0,120})", resp.text)
             if m:
                 hint = f"（ERP 提示：{m.group(1)}）"
+            if len(att.content) > HARD_LIMIT_BYTES * 0.95:
+                hint += (f"；当前 {len(att.content):,} 字节已接近 ERP 单附件上限 "
+                         f"{ERP_MAX_MB} MB，大文件请切成多个 ≤{ERP_MAX_MB} MB 的分卷分别上传")
             raise ParseError(f"附件 {att.filename} 上传后没有出现在列表里{hint}")
         return resp.text
 

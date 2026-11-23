@@ -363,7 +363,7 @@ erp quote --csv orders.csv --out data\quote.jsonl     # 18496 条，约 2 小时
 | --- | --- |
 | `--module` | `quote_request`（默认）/ `price` / `production` / `purchase` / `sales_order` |
 | `--id` | 单据记录 ID（**必填**，单据必须先保存） |
-| `--file` | 本机文件，可重复或逗号分隔 |
+| `--file` | 本机文件，可重复或逗号分隔（⚠ **单个 ≤10 MB**，ERP 硬限；更大请切分卷分别上传） |
 | `--text` / `--name` | 直接传文本内容 + ERP 里的附件名称 |
 | `--desc` / `--remark` | 附件描述 / 备注 |
 | `--urls` | 列表时一并取下载直链（同时给出 `proxy_url`：网关转发，跨网段可下） |
