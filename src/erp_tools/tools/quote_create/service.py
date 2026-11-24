@@ -163,16 +163,44 @@ def _control_names(html: str) -> set[str]:
     return names
 
 
+def _norm_select_text(text: str) -> str:
+    """下拉文字归一化：去掉所有空白（含 `&nbsp;` / 全角空格）。
+
+    真实页面里选项文字被排版换行切开，例如「半翼箱纸箱」渲染成「半翼 箱纸箱」、
+    「A=B普通芯」→「A=B普 通芯」、「FOB 盐田」→「FOB 盐 田」。
+    早期用 `get_text(strip=True)` 精确比较，这些全匹配不上 → 退回提交文字本身
+    → ASP.NET 校验失败 → **字段静默不落库**（纸箱类别/纸板类型/底卡名称…就是这么丢的）。
+    """
+    return re.sub(r"[\s\u00a0\u3000\u200b]+", "", text or "")
+
+
 def _select_value(html: str, control: str, label: str) -> str | None:
-    """把下拉的显示文字换成提交值。"""
+    """把下拉的显示文字换成提交值（也接受直接传提交值本身）。
+
+    匹配顺序：① 与某个 option 的 `value` 完全相同 → 原样用；
+    ② 归一化后与 option 文字相同 → 用该 option 的 `value`。
+    """
     sel = soup_of(html).find("select", {"name": control})
-    text = (label or "").strip()
+    text = str(label or "").strip()
     if sel is None or not text:
         return None
-    for opt in sel.find_all("option"):
-        if opt.get_text(strip=True) == text:
+    options = sel.find_all("option")
+    for opt in options:                      # ① 已经是提交值（如 `008` / `0`）
+        if (opt.get("value") or "") == text:
+            return text
+    target = _norm_select_text(text)
+    for opt in options:                      # ② 显示文字 → 提交值
+        if _norm_select_text(opt.get_text()) == target:
             return opt.get("value") or ""
     return None
+
+
+#: 页面上「一改变就回发」的下拉（`onchange="__doPostBack('<控件>','')"`）。
+#: 它们的效果是**重新生成下游下拉的选项**，所以必须按顺序先回发，
+#: 否则下游（如 送货地区 ← 运输类型）在提交里根本没有选项可写。
+CASCADE_CONTROLS = (
+    "txtCPDL", "txtBZ", "txtFSCMC", "txtYSLX", "txtFPLB", "txtXGBZ", "txtCPYS",
+)
 
 
 def _fmt_qty(value: Any) -> str:
@@ -1274,8 +1302,18 @@ class QuoteCreateService:
         if sub_resp.status_code != 200:
             raise ParseError(f"产品子页打开失败（HTTP {sub_resp.status_code}）")
         sub_html = sub_resp.text
+        field_values = dict(items[0].get("fields") or {})
+        # ⓪ 级联下拉先回发：`运输类型 → 送货地区` 这类下游选项是服务端按上游重建的，
+        #    不一并回发，下游（送达地区/币种/发票类别…）在提交里根本没有选项可写。
+        cascade_failed: list[str] = []
+        cascade_values = {ctl: str(val) for ctl, val in field_values.items()
+                          if ctl in CASCADE_CONTROLS}
+        if cascade_values:
+            sub_html, sub_body, cascade_failed = self._run_product_cascades(
+                sub_url, sub_html, cascade_values)
+        else:
+            sub_body = form_snapshot(sub_html)
         allowed = _control_names(sub_html)
-        sub_body = form_snapshot(sub_html)
         # ① 有档案：先按产品档案回填（编码/单位/规格/尺寸/类别/条码…约 35 个字段）
         if product is not None:
             for key, value in product.page_fields().items():
@@ -1292,7 +1330,8 @@ class QuoteCreateService:
                 sub_body["txtGG"] = item["spec"]
         # ② 再按调用方给的全部明细字段覆盖（`prepare` 已解析成 控件名 -> 值）
         skipped: list[str] = []
-        for control, raw in (items[0].get("fields") or {}).items():
+        unresolved: list[str] = []
+        for control, raw in field_values.items():
             if control not in allowed:
                 skipped.append(control)
                 continue
@@ -1300,6 +1339,8 @@ class QuoteCreateService:
             if pf.CONTROL_MAP.get(control) is not None and \
                     pf.CONTROL_MAP[control].kind == pf.KIND_SELECT:
                 resolved = _select_value(sub_html, control, text)
+                if resolved is None:
+                    unresolved.append(control)
                 text = resolved if resolved is not None else text
             sub_body[control] = text
         # ③ 产品数量：ERP 真正校验/落库的是隐藏字段 `txtCPSL`；
@@ -1337,8 +1378,11 @@ class QuoteCreateService:
                       "product_source": "archive" if product else "free-text",
                       "category": category.text if category else "",
                       "message": warning or "",
-                      "fields_sent": len(items[0].get("fields") or {}),
-                      "skipped_controls": skipped})
+                      "fields_sent": len(field_values),
+                      "skipped_controls": skipped,
+                      "cascades": sorted(cascade_values),
+                      "cascade_failed": cascade_failed,
+                      "unresolved_selects": unresolved})
 
         # ---- 步骤 3：回读校验（不再重复保存主表）----
         # 血的教训：用 `btn_SonNew` 之前的旧快照再 POST 一次 btnSave，会把刚写入的
@@ -1608,9 +1652,21 @@ class QuoteCreateService:
         editor = self.auth.client.get(sub_url)
         if editor.status_code != 200:
             raise ParseError(f"产品编辑页打开失败（HTTP {editor.status_code}）")
-        body = form_snapshot(editor.text)
-        body.update(changes)
-        self._restore_product_category(body, editor.text, target.get("name", ""))
+
+        # ① 级联下拉先回发（否则下游如 送货地区 在提交里没有选项）
+        page_html = editor.text
+        cascade_failed: list[str] = []
+        cascade_values = {ctl: val for ctl, val in changes.items()
+                          if ctl in CASCADE_CONTROLS}
+        if cascade_values:
+            page_html, body, cascade_failed = self._run_product_cascades(
+                sub_url, page_html, cascade_values)
+        else:
+            body = form_snapshot(page_html)
+        # ② 下拉文字 → 提交值（`value` 与文字不同，直接发文字会被 ASP.NET 丢掉）
+        mapped, unresolved = self._map_product_selects(page_html, changes)
+        body.update(mapped)
+        self._restore_product_category(body, page_html, target.get("name", ""))
         body["btnSave"] = "· 保存 ·"
         saved = self.auth.client.post(sub_url, data=body)
         if saved.status_code >= 500:
@@ -1626,7 +1682,7 @@ class QuoteCreateService:
         verified_qty = self._product_qty_readback(record_id, cpid) if qty is not None else None
         qty_ok = qty is None or float_or_none(verified_qty) == float_or_none(_fmt_qty(qty))
 
-        text_changes = {ctl: val for ctl, val in changes.items()
+        text_changes = {ctl: val for ctl, val in mapped.items()
                         if ctl not in ("txtCPMC", "txtGG", "txtCPSL", "txtCPSL1")}
         verified_text = (self._product_fields_readback(record_id, cpid, tuple(text_changes))
                          if text_changes else {})
@@ -1639,10 +1695,20 @@ class QuoteCreateService:
             "record_id": record_id,
             "cpid": cpid,
             "changes": changes,
+            "submitted": mapped,
             "verified_name": verified_name,
             "verified_qty": verified_qty,
             "message": "已保存并复核一致" if ok else "保存后回读与预期不一致，请人工确认",
         }
+        if cascade_failed:
+            result["cascade_failed"] = cascade_failed
+        if unresolved:
+            result["unresolved_selects"] = unresolved
+            result["note"] = (
+                "这些下拉的取值在页面上找不到匹配选项，已原样提交（可能不生效）："
+                "、" + "、".join(_control_label(c) for c in unresolved)
+                + "；可用值见 erp_quote_product_form 的 options"
+            )
         if text_changes:
             result["verified"] = verified_text
             result["mismatched"] = [ctl for ctl, val in text_changes.items()
@@ -1687,6 +1753,62 @@ class QuoteCreateService:
                 )
             out[control] = "" if value is None else str(value)
         return out
+
+    # ── 产品子页：级联回发 + 下拉文字→提交值 ──
+    def _run_product_cascades(self, sub_url: str, html: str,
+                              values: dict[str, str]) -> tuple[str, dict[str, str], list[str]]:
+        """按页面顺序先把「级联下拉」逐个回发，返回 (最新 HTML, 最新快照, 失败控件)。
+
+        浏览器里改【运输类型】会 `__doPostBack('txtYSLX','')`，服务端据此**重建**
+        【送货地区】的选项；纯 HTTP 一把梭提交时 `txtSHDQ` 还是空的 —— 这就是
+        送货地区永远写不进去的原因。这里按同样顺序补回发。
+        """
+        body = form_snapshot(html)
+        failed: list[str] = []
+        for control in CASCADE_CONTROLS:
+            if control not in values:
+                continue
+            resolved = _select_value(html, control, values[control])
+            if resolved is None:
+                failed.append(control)
+                continue
+            body[control] = resolved
+            body["__EVENTTARGET"] = control
+            body["__EVENTARGUMENT"] = ""
+            body.pop("btnSave", None)
+            try:
+                resp = self.auth.client.post(sub_url, data=body)
+            except ErpError:
+                failed.append(control)
+                continue
+            if resp.status_code >= 500 or "__VIEWSTATE" not in resp.text:
+                failed.append(control)
+                continue
+            html = resp.text
+            body = form_snapshot(html)
+            body[control] = resolved if control in body else resolved
+        return html, body, failed
+
+    @staticmethod
+    def _map_product_selects(html: str, changes: dict[str, str]
+                             ) -> tuple[dict[str, str], list[str]]:
+        """把 changes 里的下拉**文字**换成提交值；返回 (可提交值, 找不到选项的控件)。"""
+        from .fields import KIND_SELECT, CONTROL_MAP
+
+        mapped: dict[str, str] = {}
+        unresolved: list[str] = []
+        for control, value in changes.items():
+            spec = CONTROL_MAP.get(control)
+            if spec is not None and spec.kind == KIND_SELECT:
+                resolved = _select_value(html, control, value)
+                if resolved is None:
+                    unresolved.append(control)
+                    mapped[control] = value      # 原样发，让 ERP 自己判
+                    continue
+                mapped[control] = resolved
+                continue
+            mapped[control] = value
+        return mapped, unresolved
 
     def _product_editor_html(self, record_id: str, cpid: str) -> str | None:
         """打开产品行编辑页（`Add_CPZL.aspx?ID=<cpid>`）并返回 HTML。"""

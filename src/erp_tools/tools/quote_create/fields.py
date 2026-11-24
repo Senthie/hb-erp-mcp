@@ -143,12 +143,14 @@ _PACKAGING: tuple[FieldSpec, ...] = (
                   "FOB(美加线）-盐田", "FOB 香港")),
     FieldSpec("txtYSLX", "运输类型", KIND_SELECT, "transport_type", group="装订包装",
               options=_opt("FOB盐田(普通)", "FOBHK", "FOB(拼柜)", "DPU", "CIF", "国内",
-                           "FOB(底价)", "FOB蛇口", "FOB(美加线)")),
+                           "FOB(底价)", "FOB蛇口", "FOB(美加线)"),
+              note="**级联上游**：一改就回发重建【送货地区】的选项，"
+                   "所以写它时本工具会先触发一次 __doPostBack"),
     FieldSpec("txtSHDQ", "送货地区", KIND_SELECT, "delivery_area", group="装订包装",
               options=_opt("FOB盐田(普通)", "香港", "FOB(美加线)", "FOB(NGV)", "DPU",
                            "日本（Tokyo）", "FOB蛇口"),
-              note="服务端渲染时该下拉是空的（由【送货方式】级联生成），"
-                   "纯 HTTP 提交实测不落库（2026-11-12 建单验证）"),
+              note="**级联下游**：选项由【运输类型】回发重建；"
+                   "写入时本工具会先回发运输类型（2026-11-24 实测可写）"),
     FieldSpec("txtZXLB", "纸箱类别", KIND_SELECT, "carton_type", group="装订包装",
               options=_opt("普通纸箱", "半翼箱纸箱", "特殊纸箱", "天地盖纸箱")),
     FieldSpec("txtZBLX", "纸板类型", KIND_SELECT, "board_type", group="装订包装",
@@ -418,6 +420,13 @@ for _spec in PRODUCT_FIELDS:
     # 控件名本身也可直接当键用
     ALIAS_MAP.setdefault(_spec.control, _spec.control)
 
+#: 中文标签 → 控件名。调用方（尤其是人）经常直接写「纸箱类别」这种页面上的中文名，
+#: 以前只认英文别名/控件名，于是报「未知的产品字段」。同名取第一个。
+LABEL_MAP: dict[str, str] = {}
+for _spec in PRODUCT_FIELDS:
+    if _spec.label:
+        LABEL_MAP.setdefault(_spec.label.strip(), _spec.control)
+
 #: **可由调用方上传的控件 = 可见 且 可写**。隐藏字段一个都不在里面。
 UPLOAD_CONTROLS: frozenset[str] = frozenset(
     spec.control for spec in PRODUCT_FIELDS if spec.uploadable
@@ -479,13 +488,17 @@ RESERVED_ITEM_KEYS: frozenset[str] = frozenset(
 
 
 def resolve_control(key: str) -> str | None:
-    """把「别名 / 控件名」解析成控件名；未知返回 None。"""
+    """把「别名 / 控件名 / 中文标签」解析成控件名；未知返回 None。"""
     name = (key or "").strip()
     if not name:
         return None
     if name in CONTROL_MAP:
         return name
-    return ALIAS_MAP.get(name)
+    if name in ALIAS_MAP:
+        return ALIAS_MAP[name]
+    # 中文标签：去掉冒号与空白再比（页面标签可能是「纸箱类别：」）
+    label = name.rstrip("：:").strip()
+    return LABEL_MAP.get(label) or LABEL_MAP.get(name)
 
 
 def alias_of(control: str) -> str:
@@ -494,11 +507,11 @@ def alias_of(control: str) -> str:
 
 
 def suggest(key: str, limit: int = 5) -> list[str]:
-    """给未知键找几个候选（先按前缀，再按包含关系）。"""
+    """给未知键找几个候选（先按前缀，再按包含关系；英文别名 + 中文标签）。"""
     text = (key or "").strip().lower()
     if not text:
         return []
-    pool = list(ALIAS_MAP)
+    pool = list(ALIAS_MAP) + list(LABEL_MAP)
     starts = [k for k in pool if k.lower().startswith(text[:3])]
     contains = [k for k in pool if text[:3] in k.lower() and k not in starts]
     return (starts + contains)[:limit]

@@ -211,12 +211,12 @@
 | `packing` | `txtBZFS` | 包装方式 | ✅ **必填**；下拉：纸箱包装 / 牛皮纸包装 / 胶袋包装 / 卡板摆放 |
 | `pallet` | `txtTBLX` | 台板类型 | ✅ **必填**；下拉，选项是长文案（`1.2m*0.8m(欧式)实木消毒卡板`…） |
 | `delivery` | `txtSHFS` | 送货方式 | ✅ **必填**；下拉：FOB(NGV) / FOB 盐田 / 送香港公司 / DPU … |
-| `transport_type` | `txtYSLX` | 运输类型 | 下拉：FOB盐田(普通) / FOBHK / FOB(拼柜) / DPU / CIF … |
-| `delivery_area` | `txtSHDQ` | 送货地区 | ⚠ 级联下拉（由送货方式 JS 填充），服务端渲染为空，**纯 HTTP 写不进** |
-| `carton_type` | `txtZXLB` | 纸箱类别 | 下拉：普通纸箱 / 半翼箱纸箱 / 特殊纸箱 / 天地盖纸箱 |
-| `board_type` | `txtZBLX` | 纸板类型 | 下拉：A=B双坑纸板 / A3B单坑纸板 / A=A双坑纸板 … |
-| `packing_orientation` | `txtZXFS` | 装箱方式 | 下拉：平装 / 竖装 |
-| `bottom_card` | `txtDKMC` | 底卡名称 | 下拉：B3B坑纸板 / A=B普通芯 / 无需 / K=K加强芯 … |
+| `transport_type` | `txtYSLX` | 运输类型 | 下拉：FOB盐田(普通) / FOBHK / FOB(拼柜) / DPU / CIF …；**级联上游** |
+| `delivery_area` | `txtSHDQ` | 送货地区 | 下拉（选项由【运输类型】回发重建）；本工具会先回发运输类型再写 |
+| `carton_type` | `txtZXLB` | 纸箱类别 | 下拉：普通纸箱 / 半翼箱纸箱 / 特殊纸箱 / 天地盖纸箱（提交值是一个代码，如 `008`） |
+| `board_type` | `txtZBLX` | 纸板类型 | 下拉：A=B双坑纸板 / A3B单坑纸板 / A=A双坑纸板 …（代码值） |
+| `packing_orientation` | `txtZXFS` | 装箱方式 | 下拉：平装(`0`) / 竖装(`1`) |
+| `bottom_card` | `txtDKMC` | 底卡名称 | 下拉：B3B坑纸板 / A=B普通芯 / 无需 / K=K加强芯 …（代码值） |
 | `no_pallet` | `chkBSYTB` | 不使用台板 | checkbox；传 `false` 等于不勾选（不提交） |
 | `no_container` | `chkBSYJZX` | 不使用集装箱 | checkbox |
 | `delivery_date` | `txtJHRQ` | 交货日期 | ✅ **必填**；`2026-12-20`，ERP 也接受 `2026/12/20` |
@@ -487,8 +487,22 @@ erp_quote_customer_search           确认客户唯一命中 + 默认业务员
   `CUSTOMER_TO_HEADER` / 入口参数，并同样遵守「可见才能写」。
 - **手机 `txtSJ` / 传真 `txtCZ` 提交后不落库**：建单、改单两条路径都实测过，
   保存后回读恒为空（估计由【客户联系人】派生）。`prepare` 会对此给出 warning。
-- **送货地区 `txtSHDQ` 提交后不落库**：服务端渲染时该下拉是空的（靠【送货方式】级联 JS 填充），
-  纯 HTTP 写不进，回读为空。
+- **下拉字段提交的是「值」不是「文字」**（2026-11-24 修）：纸箱类别/纸板类型/装箱方式/
+  底卡名称/运输类型/送货地区/书脊方向 这类下拉，option 的 `value` 是代码
+  （`008`/`002`/`0`…），早期直接提交显示文字会被 ASP.NET 丢掉 → **静默不落库**。
+  现在 `_select_value()` 会做 text→value 映射，且比较时**忽略排版空格**
+  （页面把「半翼箱纸箱」渲染成「半翼 箱纸箱」、「A=B普通芯」→「A=B普 通芯」）。
+- **级联下拉要按顺序回发**（同上）：`运输类型 txtYSLX` 一改就
+  `__doPostBack('txtYSLX','')` 由服务端重建 `送货地区 txtSHDQ` 的选项。
+  纯 HTTP 一把梭提交时 SHDQ 还是空的，所以 `create()` / `update_product()` 会先把
+  `txtCPDL / txtBZ / txtFSCMC / txtYSLX / txtFPLB / txtXGBZ / txtCPYS` 里调用方给了值的
+  逐个回发，再映射剩余下拉、最后 `btnSave`。
+  - 实测：建单一次写入 特殊纸箱(`066`) / K=K加强芯(耐破)(`008`) / 竖装(`1`) /
+    特殊指定(`003`) / FOB(拼柜)(`015`) / 香港(`001`) / 四边裁(`2`) —— 7/7 落库。
+  - 回读不一致时返回 `submitted`（真正提交的值）与 `mismatched`，找不到选项的会给
+    `unresolved_selects` + `note`（不再静默丢弃）。
+- **字段键可以写中文标签**：`纸箱类别` / `送货地区` / `书脊方向` 都能直接用，
+  `resolve_control()` 同时认「英文别名 / 控件名 / 中文标签（可带冒号）」。
 - **产品类别 `txtCPLB`**：建单时把 `code;名称` + `txtLBBM` + `txtLBID` 三个字段一起发，
   实测能落库（列表页「产品类别」列有值，如 `STD彩盒` / `普通BB书`）。
   ⚠ 只写名称（如 `STD彩盒`）能过校验但**存不住**——旧版本就是这样静默失败的。
