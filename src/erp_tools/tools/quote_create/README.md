@@ -267,6 +267,33 @@ update_name: updated  readback=512961503 MCP改动名
    `_restore_product_category()` 会按产品名回查【产品档案】，把 `txtCPLB_Input` /
    `txtLBID` / `txtLBBM` 填回去，否则报 `请选择【产品类别】的数据！`。
 
+### 下拉字段：提交「代码」而不是「文字」（已破，2026-11-24）
+
+早先有 7 个字段（纸箱类别 / 纸板类型 / 装箱方式 / 底卡名称 / 运输类型 / 送货地区 /
+书脊方向）无论建单还是改单都**回读为空**，看着像「ERP 不给写」，其实是三个 bug：
+
+| # | 原因 | 表现 |
+| --- | --- | --- |
+| 1 | option 的 `value` 是**代码**（`008`/`002`/`0`/`1`），旧代码把显示文字整个发过去 | ASP.NET 找不到该值 → 丢弃，不报错 |
+| 2 | 页面把文字排版成 `半翼 箱纸箱`、`A=B普 通芯`，`strip=True` 的精确匹配命不中 | 连 map 都失败，只能原样发文字 |
+| 3 | `update_product()` 压根没做 text→value 映射（只有 `create()` 有） | 改单路径 100% 写不进 |
+| 4 | `txtSHDQ`（送货地区）的选项由 `txtYSLX`（运输类型）的 `__doPostBack` 服务端重建 | 一次性 POST 时下游下拉是空的 |
+
+现在的做法：
+
+- `_select_value(html, control, label)`：① 精确命中 `value` 就直接用；
+  ② 否则把所有 option 文字去掉**全部空白**（含 `\u00a0\u3000\u200b`）后比对，返回 `value`。
+- `CASCADE_CONTROLS = (txtCPDL, txtBZ, txtFSCMC, txtYSLX, txtFPLB, txtXGBZ, txtCPYS)`
+  —— 页面上 `onchange=__doPostBack(...)` 的那几个。`_run_product_cascades()` 会按顺序
+  逐个回发（`__EVENTTARGET=控件`），每次重新 `form_snapshot`，把下游选项重建出来。
+- `_map_product_selects()` 批量映射，命中不了的不静默丢：进 `unresolved_selects` + `note`。
+- 字段键**可以直接写中文标签**（`纸箱类别`、`送货地区`、`书脊方向`，带冒号也行）；
+  `resolve_control()` 同时认「英文别名 / 控件名 / 中文标签」。
+
+实测（账号 00469，2026-11-24）：建单一次写入 `特殊纸箱 066` / `K=K加强芯(耐破) 008` /
+`竖装 1` / `特殊指定 003` / `FOB(拼柜) 015` / `香港 001` / `四边裁 2` —— 7/7 落库；
+`update_product` 把这 7 个改成别的值后回读也 7/7 一致（返回里的 `submitted` 是真提交值）。
+
 
 ## 已知限制（2026-11-11 定稿）
 
