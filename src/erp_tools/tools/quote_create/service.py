@@ -596,6 +596,9 @@ class QuoteCreateService:
             }
             if spec.note:
                 record["note"] = spec.note
+            if spec.control in CASCADE_CONTROLS:
+                # 页面 onchange=__doPostBack 的下拉：写入前必须先回发一次重建下游选项
+                record["cascade"] = True
             if spec.options:
                 record["known_options"] = list(spec.options)
             if page is not None:
@@ -642,6 +645,7 @@ class QuoteCreateService:
                 "**只有 uploadable=true（首屏可见且可写）的字段能写入**；hidden 字段一律拒绝。",
                 "products[].fields 或 products[].[alias] 都可传；也可用 products[].fields 显式分组。",
                 "下拉请传显示文字（如「纸箱包装」），落库时按真实页面换成提交值。",
+                "cascade=true 的下拉是页面 onchange 回发的上一环，写入时会先自动回发重建下游选项。",
                 "upload.json_schema 就是可直接用来生成/校验上传 JSON 的结构。",
             ],
         }

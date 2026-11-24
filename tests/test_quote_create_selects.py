@@ -90,6 +90,22 @@ def test_cascade_controls_match_page_onchange() -> None:
     assert "txtSHDQ" not in CASCADE_CONTROLS      # 它是下游，不回发自己
 
 
+def test_cascade_controls_are_all_registered_selects() -> None:
+    """回发的 7 个控件必须都在字段注册表里且是下拉，否则 _run_product_cascades 会白跑。
+
+    注：`txtFPLB`（发票类别）/`txtXGBZ`（香港币种）/`txtCPYS`（产品样式）在首屏是隐藏的、
+    不可上传，所以它们永远不会出现在调用方给的 values 里，`_run_product_cascades`
+    自然跳过——这是预期行为。
+    """
+    for control in CASCADE_CONTROLS:
+        spec = CONTROL_MAP.get(control)
+        assert spec is not None, f"{control} 未注册"
+        assert spec.kind == "select", f"{control} 不是下拉"
+    hidden = {"txtFPLB", "txtXGBZ", "txtCPYS"}
+    uploadable = {c for c in CASCADE_CONTROLS if CONTROL_MAP[c].uploadable}
+    assert uploadable == set(CASCADE_CONTROLS) - hidden
+
+
 # ══════════════════ 中文标签 ══════════════════
 def test_resolve_control_accepts_chinese_label() -> None:
     assert resolve_control("纸箱类别") == "txtZXLB"
