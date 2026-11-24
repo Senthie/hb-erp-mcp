@@ -20,6 +20,7 @@
 | 参数 | 类型 | 说明 |
 | --- | --- | --- |
 | `record_id` | str | 施工单记录 ID（`erp_production_list` 的 `记录ID`） |
+| `number` | str | 生产单号（与 `record_id` 二选一，内部会先按单号反查） |
 | `action` | str | 动作名；`actions`（默认）= 列出这一行能点什么 |
 | `product_id` | str | 产品行 ID；不传就用列表行里的 `产品ID` |
 | `max_rows` | int | 每个表格最多返回多少行（默认 100，上限 500） |

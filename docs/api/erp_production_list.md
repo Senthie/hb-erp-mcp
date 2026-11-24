@@ -41,14 +41,44 @@
 
 ```json
 {
-  "columns": ["生产单号", "订单编号", "产品名称", "客户名称", "工单状态", "制单日期", "记录ID"],
-  "records": [{"生产单号": "SGD2611180011", "记录ID": "362a2b46-…"}],
+  "columns": ["生产单号", "订单编号", "产品名称", "客户名称", "工单状态", "制单日期"],
+  "handle_columns": ["记录ID", "产品ID", "可点动作"],
+  "records": [{
+    "生产单号": "SGD2611230005",
+    "工单状态": "编辑中",
+    "记录ID": "30a7b30c-…",
+    "产品ID": "204731AE-…",
+    "可点动作": ["gjqk", "zhzy", "wjqk", "clqd", "print", "info", "bjremark", "cphj"]
+  }],
   "count": 50,
-  "total": 89,
+  "total": 112,
   "pages": 1,
   "truncated": true,
   "note": "一行 = 一张生产施工单；详情用 erp_production_detail"
 }
+```
+
+### 三个「句柄」列始终会带回
+
+| 列 | 用途 |
+| --- | --- |
+| `记录ID` | `erp_production_detail` / `erp_production_node` / `erp_attachment` 的入参 |
+| `产品ID` | 列表行内子页 `erp_production_row` 的入参 |
+| `可点动作` | 这一行**实际**挂了哪些行内事件（与上一次实验一致） |
+
+它们不是业务列，所以：**即使传了 `columns` 也会一并返回**
+（`columns` 里只反映你要的业务列，`handle_columns` 列出实际带回的句柄）。
+
+> 这条是踩出来的：早期版本把 `记录ID` 当成普通列，调用方一旦指定 `columns`
+> 就把它裁掉了，于是「拿列表 → 查详情」链断在第一步。
+
+## 典型调用链
+
+```
+erp_production_list(columns="生产单号,工单状态")   # → 每行带 记录ID / 产品ID
+   ├─ erp_production_detail(record_id=…)          # 整张施工单：字段+网格+子页清单
+   │     └─ erp_production_node(record_id, node)  # 详情页里的弹窗子页
+   └─ erp_production_row(record_id, action=…)     # 列表行上的图标/链接子页
 ```
 
 ## 注意

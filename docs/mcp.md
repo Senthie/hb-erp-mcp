@@ -114,7 +114,7 @@ VS Code `mcp.json`：
 | `erp_production_list` | — | **生产施工单列表**（`SC_SCSGD/Index.aspx`，QXID 740，一行=一张施工单） |
 | `erp_production_detail` | — | 施工单详情：表头字段 + 部件表(17 列) + 送货表(21 列) + 备注文本 + 可点子页清单 |
 | `erp_production_node` | `record_id` + `node` | **施工单 18 个弹窗子页**：`cp` 产品资料 / `cp_process` 产品工序 / `cp_materials` 产品辅料 / `part` 部件 / `part_new` 新增部件 / `part_materials` 部件辅料 / `part_process` 部件工序 / `part_machines` 部件机台 / `product_check` 送货资料 / `part_pick` 部件明细 / `product_bg` 产品变更 / `feedback` 需求反馈 / `sgkb` 手工开版 / `template_product` 产品模板 / `by_template` 按模板 / `binding` 装订D10 / `package_content` 包装内容 / `stock` 生产库存；`list` 列出节点 |
-| `erp_production_row` | `record_id` + `action` | **列表行内点击事件**：`esign` 电子稿袋（文件浏览）/ `gjqk` 产品跟进信息 / `zhzy` 做货指引 / `wjqk` 文件跟进情况 / `zszm` 专色油墨 / `clqd` 临时材料清单 / `print` 打印报表列表；`actions`（默认）列出这一行能点什么。返回子页 `{title, tables, links, texts}`；`info`/部件备注/核价否 在 ERP 侧不可读 |
+| `erp_production_row` | `record_id` 或 `number` + `action` | **列表行内点击事件**：`esign` 电子稿袋（文件浏览）/ `gjqk` 产品跟进信息 / `zhzy` 做货指引 / `wjqk` 文件跟进情况 / `zszm` 专色油墨 / `clqd` 临时材料清单 / `print` 打印报表列表；`actions`（默认）列出这一行能点什么。返回子页 `{title, tables, links, texts}`；`info`/部件备注/核价否 在 ERP 侧不可读 |
 | `erp_purchase_list` | — | **采购订单列表**（`CG_CGDD/Index.aspx`，QXID 266，一行=一条材料明细） |
 | `erp_purchase_detail` | — | 采购订单详情：表头字段 + 材料明细内联网格（`gridView2` 33 列） |
 | `erp_purchase_node` | `record_id` + `node` | 采购订单子页面（只有供应商档案选择等弹窗；明细在详情页网格里） |

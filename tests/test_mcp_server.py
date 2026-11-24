@@ -208,6 +208,40 @@ def test_tools_list_schema_budget(mcp_client) -> None:
     assert total <= 36_000, f"inputSchema 合计 {total} 字符，超预算 36000"
 
 
+# ══════════════════ 列表返回的「句柄列」 ══════════════════
+def test_list_rows_keep_handle_keys_even_with_columns() -> None:
+    """指定 columns 也不能把 记录ID / 产品ID / 可点动作 裁掉。
+
+    否则「拿列表 → 查详情」的链断在第一步（实测踩过：columns 之后 记录ID 消失）。
+    """
+    from erp_tools.apps.mcp.tools import _grid_response, _shape_rows
+
+    rows = [{"生产单号": "SGD1", "工单状态": "编辑中", "记录ID": "r-1",
+             "产品ID": "c-1", "可点动作": ["clqd", "print"]}]
+    out = _grid_response(rows, ["生产单号", "工单状态", "记录ID"],
+                         page=None, note="", columns="生产单号")
+
+    assert out["columns"] == ["生产单号"]                # 业务列只反映请求的
+    row = out["records"][0]
+    assert row["生产单号"] == "SGD1"
+    assert "工单状态" not in row                          # 没要的列不返回
+    assert row["记录ID"] == "r-1"                         # 句柄始终在
+    assert row["产品ID"] == "c-1"
+    assert row["可点动作"] == ["clqd", "print"]
+    assert out["handle_columns"] == ["记录ID", "产品ID", "可点动作"]
+
+    # 单列整形函数也一致
+    assert _shape_rows(rows, ["生产单号"])[0]["记录ID"] == "r-1"
+
+
+def test_handle_columns_only_lists_keys_actually_present() -> None:
+    from erp_tools.apps.mcp.tools import _grid_response
+
+    rows = [{"生产单号": "SGD1", "记录ID": "r-1"}]
+    out = _grid_response(rows, ["生产单号", "记录ID"], page=None, note="")
+    assert out["handle_columns"] == ["记录ID"]
+
+
 # ══════════════════ 工具调用 ══════════════════
 def test_whoami_uses_request_identity(mcp_client) -> None:
     """身份必须来自 Authorization 头（contextvar），不是工具参数。"""

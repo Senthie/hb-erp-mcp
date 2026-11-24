@@ -104,8 +104,28 @@ def _module_capabilities(pages: dict[str, str]) -> dict[str, dict[str, Any]]:
     return out
 
 
-#: 列表返回里「不是表格列、但下游接口要用」的附加键（始终带上，不受 columns 影响）
-EXTRA_ROW_KEYS = ("记录ID", "产品ID", "可点动作")
+#: 列表行里「不是表格列、但下游接口要用」的句柄键（始终带回，不受 columns 影响）
+#: - `记录ID`：erp_*_detail / erp_*_node / erp_attachment 的入参
+#: - `产品ID`：列表行内子页（erp_production_row）的入参
+#: - `可点动作`：这一行实际挂了哪些行内事件
+HANDLE_ROW_KEYS = ("记录ID", "产品ID", "可点动作")
+
+
+def _shape_rows(rows: list[dict], picked: list[str]) -> list[dict]:
+    """按 `picked` 裁列，但**句柄键始终带上**。
+
+    早期版本把 `记录ID` 假定在 `picked` 里——调用方一旦指定了 `columns`，
+    `记录ID` 就被裁掉，于是「拿列表 → 查详情」的链断在第一步。
+    """
+    out: list[dict] = []
+    for row in rows:
+        item = {c: row.get(c) for c in picked}
+        for key in HANDLE_ROW_KEYS:
+            value = row.get(key)
+            if value:
+                item[key] = value
+        out.append(item)
+    return out
 
 
 def _grid_response(rows: list[dict], headers: list[str], page, note: str,
@@ -119,13 +139,12 @@ def _grid_response(rows: list[dict], headers: list[str], page, note: str,
     if "记录ID" not in available:
         available.append("记录ID")
     picked, unknown = _pick_columns(columns, available)
-    extra = [k for k in EXTRA_ROW_KEYS if k != "记录ID"]
     return {
         "columns": picked,
-        "extra_columns": [k for k in extra if any(row.get(k) for row in rows)],
+        "handle_columns": [k for k in HANDLE_ROW_KEYS
+                           if any(row.get(k) for row in rows)],
         "unknown_columns": unknown,
-        "records": [{**{c: row.get(c) for c in picked},
-                     **{k: row.get(k) for k in extra if row.get(k)}} for row in rows],
+        "records": _shape_rows(rows, picked),
         "count": len(rows),
         "total": getattr(page, "total", 0),
         "pages": getattr(page, "pages", 1),
@@ -328,8 +347,10 @@ def register_tools(mcp: MCPServer, state: ServerState) -> None:
         picked, unknown = _pick_columns(columns, available)
         return {
             "columns": picked,
+            "handle_columns": [k for k in HANDLE_ROW_KEYS
+                               if any(row.get(k) for row in rows)],
             "unknown_columns": unknown,
-            "records": [{c: row.get(c) for c in picked} for row in rows],
+            "records": _shape_rows(rows, picked),
             "count": len(rows),
             "total": page.total,
             "pages": page.pages,
@@ -427,8 +448,10 @@ def register_tools(mcp: MCPServer, state: ServerState) -> None:
         picked, unknown = _pick_columns(columns, available)
         return {
             "columns": picked,
+            "handle_columns": [k for k in HANDLE_ROW_KEYS
+                               if any(row.get(k) for row in rows)],
             "unknown_columns": unknown,
-            "records": [{c: row.get(c) for c in picked} for row in rows],
+            "records": _shape_rows(rows, picked),
             "count": len(rows),
             "total": page.total,
             "pages": page.pages,
@@ -545,13 +568,15 @@ def register_tools(mcp: MCPServer, state: ServerState) -> None:
         ] = "",
     ) -> dict[str, Any]:
         from erp_tools.tools.grid_module import MODULES, get_module
+        from erp_tools.tools.grid_module.row_action import PRODUCTION_ROW_ACTIONS
 
         specs = [get_module(module)] if module.strip() else list(MODULES.values())
         tools = {
             "costing": {"list": "erp_costing_list", "detail": "erp_price_detail",
                         "node": "erp_price_node"},
             "production": {"list": "erp_production_list", "detail": "erp_production_detail",
-                           "node": "erp_production_node"},
+                           "node": "erp_production_node",
+                           "row": "erp_production_row"},
             "purchase": {"list": "erp_purchase_list", "detail": "erp_purchase_detail",
                          "node": "erp_purchase_node"},
             "sales_order": {"list": "erp_sales_order_list",
@@ -561,7 +586,7 @@ def register_tools(mcp: MCPServer, state: ServerState) -> None:
         }
         out = []
         for spec in specs:
-            out.append({
+            entry = {
                 "module": spec.key,
                 "label": spec.label,
                 "row_note": spec.row_note,
@@ -578,7 +603,13 @@ def register_tools(mcp: MCPServer, state: ServerState) -> None:
                      "label": label, "mcp": tools[spec.key]["node"]}
                     for node, (page, button, label) in spec.nodes.items()
                 ] or "该模块的详情页没有弹窗数据子页（数据在页面内联网格里）",
-            })
+            }
+            if "row" in tools[spec.key]:
+                entry["row_actions"] = {
+                    "mcp": tools[spec.key]["row"],
+                    "actions": [a.as_dict() for a in PRODUCTION_ROW_ACTIONS.values()],
+                }
+            out.append(entry)
         return {"modules": out, "count": len(out)}
 
     # ---------- 产品核价：列表 ----------
@@ -629,9 +660,11 @@ def register_tools(mcp: MCPServer, state: ServerState) -> None:
     @mcp.tool(
         name="erp_production_list",
         description=(
-            "查询生产施工单【列表】（ShengChan/SC_SCSGD/Index.aspx，QXID=740）。"
+            "【链路第一步】查询生产施工单【列表】（ShengChan/SC_SCSGD/Index.aspx，QXID=740）。"
             "一行=一张施工单（生产单号 SGD…）。服务端只支持日期区间+关键字，"
             "其余用 filters（服务端下拉）或 where（本地过滤）。"
+            "每行的 记录ID → erp_production_detail / erp_production_node；"
+            "产品ID + 可点动作 → erp_production_row（列表行内子页）。"
             f"默认 {DEFAULT_RECORDS} 行，上限 {MAX_RECORDS}。"
         ),
     )
@@ -671,10 +704,11 @@ def register_tools(mcp: MCPServer, state: ServerState) -> None:
     @mcp.tool(
         name="erp_production_detail",
         description=(
-            "生产施工单【详情】（SC_SCSGD/Add.aspx，Option=3 只读）："
+            "【链路第二步】生产施工单【详情】（SC_SCSGD/Add.aspx，Option=3 只读）："
             "表头字段（表单编号/产品名称/数量/交货日期…）+ 内联网格（部件表 17 列、"
             "送货表 21 列）+ 备注文本 + 这一单能点开的子页清单（nodes）。"
-            "record_id 与 number 至少给一个。"
+            "record_id 与 number 至少给一个（record_id 来自 erp_production_list）。"
+            "子页内容用 erp_production_node；列表行上的图标/链接用 erp_production_row。"
         ),
     )
     @_tool_errors
@@ -721,23 +755,31 @@ def register_tools(mcp: MCPServer, state: ServerState) -> None:
         name="erp_production_row",
         description=(
             "生产施工单**列表行内点击事件**（不是详情页的弹窗节点）。"
+            "record_id 或 number 给一个即可（都来自 erp_production_list）。"
             "action=actions 列出这一行能点什么；也可直接给："
             "esign=电子稿袋(文件浏览)、gjqk=产品跟进信息、zhzy=做货指引、"
             "wjqk=文件跟进情况、zszm=专色油墨、clqd=临时材料清单、print=打印报表列表。"
             "返回 {title, tables, links, texts}；info/部件备注/核价否 在 ERP 侧不可读（会说明原因）。"
             "行内子页需要「产品ID」——erp_production_list 的每行已经带上 产品ID 与 可点动作。"
+            "要看整张施工单用 erp_production_detail，要详情页里的弹窗子页用 erp_production_node。"
         ),
     )
     @_tool_errors
     def erp_production_row(
-        record_id: Annotated[str, Field(description="记录 ID（列表的 记录ID）")],
+        record_id: Annotated[str, Field(description="记录 ID（列表的 记录ID）")] = "",
         action: Annotated[str, Field(description="动作名；actions=列出可用动作")] = "actions",
+        number: Annotated[str, Field(description="生产单号（与 record_id 二选一）")] = "",
         product_id: Annotated[str, Field(description="产品行 ID（默认用列表行里的 产品ID）")] = "",
         max_rows: Annotated[int, Field(description="每个表格最多返回多少行", le=500)] = 100,
     ) -> dict[str, Any]:
         session = _session(state)
         tool = ProductionRowTool(session.auth)
         with state.provider.slot():
+            if not record_id.strip() and number.strip():
+                rows = tool.row_of("", number=number.strip())
+                record_id = rows.get("记录ID", "")
+            if not record_id.strip():
+                raise ToolError("record_id 与 number 至少给一个")
             if action.strip().lower() in ("actions", "list", "ls"):
                 return {"actions": tool.catalog(record_id, product_id=product_id or "")}
             return tool.fetch(record_id, action, product_id=product_id or "",
