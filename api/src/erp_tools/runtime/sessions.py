@@ -25,7 +25,7 @@ from contextlib import contextmanager
 from dataclasses import dataclass, field
 from pathlib import Path
 
-from ..core.auth import AuthManager
+from ..core.auth import AuthManager, normalize_page_path
 from ..core.config import ErpConfig
 from ..core.errors import ErpError
 from ..core.session import ErpClient
@@ -55,6 +55,10 @@ class UserSession:
     last_used: float = field(default_factory=time.time)
     user_id: str | None = None
     pages: dict[str, str] = field(default_factory=dict)
+    #: `pages` 是怎么来的：`login`（登录时探测）/ `cache`（磁盘缓存）/ `probe`（事后补探）/ `` 未取到
+    pages_source: str = ""
+    #: 取不到菜单时的原因（权限不足 / 上游报错）；空串表示没出错
+    pages_error: str = ""
     #: 最近一次存活探测结果与时间戳（避免每次请求都打一次 ERP）
     alive: bool = True
     alive_checked_at: float = 0.0
@@ -143,8 +147,12 @@ class SessionProvider:
 
         try:
             session.pages = auth.qxid_map(refresh=True)
-        except ErpError:
+            session.pages_source = "login"
+        except ErpError as exc:
             session.pages = {}
+            session.pages_source = ""
+            # 别把原因丢掉：`erp_capabilities` 全 null 时用户需要知道是「没权限」还是「没探到」
+            session.pages_error = str(exc)[:300]
             auth._qxid_map = {}  # noqa: SLF001 - 探测失败不该拖垮登录
         return session
 
@@ -179,6 +187,13 @@ class SessionProvider:
             return None
         session = UserSession(username=username, auth=auth, user_id=auth.user_id,
                               alive=True, alive_checked_at=time.time())
+        # 重启后内存里没有 pages：先用磁盘上的 qxid 缓存回填（纯本地，不打 ERP）。
+        # 不回填的话 `erp_capabilities` 会对**任何账号**都返回全 null（pages 空、
+        # 四个 module list_available=false），看起来像权限全没了。
+        cached = auth.cached_qxid_map()
+        if cached:
+            session.pages = {normalize_page_path(k): str(v) for k, v in cached.items()}
+            session.pages_source = "cache"
         with self._lock:
             self._sessions.setdefault(username, session)
             return self._sessions[username]

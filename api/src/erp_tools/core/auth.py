@@ -360,8 +360,17 @@ class AuthManager:
         )
         mapping = parse_menu_urls(resp.text)
         if not mapping:
-            raise UpstreamError("菜单接口没有返回任何菜单项，可能权限不足或接口变更",
-                                status=resp.status_code, body=brief(resp.text))
+            # 把「为什么空」写清楚：菜单树里完全没有 url 节点 = 该账号没配菜单；
+            # 有 url 但没有 QXID = 接口格式变了。这句会一路显示到 erp_capabilities。
+            text = resp.text or ""
+            has_url = "url" in text.lower()
+            raise UpstreamError(
+                "菜单接口没有返回任何菜单项"
+                f"（响应 {len(text)} 字符，"
+                f"{'含 url 节点但没有 QXID' if has_url else '完全没有 url 节点'}），"
+                "通常表示该 ERP 账号没有配置菜单权限；接口变更时也会这样",
+                status=resp.status_code, body=brief(text),
+            )
         self._qxid_map = mapping
         self._save_qxid_cache(mapping)
         return mapping
@@ -385,6 +394,19 @@ class AuthManager:
             self._log(f"    ⚠️  菜单里没有 {page_path}；沿用默认 QXID {fallback}")
             return fallback
         raise QxidNotFoundError(f"当前账号菜单里没有页面 {page_path}（可能是权限不足）")
+
+    def cached_qxid_map(self) -> dict[str, str]:
+        """只读磁盘缓存（必要时读一次），**不发网络请求**。
+
+        用于「服务重启后恢复会话」这种不方便打 ERP 的场景：`qxid_map()`
+        在缓存缺失时会去探测，这里则允许返回空字典。
+        """
+        if self._qxid_map is not None:
+            return dict(self._qxid_map)
+        cached = self._load_qxid_cache()
+        if cached:
+            self._qxid_map = cached
+        return cached
 
     def _load_qxid_cache(self) -> dict[str, str]:
         p = self.qxid_cache_file

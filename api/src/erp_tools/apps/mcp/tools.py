@@ -14,7 +14,7 @@ from __future__ import annotations
 import functools
 import logging
 import time
-from typing import Annotated, Any
+from typing import TYPE_CHECKING, Annotated, Any
 
 from mcp.server.mcpserver import MCPServer
 from mcp.server.mcpserver.exceptions import ToolError
@@ -46,8 +46,14 @@ from ...tools.quote_index import QuoteListTool
 from ...tools.quote_index.parser import ACTION_COLUMNS
 from ...tools.quote_price import PriceDetailTool, PriceListTool, PriceNodeTool
 from ...tools.quote_request import QuoteRequestTool
-from ..server.state import ServerState
 from .schemas import QuoteProductInput
+
+if TYPE_CHECKING:  # pragma: no cover - 只为类型标注
+    # ⚠ 不能在这里直接用 `from ..server.state import ServerState`：那会先执行
+    # `apps/server/__init__.py`，而它 `from .app import create_app`，
+    # app.py 又 `from ..mcp.tools import build_mcp_server` → 循环导入。
+    # 先 import 本模块的用法（如测试）会直接炸 ImportError。
+    from ..server.state import ServerState
 
 #: 单次返回的默认条数（LLM 友好）
 DEFAULT_RECORDS = 50
@@ -108,7 +114,8 @@ def _proxy_url(url: str, name: str = "") -> str:
         return ""
 
 
-def _module_capabilities(pages: dict[str, str]) -> dict[str, dict[str, Any]]:
+def _module_capabilities(pages: dict[str, str], *, known: bool = True
+                         ) -> dict[str, dict[str, Any]]:
     """四个模块（核价/施工单/采购订单/客户订单）的页面权限。
 
     ⚠ **不能直接用菜单探测值**：同一路径挂在多个菜单下（`BJ_KHBJ/Index.aspx` 既是
@@ -118,25 +125,75 @@ def _module_capabilities(pages: dict[str, str]) -> dict[str, dict[str, Any]]:
 
     采购订单的详情页没有独立菜单（从列表行双击进 `Add.aspx`），
     因此它的可用性跟列表页一致。
+
+    :param known: 菜单是否真的取到了。`False` 时 `list_available=false` 只代表
+        「不知道」，不代表没权限，返回里会写 `available: null` 并在 note 里说明。
     """
     from erp_tools.tools.grid_module import MODULES
 
     out: dict[str, dict[str, Any]] = {}
     for spec in MODULES.values():
         list_ok = normalize_page_path(spec.list_path) in pages
+        if known:
+            note = (
+                "QXID 为实测值（菜单里同路径可能对应多个菜单，探测值不可用）"
+                if list_ok else "菜单里没有这个页面，当前账号可能无权限"
+            )
+        else:
+            note = "菜单没取到（见 pages_known / pages_error），无法判断是否有权限"
         out[spec.key] = {
             "label": spec.label,
             "list_path": spec.list_path,
             "list_qxid": spec.fallback_qxid,
             "list_available": list_ok,
+            "available": list_ok if known else None,
             "detail_path": spec.detail_path or None,
             "detail_reached_from": "list_row" if spec.detail_path else None,
-            "note": (
-                "QXID 为实测值（菜单里同路径可能对应多个菜单，探测值不可用）"
-                if list_ok else "菜单里没有这个页面，当前账号可能无权限"
-            ),
+            "note": note,
         }
     return out
+
+
+def _ensure_pages(session) -> tuple[dict[str, str], str, str]:
+    """保证 `session.pages` 可用，返回 `(pages, source, error)`。
+
+    为什么需要这一步：`pages` 只在**登录那一刻**填。服务重启后会话是从磁盘 cookie
+    恢复的（`SessionProvider._restore`），早期版本不填 `pages` →
+    `erp_capabilities` 对**任何账号**都返回 `pages` 全 null、四个模块
+    `list_available=false`，看起来像「权限全没了」。
+
+    这里按「内存 → 磁盘 qxid 缓存 → 真正探一次」逐级补，全部失败才报错，
+    并且把失败原因带回去（区分「该账号没权限」与「没探到」）。
+    """
+    pages = {normalize_page_path(k): str(v) for k, v in (session.pages or {}).items()}
+    if pages:
+        return pages, (session.pages_source or "login"), ""
+
+    auth = session.auth
+    try:
+        cached = auth.cached_qxid_map()
+    except Exception:  # noqa: BLE001 - 缓存坏了不该让接口挂掉
+        cached = {}
+    if cached:
+        pages = {normalize_page_path(k): str(v) for k, v in cached.items()}
+        session.pages = dict(cached)
+        session.pages_source = "cache"
+        session.pages_error = ""
+        return pages, "cache", ""
+
+    try:
+        probed = auth.qxid_map(refresh=True)
+    except ErpError as exc:
+        session.pages_error = str(exc)[:300]
+        return {}, "", session.pages_error
+    except Exception as exc:  # noqa: BLE001 - 能力查询不该因为探测本身崩掉
+        session.pages_error = f"{type(exc).__name__}: {exc}"[:300]
+        return {}, "", session.pages_error
+    pages = {normalize_page_path(k): str(v) for k, v in probed.items()}
+    session.pages = dict(probed)
+    session.pages_source = "probe"
+    session.pages_error = ""
+    return pages, "probe", ""
 
 
 #: 列表行里「不是表格列、但下游接口要用」的句柄键（始终带回，不受 columns 影响）
@@ -292,29 +349,46 @@ def register_tools(mcp: MCPServer, state: ServerState) -> None:
     @mcp.tool(
         name="erp_capabilities",
         description=(
-            "返回当前账号能访问哪些页面：pages=基础模块（报价需求/客户报价/考勤）的菜单 QXID；"
-            "modules=产品核价/生产施工单/采购订单三个模块的**实测** QXID 与可用性。"
-            "missing_pages 为空说明基础页面齐全。"
+            "返回当前账号能访问哪些页面：pages=基础模块（报价需求/客户报价/核价/考勤）的菜单 QXID；"
+            "modules=产品核价/生产施工单/采购订单/客户订单四个模块的**实测** QXID 与可用性。"
+            "missing_pages 为空说明基础页面齐全。pages_known=false 表示菜单没取到"
+            "（看 pages_error），此时 missing_pages / list_available 不代表没权限。"
         ),
     )
     @_tool_errors
     def erp_capabilities() -> dict[str, Any]:
         session = _session(state)
-        pages = {normalize_page_path(k): str(v) for k, v in (session.pages or {}).items()}
+        pages, source, error = _ensure_pages(session)
+        known = bool(pages)
         available = {name: pages.get(normalize_page_path(path)) for name, path in PAGE_KEYS.items()}
         missing = [name for name, qxid in available.items() if not qxid]
-        modules = _module_capabilities(pages)
-        return {
+        modules = _module_capabilities(pages, known=known)
+        notes = [
+            "modules 里的 QXID 是实测值：同一 aspx 常挂在多个菜单下"
+            "（BJ_KHBJ/Index.aspx = 客户报价 860 + 产品核价 1281），菜单探测只留第一个，不可用。",
+        ]
+        if not known:
+            notes.append(
+                "菜单没取到，pages 全 null 不代表没有权限：业务工具走 qxid_for()，"
+                "探测失败时会回退到内置默认 QXID，通常仍可正常调用。"
+            )
+        elif missing:
+            notes.append(
+                "missing_pages 非空：该账号菜单里确实没有这些页面（权限按账号配置）。"
+            )
+        payload: dict[str, Any] = {
             "username": session.username,
             "pages": available,
             "missing_pages": missing,
+            "pages_known": known,
+            "pages_source": source or "none",
             "modules": modules,
             "module_missing": [k for k, v in modules.items() if not v["list_available"]],
-            "note": (
-                "modules 里的 QXID 是实测值：同一 aspx 常挂在多个菜单下"
-                "（BJ_KHBJ/Index.aspx = 客户报价 860 + 产品核价 1281），菜单探测只留第一个，不可用。"
-            ),
+            "note": "".join(notes) if len(notes) == 1 else notes,
         }
+        if error:
+            payload["pages_error"] = error
+        return payload
 
     # ---------- 报价需求：列表 ----------
     @mcp.tool(

@@ -331,7 +331,7 @@ VS Code `mcp.json`：
 | 工具 | 写库 | 说明 |
 | --- | --- | --- |
 | `erp_whoami` | — | 当前身份 / 会话状态；`erp_alive=false` 表示会话过期 |
-| `erp_capabilities` | — | 当前账号能访问哪些页面（`missing_pages` 为空即齐全） |
+| `erp_capabilities` | — | 当前账号能访问哪些页面（`missing_pages` 为空即齐全）。**先看 `pages_known`**：`false` 表示菜单没取到，全 null 不代表没权限（详见 [api/erp_capabilities.md](api/erp_capabilities.md)） |
 | `erp_menu` | — | **菜单 → 接口对照**：哪些菜单页已接入、各页能做什么、对应哪个工具与文档 |
 | `erp_quote_list` | — | 报价需求列表查询（日期区间 + 一个关键字，其余条件本地过滤） |
 | `erp_price_list` | — | **客户报价列表**（`BJ_KHBJ`，一行=一个报价产品行）：日期区间可选作用于制单/交货/离厂 + 服务端下拉过滤 + 本地 `where` |
