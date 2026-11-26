@@ -63,6 +63,13 @@ if ! grep -qE '^[[:space:]]*ERP_HOST=.+' .env; then
 fi
 
 # ── 0. 应用配置：config.yaml 由 .env 生成（不用手写一堆变量）──────
+# 已有 config.yaml 但不是 mcp 形态（没有 server 段，比如误从 config.example.yaml 复制）
+# 就备份后重新生成，否则容器起来会因为「没有存储」直接退出。
+if [ -f config.yaml ] && ! grep -qE '^[[:space:]]*server:' config.yaml; then
+  log "现有 config.yaml 没有 server 段（不是 mcp 配置），备份为 config.yaml.bak 后重新生成"
+  mv -f config.yaml config.yaml.bak
+fi
+
 if [ ! -f config.yaml ]; then
   pg_user="$(dotenv_get POSTGRES_USER erp)"
   pg_pass="$(dotenv_get POSTGRES_PASSWORD '')"
@@ -97,9 +104,12 @@ ${admin_line}
   allow_hosts: auto
   register_secret: auto
 YAML
-  chmod 600 config.yaml 2>/dev/null || true
+  # 容器以 uid 10001（非 root）运行，文件必须对其它用户可读，否则
+  # `erp serve` 会报「配置文件解析失败：Permission denied」后反复重启。
+  chmod 644 config.yaml 2>/dev/null || true
   log "已生成 config.yaml（PostgreSQL + nginx 终止 TLS；管理员：${admin_user:-未设置}）"
 else
+  chmod 644 config.yaml 2>/dev/null || true   # 容器 uid 10001 要能读到
   log "沿用已有 config.yaml（要重新生成先删掉它）"
 fi
 
@@ -146,7 +156,18 @@ esac
 
 # ── 2. 构建并启动 ─────────────────────────────────────────
 log "docker compose up -d --build --remove-orphans"
-docker compose up -d --build --remove-orphans
+if ! docker compose up -d --build --remove-orphans; then
+  log "启动失败，最近日志："
+  docker compose ps >&2 || true
+  docker compose logs --tail=50 app 2>&1 | tail -50 >&2 || true
+  docker compose logs --tail=20 nginx 2>&1 | tail -20 >&2 || true
+  log "排查提示："
+  log "  · 应用起不来最常见的原因是 config.yaml 读不到/内容不对："
+  log "      docker compose exec app cat /app/api/config.yaml     # 看不到就是权限问题"
+  log "      chmod 644 config.yaml                                # 容器以 uid 10001 运行"
+  log "  · PostgreSQL 连不上：POSTGRES_PASSWORD 含 @ : / # 等特殊字符会让 DSN 失效"
+  exit 1
+fi
 
 # ── 3. 健康检查 ───────────────────────────────────────────
 if [ "$SKIP_HEALTH" = 1 ]; then
@@ -170,8 +191,16 @@ fi
 port="${mapped##*:}"
 [ -n "$port" ] || { log "拿不到 nginx 的发布端口，跳过健康检查"; docker compose ps; exit 0; }
 
+# 用「客户端实际访问的域名」验，而不是 localhost：
+# 自签证书的 SAN 里是 ERP_PUBLIC_HOST，用 localhost 会证书校验失败（假警报）。
+public_host_first="$(dotenv_get ERP_PUBLIC_HOST '' | cut -d, -f1 \
+  | sed -e 's#^[[:space:]]*##' -e 's#^https\?://##' -e 's/:.*$//')"
 url="$scheme://localhost:$port/healthz"
-curl_args=(-fsS -o /dev/null)
+curl_args=(-fsS -o /dev/null -m 8)
+if [ "$scheme" = https ] && [ -n "$public_host_first" ]; then
+  url="$scheme://$public_host_first:$port/healthz"
+  curl_args+=(--resolve "$public_host_first:$port:127.0.0.1")
+fi
 [ "$scheme" = https ] && [ -f "$cacert" ] && curl_args+=(--cacert "$cacert")
 
 log "健康检查：$url"

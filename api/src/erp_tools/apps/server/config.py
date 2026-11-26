@@ -303,13 +303,37 @@ class ServerConfig:
 
     @classmethod
     def from_config_file(cls, path: str | Path | None = None) -> "ServerConfig":
-        """定位并读取 config.yaml 的 `server` 段。"""
-        from ...core.paths import find_config_file
+        """定位并读取 config.yaml 的 `server` 段。
+
+        配置有问题时报能照着做的错：目录（docker 挂载时文件不存在会建同名目录）、
+        权限（容器里以 uid 10001 运行，宿主上的文件必须对其他用户可读）。
+        """
+        from ...core.errors import ConfigError
+        from ...core.paths import config_candidates, find_config_file
         from ...core.settings import read_yaml
 
         found = find_config_file(path)
-        data = read_yaml(found) if found is not None else {}
-        return cls.from_settings(data)
+        if found is None:
+            candidates = [Path(path).expanduser()] if path else []
+            candidates += list(config_candidates())
+            for candidate in candidates:
+                if candidate.is_dir():
+                    raise ConfigError(
+                        f"{candidate} 是个目录，不是配置文件：通常是 docker 挂载时文件不存在，"
+                        "Docker 自动建了个同名目录。先 `erp init --mode mcp` 生成文件"
+                        f"（或 `rmdir {candidate}`）再重启"
+                    )
+            return cls.from_settings({})
+        try:
+            with open(found, "rb"):
+                pass
+        except OSError as exc:
+            raise ConfigError(
+                f"读不了配置文件 {found}：{exc}。"
+                "容器内以 uid 10001 运行，宿主机上的 config.yaml 需要对其他用户可读"
+                "（`chmod 644 config.yaml`）"
+            ) from exc
+        return cls.from_settings(read_yaml(found))
 
     @classmethod
     def from_args(cls, args) -> "ServerConfig":

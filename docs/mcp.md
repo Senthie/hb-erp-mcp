@@ -571,7 +571,7 @@ sudo ufw allow 8443/tcp
 | 步骤 | 说明 |
 | --- | --- |
 | 前置 | `docker info` 通；`.env` 存在且 `ERP_HOST` 非空（否则直接报错退出） |
-| 应用配置 | **按 `.env` 生成 `config.yaml`**（`mode: mcp` + postgres DSN 拼好；已存在则沿用） |
+| 应用配置 | **按 `.env` 生成 `config.yaml`**（`mode: mcp` + postgres DSN 拼好，`chmod 644` 让容器 uid 10001 能读）；已存在且带 `server:` 段则沿用，否则备份成 `.bak` 重生成 |
 | 证书 | `gen-cert.sh --ensure`：**已有证书且 7 天内不过期就跳过**，缺失才签；SAN 取自 `ERP_PUBLIC_HOST` |
 | 启动 | `docker compose up -d --build --remove-orphans` |
 | 自检 | 用 `docker compose port nginx 443` 拿真实端口，`curl --cacert` 打 `/healthz`，最多等 40s |
@@ -1017,6 +1017,7 @@ docker compose logs -f --tail=100 app nginx
 | 0 | `curl` 到 ERP 超时 | 服务器与 ERP 不在同一网段 / 有防火墙；先在服务器上 `ping`/`curl` 通 |
 | 1 | `Permission denied (publickey)` | 服务器没配部署密钥；改用 `https://<PAT>@github.com/...` |
 | 3 | `请在 .env 里设置 ERP_HOST` | `.env` 没建或变量名拼错（compose 只从同目录 `.env` 读）；也可直接改 `config.yaml` 的 `erp.host` |
+| 4 | `docker compose ps` 里 `app` 是 `unhealthy`/`Restarting` | 先看 `docker compose logs --tail=50 app`：① `配置文件 ... Permission denied` → 宿主 `chmod 644 config.yaml`（容器以 uid 10001 运行）；② `没有存储` → `config.yaml` 没有 `server:` 段，`rm config.yaml && bash scripts/up.sh` 重生成；③ psycopg 报 password 认证失败 → `POSTGRES_PASSWORD` 含特殊字符，换成 URL 安全字符后 `docker compose down -v` 重建（PG 里的旧密码已固化） |
 | 4 | `421 Invalid Host header` | `ERP_PUBLIC_HOST` 与客户端实际用的 `host:port` 不一致（含端口） |
 | 4 | 容器 healthy 但 `curl` 502 | 容器内到 ERP 不通，或 `ERP_HOST` 写错；`docker compose exec app python -c "import urllib.request;print(urllib.request.urlopen('http://192.168.1.199:8889/Admin/Login.aspx').status)"` |
 | 4 | nginx 起不来 / `cannot load certificate` | `ERP_CERT_DIR` 下没有 `erp-tools.crt`/`.key`，或文件名不符 |

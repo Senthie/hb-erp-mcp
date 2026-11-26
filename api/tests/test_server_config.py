@@ -108,6 +108,44 @@ def test_allow_hosts_auto_is_derived_from_bind(tmp_path, monkeypatch) -> None:
     assert (tmp_path / "tls").is_dir(), "非回环监听应自动签发证书"
 
 
+def test_config_path_that_is_a_directory_gives_actionable_error(tmp_path) -> None:
+    """docker 挂载时文件不存在，Docker 会建同名目录 —— 报错要能照着做。"""
+    from erp_tools.core.errors import ConfigError
+
+    (tmp_path / "config.yaml").mkdir()
+    with pytest.raises(ConfigError, match="是个目录"):
+        ServerConfig.from_config_file(tmp_path / "config.yaml")
+
+
+def test_config_missing_returns_defaults(tmp_path) -> None:
+    cfg = ServerConfig.from_config_file(tmp_path / "nope.yaml")
+    assert cfg.bind == "127.0.0.1:8765"
+    # 没有配置文件时退回默认（sqlite 落在数据目录），不会因为缺 storage 直接崩溃
+    assert cfg.db_path is not None
+    assert cfg.validate() == [], cfg.validate()
+
+
+def test_unreadable_config_gives_permission_hint(tmp_path, monkeypatch) -> None:
+    """容器以 uid 10001 运行，宿主上 mode 600 的 config.yaml 读不到 —— 报错要能照着做。"""
+    import builtins
+
+    from erp_tools.core.errors import ConfigError
+
+    path = tmp_path / "config.yaml"
+    path.write_text("mode: mcp\n", encoding="utf-8")
+    real_open = builtins.open
+
+    def fake_open(file, *args, **kwargs):
+        if str(file) == str(path):
+            raise PermissionError(13, "Permission denied", str(path))
+        return real_open(file, *args, **kwargs)
+
+    monkeypatch.setattr(builtins, "open", fake_open)
+
+    with pytest.raises(ConfigError, match="chmod 644"):
+        ServerConfig.from_config_file(path)
+
+
 def test_register_secret_auto_generates_once(tmp_path) -> None:
     cfg = ServerConfig(bind="127.0.0.1:8765", db_path=tmp_path / "auth.db",
                        register_secret="auto")
