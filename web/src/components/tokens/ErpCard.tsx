@@ -8,9 +8,11 @@ import { Alert, Badge, Button, Card, Field } from '../ui'
 /** ERP 账号绑定卡片：一个平台账号只能绑一个工号，换绑到别的工号会撤销旧 token。 */
 export function ErpCard({
   erp,
+  credential,
   onBound,
 }: {
   erp: ErpBinding
+  credential?: { store_enabled: boolean; stored: boolean }
   onBound: (state: AccountState & { revoked_tokens: number }) => void
 }) {
   const [editing, setEditing] = useState(!erp.bound)
@@ -18,6 +20,8 @@ export function ErpCard({
   const [password, setPassword] = useState('')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
+  const [stored, setStored] = useState(Boolean(credential?.stored))
+  const storeEnabled = credential?.store_enabled ?? true
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -27,7 +31,22 @@ export function ErpCard({
       const state = await platform.bindErp(username.trim(), password)
       setPassword('')
       setEditing(false)
+      setStored(Boolean(state.credential_stored))
       onBound(state)
+    } catch (err) {
+      setError(describeError(err))
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  async function forget() {
+    if (!window.confirm('删除已保存的 ERP 密码？之后会话过期需要重新绑定 ERP 账号。')) return
+    setBusy(true)
+    setError('')
+    try {
+      await platform.deleteErpCredential()
+      setStored(false)
     } catch (err) {
       setError(describeError(err))
     } finally {
@@ -86,9 +105,13 @@ export function ErpCard({
             required
             value={password}
             onChange={(event) => setPassword(event.target.value)}
-            placeholder="只用于验证，不会保存"
+            placeholder="登录华博 ERP 的密码"
             autoComplete="current-password"
-            hint="服务端只保留 cookie 会话，密码不落盘"
+            hint={
+              storeEnabled
+                ? '加密保存（AES-GCM，密钥与数据库分开），仅用于会话过期后自动重登'
+                : '只用于本次验证，不会保存'
+            }
           />
           <div className="flex flex-wrap items-center gap-2 sm:col-span-2">
             <Button type="submit" busy={busy}>
@@ -114,10 +137,25 @@ export function ErpCard({
       )}
 
       {erp.bound && !editing && (
-        <div className="mt-4">
+        <div className="mt-4 flex flex-wrap items-center gap-2">
           <Button type="button" variant="ghost" onClick={() => setEditing(true)}>
             换绑 ERP 账号
           </Button>
+          {storeEnabled && stored && (
+            <>
+              <span className="rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2.5 py-0.5 text-xs text-emerald-300">
+                密码已加密保存 · 会话过期自动重登
+              </span>
+              <Button type="button" variant="ghost" busy={busy} onClick={() => void forget()}>
+                删除已存密码
+              </Button>
+            </>
+          )}
+          {storeEnabled && !stored && (
+            <span className="text-xs text-amber-300">
+              未保存密码：ERP 会话过期后需要重新绑定
+            </span>
+          )}
         </div>
       )}
     </Card>

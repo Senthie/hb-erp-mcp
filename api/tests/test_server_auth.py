@@ -30,13 +30,15 @@ def ok_login(username: str, password: str) -> UserSession:
     return fake_session(username)
 
 
-def make_state(tmp_path: Path, *, login_impl=ok_login, alive_impl=lambda _auth: True):
+def make_state(tmp_path: Path, *, login_impl=ok_login, alive_impl=lambda _auth: True,
+               store_erp_password: bool = True):
     erp = ErpConfig(
         host="http://127.0.0.1:8889", username="21146", password="",
         cookie_dir=tmp_path / "cookies",
     )
     server = ServerConfig(bind="127.0.0.1:8765", db_path=tmp_path / "auth.db",
-                          global_concurrency=2)
+                          global_concurrency=2,
+                          store_erp_password=store_erp_password)
     return build_state(server, erp, login_impl=login_impl, alive_impl=alive_impl)
 
 
@@ -169,7 +171,8 @@ def test_logout_revokes_only_current_key(client: TestClient) -> None:
 
 
 def test_session_expired_revokes_key(tmp_path: Path) -> None:
-    st = make_state(tmp_path, alive_impl=lambda _auth: False)
+    """关掉「保存密码」时，会话过期就只能作废 key（旧行为）。"""
+    st = make_state(tmp_path, alive_impl=lambda _auth: False, store_erp_password=False)
     try:
         app = create_app(st)
         with TestClient(app) as c:
@@ -182,6 +185,33 @@ def test_session_expired_revokes_key(tmp_path: Path) -> None:
             again = c.get("/v1/me", headers=auth_header(key))
             assert again.status_code == 401
             assert again.json()["error"] == "api_key_revoked"
+    finally:
+        st.close()
+
+
+def test_session_expired_auto_relogins_and_keeps_key(tmp_path: Path) -> None:
+    """默认开启「加密保存密码」：会话过期时自动重登，用户无感（key 不作废）。"""
+    alive = {"value": True}
+    logins: list[str] = []
+
+    def counting_login(username: str, password: str) -> UserSession:
+        logins.append(password)
+        return fake_session(username)
+
+    st = make_state(tmp_path, login_impl=counting_login,
+                    alive_impl=lambda _auth: alive["value"])
+    try:
+        with TestClient(create_app(st)) as c:
+            key = login(c).json()["api_key"]
+            assert logins == ["secret"]
+
+            alive["value"] = False          # ERP 会话过期了
+            resp = c.get("/v1/me", headers=auth_header(key))
+            assert resp.status_code == 200, resp.text
+            assert resp.json()["erp_alive"] is True
+            # 用库里存的密码自动重登了一次，key 依然有效
+            assert logins == ["secret", "secret"]
+            assert c.get("/v1/me", headers=auth_header(key)).status_code == 200
     finally:
         st.close()
 

@@ -1046,6 +1046,9 @@ def cmd_serve(args) -> int:
     _log(f"[INFO] 监听 {host}:{port}  TLS={'on' if server_cfg.tls_enabled else 'off'}  "
          f"全局并发={server_cfg.global_concurrency}")
     _log(f"[INFO] 存储：{server_cfg.describe()['store']}")
+    _log("[INFO] ERP 会话过期时会用加密保存的密码自动重登（用户无感）"
+         if server_cfg.store_erp_password else
+         "[WARN] 已关闭 ERP 密码保存：会话过期后需要用户重新绑定 ERP 账号")
     if server_cfg.db_path is not None:
         _log("[WARN] 正在使用 SQLite：仅适合本地开发与测试；"
              "生产把 config.yaml 的 server.storage 改成 postgres")
@@ -1428,6 +1431,9 @@ def build_parser() -> argparse.ArgumentParser:
                    help="信任 X-Forwarded-For（放在反向代理后面时打开）")
     p.add_argument("--allow-plaintext", dest="allow_plaintext", action="store_true",
                    help="显式允许非回环 + 明文 HTTP（仅当 TLS 由 nginx 等代理终止）")
+    p.add_argument("--no-store-erp-password", dest="no_store_erp_password",
+                   action="store_true",
+                   help="不保存 ERP 密码（默认加密保存，用于会话过期后自动重登）")
     p.set_defaults(func=cmd_serve)
 
     return parser

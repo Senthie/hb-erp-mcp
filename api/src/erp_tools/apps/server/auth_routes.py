@@ -114,6 +114,10 @@ def authenticate(state: ServerState, username: str, password: str, ip: str
         ) from exc
 
     state.guard.success(user_key)
+    # 加密保存密码：会话过期后服务自动重登，CLI/脚本签的 key 也能自动续期
+    from .state import store_erp_secret  # 延迟导入：避免 state <-> auth_routes 循环
+
+    store_erp_secret(state, username, password)
     raw_key = state.store.issue(username, user_id=session.user_id, ip=ip)
     return raw_key, session
 

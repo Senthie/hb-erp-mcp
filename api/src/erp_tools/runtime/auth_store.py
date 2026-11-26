@@ -6,10 +6,12 @@
 
 设计要点：
 
-* **不存 ERP 密码**。登录只用于换取 cookie，密码不进库、不进日志。
+* ERP 密码**只以 AES-GCM 密文**存在 `erp_credentials`（密钥在数据目录的
+  `erp_credentials.key`，与库分开），用于会话过期后自动重新登录；
+  可用 `server.store_erp_password: false` 关闭（此时过期需人工重新绑定）。
 * 库里只有 ``sha256(api_key)``，没有明文 key。
 * **没有 expires_at**：key 的有效期等于它绑定的 ERP 会话。
-  会话一死，调用方探测到就把这一行置 ``revoked=1``（保留痕迹，便于审计）。
+  会话一死且无法自动重登，调用方探测到就把这一行置 ``revoked=1``（保留痕迹，便于审计）。
 * 同一账号允许多把 key 并存（多设备/多客户端）。
 """
 
@@ -128,6 +130,13 @@ CREATE TABLE IF NOT EXISTS mcp_call_logs (
 CREATE INDEX IF NOT EXISTS idx_calls_created ON mcp_call_logs(created_at);
 CREATE INDEX IF NOT EXISTS idx_calls_tool ON mcp_call_logs(tool);
 CREATE INDEX IF NOT EXISTS idx_calls_actor ON mcp_call_logs(actor_id);
+
+-- ERP 密码密文（AES-GCM，密钥在数据目录的 erp_credentials.key，与库分开存）
+CREATE TABLE IF NOT EXISTS erp_credentials (
+    erp_username TEXT PRIMARY KEY,
+    secret       TEXT NOT NULL,
+    updated_at   TEXT NOT NULL
+);
 """
 
 _SERVICE_COLUMNS = (
@@ -270,6 +279,11 @@ class ApiKeyStore(Protocol):
                        until: str | None = None, limit: int = 100,
                        offset: int = 0) -> list[ToolCallLog]: ...
     def count_call_logs(self, *, actor_id: str | None = None) -> int: ...
+
+    # ERP 密码密文（自动重登用；明文永不入库）
+    def set_erp_secret(self, erp_username: str, secret: str) -> None: ...
+    def get_erp_secret(self, erp_username: str) -> str | None: ...
+    def delete_erp_secret(self, erp_username: str) -> bool: ...
 
 
 class AuthStore:
@@ -829,6 +843,34 @@ class AuthStore:
             params.append(actor_id)
         with self._lock:
             return int(self.conn.execute(sql, params).fetchone()[0])
+
+    # ---------- ERP 密码密文（自动重登用） ----------
+    def set_erp_secret(self, erp_username: str, secret: str) -> None:
+        with self._lock:
+            self.conn.execute(
+                "INSERT INTO erp_credentials (erp_username, secret, updated_at) "
+                "VALUES (?, ?, ?) "
+                "ON CONFLICT(erp_username) DO UPDATE SET "
+                "secret = excluded.secret, updated_at = excluded.updated_at",
+                (erp_username, secret, _utcnow()),
+            )
+            self.conn.commit()
+
+    def get_erp_secret(self, erp_username: str) -> str | None:
+        with self._lock:
+            row = self.conn.execute(
+                "SELECT secret FROM erp_credentials WHERE erp_username = ?",
+                (erp_username,),
+            ).fetchone()
+        return str(row["secret"]) if row else None
+
+    def delete_erp_secret(self, erp_username: str) -> bool:
+        with self._lock:
+            cur = self.conn.execute(
+                "DELETE FROM erp_credentials WHERE erp_username = ?", (erp_username,)
+            )
+            self.conn.commit()
+            return bool(cur.rowcount)
 
 
 __all__ = ["ApiKeyRecord", "ApiKeyStore", "AuthStore"]

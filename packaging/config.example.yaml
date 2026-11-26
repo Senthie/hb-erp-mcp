@@ -52,7 +52,8 @@ qxid:
 #   tls: auto                    # 非回环监听时首次启动自签证书，不用回填路径
 #   allow_hosts: auto            # 由 bind / public_host 派生
 #   register_secret: auto        # 首次启动随机生成到 <数据目录>/register.secret
-#   concurrency: 6
+#   concurrent: 6
 #   public_host: ""              # 反向代理 / docker 对外地址
 #   trust_proxy: false
 #   allow_plaintext: false
+#   store_erp_password: true     # ERP 密码 AES-GCM 加密存库，会话过期自动重登（用户无感）

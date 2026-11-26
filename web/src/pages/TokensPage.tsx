@@ -72,8 +72,13 @@ export function TokensPage({
 
       <ErpCard
         erp={account.user.erp}
+        credential={account.erp_credential}
         onBound={(state) => {
-          onAccountChange({ user: state.user, tokens: state.tokens })
+          onAccountChange({
+            user: state.user,
+            tokens: state.tokens,
+            erp_credential: state.erp_credential ?? account.erp_credential,
+          })
           void refresh()
         }}
       />

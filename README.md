@@ -106,8 +106,9 @@ npm run build    # 产物落进 api/src/erp_tools/apps/server/static，由 erp s
 优先级：命令行 `--host/--user/--password` > 临时环境变量 > `config.yaml` > 内置默认值。
 旧版 `.env` 自 0.4 起不再读取。`erp config` 可随时确认生效来源，详见 [docs/cli.md](docs/cli.md)。
 
-**密码不落盘**：CLI 登录只缓存 cookie；MCP 服务端只在 `/v1/auth/login` 那一次请求里使用密码，
-库里只存 api-key 的 sha256。
+**密码只在登录那一刻以明文出现**：CLI 登录只缓存 cookie；MCP 服务端把 ERP 密码用
+AES-GCM 加密存库（密钥在数据目录、与库分开），只为「会话过期时自动重登」，让用户无感；
+不想要可关 `server.store_erp_password`（见 [docs/mcp.md](docs/mcp.md) §2.6）。
 
 ## 文档
 
@@ -133,7 +134,7 @@ npm run build    # 产物落进 api/src/erp_tools/apps/server/static，由 erp s
 | **JSONL + 主键续跑** | 每条记录一个 JSON 文件会产生 18496 个目录，重跑时无法判断完成情况；JSONL 追加写 + 按 `id` 去重，天然支持中断续跑。 |
 | **夹具回归测试** | 页面改版过去只能靠跑很久才发现。现在 `api/tests/fixtures/` 存真实页面，解析器改动先跑单测。 |
 | **`Connection: close`** | 老旧 IIS 7.5 上 Keep-Alive 极易导致连接池超时。 |
-| **服务端不存密码** | 每个使用者用自己的工号密码换自己的 api-key，密码只在一次请求的调用栈里；会话过期只能重新登录。 |
+| **密码加密保存、会话自动续期** | ERP cookie 会过期，重登需要密码+验证码。默认把密码 AES-GCM 加密存库（密钥与库分开），过期时后台重登，MCP 调用不中断；合规不允许就关掉 `store_erp_password`。 |
 
 ## 已知限制
 
@@ -141,6 +142,7 @@ npm run build    # 产物落进 api/src/erp_tools/apps/server/static，由 erp s
 - 报价需求写入已跑通，但 **产品类别（树形下拉）不落库**、**多语言数量明细（`CPSLID`）不自动建**；
   细节见 [quote_create/README.md](api/src/erp_tools/tools/quote_create/README.md)。
 - **api-key 无过期时间**：寿命等于绑定的 ERP 会话；主动作废用 `POST /v1/auth/logout`。
+- **自动重登依赖加密保存的 ERP 密码**：ERP 侧改密码后自动重登会失败（审计日志可见），需重新绑定一次。
 - **cookie 以明文保存在 `cookies/<工号>.json`**：建议收紧目录 ACL（接 DPAPI 尚未实现）。
 - **限流与锁定是进程内内存态**：重启即清零，暂不支持多实例横向部署。
 - 同一个 ERP 可能存在**多端口实例**（实测 `8889` 与 `8890` 数据不互通），切换前先 `erp config`。

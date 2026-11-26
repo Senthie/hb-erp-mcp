@@ -84,6 +84,9 @@ class ServerConfig:
     trust_proxy: bool = False
     #: 显式允许「非回环 + 明文 HTTP」（TLS 由上游代理终止时）
     allow_plaintext: bool = False
+    #: 把 ERP 密码**加密**存库，会话过期时自动重登（用户无感）。
+    #: 密文用 AES-GCM，密钥在数据目录的 `erp_credentials.key`（与库分开存）。
+    store_erp_password: bool = True
     #: 启动期自动配置产生的说明（自动签发的证书、生成的密钥等），给日志用
     notes: list[str] = field(default_factory=list)
 
@@ -314,6 +317,7 @@ class ServerConfig:
             public_host=_text(block.get("public_host")),
             trust_proxy=_as_bool(block.get("trust_proxy", False)),
             allow_plaintext=_as_bool(block.get("allow_plaintext", False)),
+            store_erp_password=_as_bool(block.get("store_erp_password", True)),
         )
 
     @classmethod
@@ -392,6 +396,8 @@ class ServerConfig:
             cfg.trust_proxy = True
         if getattr(args, "allow_plaintext", False):
             cfg.allow_plaintext = True
+        if getattr(args, "no_store_erp_password", False):
+            cfg.store_erp_password = False
         return cfg
 
     def describe(self) -> dict[str, str]:
@@ -411,6 +417,7 @@ class ServerConfig:
             "register_secret": "on" if self.register_secret else "off",
             "signup": "on" if self.allow_signup else "off",
             "admin_users": ",".join(self.admin_users) or "(未配置)",
+            "store_erp_password": "on" if self.store_erp_password else "off",
         }
 
 

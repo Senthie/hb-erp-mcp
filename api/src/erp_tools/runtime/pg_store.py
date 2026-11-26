@@ -138,6 +138,14 @@ _SCHEMA_STATEMENTS = (
     "CREATE INDEX IF NOT EXISTS idx_calls_created ON mcp_call_logs (created_at DESC)",
     "CREATE INDEX IF NOT EXISTS idx_calls_tool ON mcp_call_logs (tool)",
     "CREATE INDEX IF NOT EXISTS idx_calls_actor ON mcp_call_logs (actor_id)",
+    # ERP 密码密文（AES-GCM；密钥在数据目录的 erp_credentials.key，不在库里）
+    """
+    CREATE TABLE IF NOT EXISTS erp_credentials (
+        erp_username TEXT PRIMARY KEY,
+        secret       TEXT NOT NULL,
+        updated_at   TIMESTAMPTZ NOT NULL DEFAULT now()
+    )
+    """,
 )
 
 #: 一条语句一次执行：psycopg 带参数时走扩展协议，不接受多语句拼接
@@ -734,6 +742,37 @@ class PgStore:
             params.append(actor_id)
         row = self._run(lambda conn: conn.execute(sql, tuple(params)).fetchone())
         return int((row or {}).get("n") or 0)
+
+    # ---------- ERP 密码密文（自动重登用） ----------
+    def set_erp_secret(self, erp_username: str, secret: str) -> None:
+        def _do(conn):
+            conn.execute(
+                "INSERT INTO erp_credentials (erp_username, secret, updated_at) "
+                "VALUES (%s, %s, now()) "
+                "ON CONFLICT (erp_username) DO UPDATE SET "
+                "secret = EXCLUDED.secret, updated_at = now()",
+                (erp_username, secret),
+            )
+
+        self._run(_do)
+
+    def get_erp_secret(self, erp_username: str) -> str | None:
+        row = self._run(
+            lambda conn: conn.execute(
+                "SELECT secret FROM erp_credentials WHERE erp_username = %s",
+                (erp_username,),
+            ).fetchone()
+        )
+        return str(row["secret"]) if row else None
+
+    def delete_erp_secret(self, erp_username: str) -> bool:
+        row = self._run(
+            lambda conn: conn.execute(
+                "DELETE FROM erp_credentials WHERE erp_username = %s RETURNING 1",
+                (erp_username,),
+            ).fetchone()
+        )
+        return row is not None
 
     # ---------- 元信息 ----------
     def describe(self) -> dict[str, str]:

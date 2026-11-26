@@ -103,6 +103,8 @@ ${admin_line}
   public_host: "${public_host}"
   allow_hosts: auto
   register_secret: auto
+  # ERP 密码 AES-GCM 加密存库 → cookie 过期时后台自动重登（用户无感）
+  store_erp_password: true
 YAML
   # 容器以 uid 10001（非 root）运行，文件必须对其它用户可读，否则
   # `erp serve` 会报「配置文件解析失败：Permission denied」后反复重启。

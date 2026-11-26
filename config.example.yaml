@@ -84,3 +84,4 @@ qxid:
 #   public_host: ""             # 反向代理 / docker 对外地址，如 erp-tools.lan:8443
 #   trust_proxy: false          # 前面有反向代理时才打开
 #   allow_plaintext: false      # TLS 由代理终止时打开（docker + nginx）
+#   store_erp_password: true    # ERP 密码 AES-GCM 加密存库 → 会话过期自动重登（用户无感）

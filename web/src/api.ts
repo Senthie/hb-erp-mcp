@@ -54,6 +54,8 @@ export interface NewToken {
 export interface AccountState {
   user: PlatformUser
   tokens: McpToken[]
+  /** ERP 密码是否已加密保存（过期自动重登）；老接口可能没有这个字段 */
+  erp_credential?: { store_enabled: boolean; stored: boolean }
 }
 
 export class ApiError extends Error {
@@ -137,10 +139,18 @@ export const platform = {
   },
 
   bindErp(username: string, password: string) {
-    return request<AccountState & { revoked_tokens: number }>('/v1/platform/erp/bind', {
-      method: 'POST',
-      body: JSON.stringify({ username, password }),
-    })
+    return request<AccountState & { revoked_tokens: number; credential_stored: boolean }>(
+      '/v1/platform/erp/bind',
+      {
+        method: 'POST',
+        body: JSON.stringify({ username, password }),
+      },
+    )
+  },
+
+  /** 删除已加密保存的 ERP 密码（之后会话过期需重新绑定） */
+  deleteErpCredential(): Promise<{ removed: boolean }> {
+    return request('/v1/platform/erp/credentials', { method: 'DELETE' })
   },
 
   tokens(): Promise<{ erp: ErpBinding; tokens: McpToken[] }> {

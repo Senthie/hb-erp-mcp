@@ -58,7 +58,7 @@ from .errors import (
     RateLimited,
     Unauthorized,
 )
-from .state import ServerState
+from .state import ServerState, store_erp_secret
 
 _log = logging.getLogger("erp_tools.server.platform")
 
@@ -296,10 +296,23 @@ def build_routes(state: ServerState) -> list[Route]:
     async def me(request: Request) -> JSONResponse:
         session, user = await _require_user(state, request)
         tokens = await anyio.to_thread.run_sync(lambda: state.store.list_for_owner(user.id))
+        stored = False
+        if user.erp_bound:
+            try:
+                stored = bool(await anyio.to_thread.run_sync(
+                    lambda: state.store.get_erp_secret(user.erp_username or "")
+                ))
+            except Exception:  # noqa: BLE001 - 查不到就当没存
+                stored = False
         return JSONResponse({
             "user": user.to_dict(),
             "tokens": [public_token(item) for item in tokens],
             "session": {"expires_at": session.expires_at},
+            # ERP 密码是否已加密保存（过期自动重登）；不代表明文可读
+            "erp_credential": {
+                "store_enabled": state.server.store_erp_password,
+                "stored": stored,
+            },
         })
 
     # ══════════════════ 绑定 ERP 账号 ══════════════════
@@ -350,24 +363,47 @@ def build_routes(state: ServerState) -> list[Route]:
         updated = await anyio.to_thread.run_sync(
             lambda: state.store.bind_erp(user.id, erp_username, erp_session.user_id)
         )
+        # 加密保存密码：会话过期时服务自动重登，用户不必再操作
+        stored = await anyio.to_thread.run_sync(
+            lambda: store_erp_secret(state, erp_username, erp_password)
+        )
         revoked = 0
         if previous and previous != erp_username.lower():
             # 换绑到别的 ERP 账号：旧 token 还指向老身份，必须作废
             revoked = await anyio.to_thread.run_sync(
                 lambda: state.store.revoke_owner(user.id)
             )
-        _log.info("平台账号 %s 绑定 ERP %s（撤销旧 token %d 把）",
-                  user.username, erp_username, revoked)
+            await anyio.to_thread.run_sync(
+                lambda: state.store.delete_erp_secret(user.erp_username or "")
+            )
+        _log.info("平台账号 %s 绑定 ERP %s（撤销旧 token %d 把，存密码=%s）",
+                  user.username, erp_username, revoked, stored)
         await record_audit(state, request, "platform.erp.bind",
                            actor=updated or user, target_type="erp_account",
                            target_id=erp_username, status_code=200,
-                           detail={"revoked_tokens": revoked})
+                           detail={"revoked_tokens": revoked,
+                                   "credential_stored": stored})
         tokens = await anyio.to_thread.run_sync(lambda: state.store.list_for_owner(user.id))
         return JSONResponse({
             "user": (updated or user).to_dict(),
             "revoked_tokens": revoked,
+            "credential_stored": stored,
             "tokens": [public_token(item) for item in tokens],
         })
+
+    # ══════════════════ 删除已保存的 ERP 密码 ══════════════════
+    async def delete_erp_credential(request: Request) -> JSONResponse:
+        _, user = await _require_user(state, request)
+        if not user.erp_bound:
+            raise Conflict("尚未绑定 ERP 账号", code="erp_not_bound")
+        removed = await anyio.to_thread.run_sync(
+            lambda: state.store.delete_erp_secret(user.erp_username or "")
+        )
+        await record_audit(state, request, "platform.erp.credential_delete",
+                           actor=user, target_type="erp_account",
+                           target_id=user.erp_username, status_code=200,
+                           detail={"removed": removed})
+        return JSONResponse({"removed": removed})
 
     # ══════════════════ token 列表 ══════════════════
     async def list_tokens(request: Request) -> JSONResponse:
@@ -437,6 +473,7 @@ def build_routes(state: ServerState) -> list[Route]:
         Route("/v1/platform/logout", logout, methods=["POST"]),
         Route("/v1/platform/me", me, methods=["GET"]),
         Route("/v1/platform/erp/bind", bind_erp, methods=["POST"]),
+        Route("/v1/platform/erp/credentials", delete_erp_credential, methods=["DELETE"]),
         Route("/v1/platform/tokens", list_tokens, methods=["GET"]),
         Route("/v1/platform/tokens", create_token, methods=["POST"]),
         Route("/v1/platform/tokens/{token_id}/revoke", revoke_token, methods=["POST"]),

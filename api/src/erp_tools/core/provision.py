@@ -165,6 +165,7 @@ def mcp_config(
     if plain:
         server["allow_plaintext"] = True
         server["tls"] = "off"  # TLS 由上游代理终止，自己不用签
+    server["store_erp_password"] = True  # ERP 密码加密存库 → 会话过期自动重登
 
     return {"mode": MODE_MCP, "erp": {"host": (erp_host or "").strip()}, "server": server}
 

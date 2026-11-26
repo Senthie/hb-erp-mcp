@@ -225,6 +225,10 @@ def build_routes(state: ServerState) -> list[Route]:
         revoked = await anyio.to_thread.run_sync(
             lambda: state.store.revoke_owner(user_id)
         )
+        # 解绑后没必要再留着密码密文
+        await anyio.to_thread.run_sync(
+            lambda: state.store.delete_erp_secret(target.erp_username or "")
+        )
         await record_audit(
             state, request, "admin.user.unbind_erp", actor=admin,
             target_type="user", target_id=user_id, status_code=200,
@@ -268,6 +272,10 @@ def build_routes(state: ServerState) -> list[Route]:
             raise Conflict("不能删除自己的账号", code="cannot_delete_self")
 
         await anyio.to_thread.run_sync(lambda: state.store.delete_user(user_id))
+        # 删账号时一并抹掉加密保存的 ERP 密码
+        await anyio.to_thread.run_sync(
+            lambda: state.store.delete_erp_secret(target.erp_username or "")
+        )
         await record_audit(
             state, request, "admin.user.delete", actor=admin,
             target_type="user", target_id=user_id, status_code=200,

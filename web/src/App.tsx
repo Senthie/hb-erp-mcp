@@ -36,7 +36,11 @@ export function App() {
       .me()
       .then((state) => {
         if (!alive) return
-        setAccount({ user: state.user, tokens: state.tokens })
+        setAccount({
+          user: state.user,
+          tokens: state.tokens,
+          erp_credential: state.erp_credential,
+        })
         const current = readHash()
         if (current === 'register') return
         if (current === 'admin' && state.user.is_admin) {

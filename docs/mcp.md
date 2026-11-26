@@ -67,6 +67,7 @@ server:
 | `--global-concurrency` | `6` | 全局 ERP 并发闸门（实测 4~8 饱和） |
 | `--trust-proxy` | 取配置 | 信任 `X-Forwarded-For` |
 | `--allow-plaintext` | 取配置 | 显式允许「非回环 + 明文 HTTP」（TLS 由上游终止时） |
+| `--no-store-erp-password` | 关（默认保存） | 不保存 ERP 密码 → 会话过期需人工重新绑定（见 2.6） |
 
 > 存储默认 `sqlite`（单机试跑）；生产把 `server.storage` 改成 `postgres` 并填 `pg_dsn`。
 > 用 `--pg-dsn`/`--db` 都没给、配置里也没有时直接拒绝启动，
@@ -99,8 +100,10 @@ npm run build    # 产物 → api/src/erp_tools/apps/server/static
 
 1. **平台登录 / 注册** —— 这是 HB-MCP 自己的账号（用户名 + 密码，scrypt 存储），
    **不是 ERP 工号**。会话只放在 HttpOnly cookie 里，7 天有效。
-2. **Token 管理** —— 绑定 ERP 账号（**一个平台账号只能绑一个工号**，密码只用于验证、
-   不落盘）；换绑到别的工号会**自动撤销**该账号下所有旧 token。
+2. **Token 管理** —— 绑定 ERP 账号（**一个平台账号只能绑一个工号**）。密码用
+   AES-GCM **加密保存**，只用于 ERP 会话过期后自动重登（见 2.6）；
+   不想要这份密文可以随时「删除已存密码」，或全局关掉 `server.store_erp_password`。
+   换绑到别的工号会**自动撤销**该账号下所有旧 token。
 3. **申请 Token** —— 在「我的 Token」右上角点**新增**，弹窗里填写备注（必填）后点创建；
    成功后**同一个弹窗内**展示结果：**上方是 API Key、下方是使用指南**（`mcp.json` 配置 +
    可粘贴给 AI 的提示），三者都能一键复制。结果态必须点「完成」才关闭（Esc/点遮罩不会关，
@@ -116,7 +119,8 @@ npm run build    # 产物 → api/src/erp_tools/apps/server/static
 | POST | `/v1/platform/login` | `{username, password}` → 登录，下发 `hb_session` cookie |
 | POST | `/v1/platform/logout` | 注销当前会话（204） |
 | GET | `/v1/platform/me` | 当前账号 + ERP 绑定 + token 列表 |
-| POST | `/v1/platform/erp/bind` | `{username, password}`＝**ERP 工号密码**，验证后绑定 |
+| POST | `/v1/platform/erp/bind` | `{username, password}`＝**ERP 工号密码**，验证后绑定（密码加密保存，用于过期自动重登） |
+| DELETE | `/v1/platform/erp/credentials` | 删除已加密保存的 ERP 密码（此后过期需重新绑定） |
 | GET | `/v1/platform/tokens` | 我的 token（只给 id 前缀，不含明文） |
 | POST | `/v1/platform/tokens` | `{label}` → 签发 token，返回明文 + `mcp` 配置/提示 |
 | POST | `/v1/platform/tokens/{id}/revoke` | 撤销一把 token |
@@ -151,10 +155,11 @@ npm run build    # 产物 → api/src/erp_tools/apps/server/static
 `actor_name` / `actor_type` / `target_type` / `target_id` / `status_code` / `ip` /
 `user_agent` / `detail`（JSONB）。
 
-- 覆盖：平台注册 / 登录（含失败）/ 登出、绑定 ERP、申请 / 撤销 token、ERP 直连换 key
-  （`/v1/auth/login`）、MCP 服务登记、管理员改用户 / 删用户 / 解绑 / 撤销 token。
+- 覆盖：平台注册 / 登录（含失败）/ 登出、绑定 ERP、删除已存 ERP 密码、申请 / 撤销 token、
+  ERP 直连换 key（`/v1/auth/login`）、MCP 服务登记、**ERP 会话自动重登（`erp.relogin`）**、
+  管理员改用户 / 删用户 / 解绑 / 撤销 token。
 - **不写敏感信息**：没有密码、没有 api-key 明文、没有 cookie；`detail` 只放工号、备注、
-  token id 前缀这类定位信息。
+  token id 前缀、失败原因这类定位信息。
 - 写日志失败只告警，绝不影响业务请求。
 
 ### 2.5 MCP 调用日志（PostgreSQL `mcp_call_logs`）
@@ -180,9 +185,52 @@ npm run build    # 产物 → api/src/erp_tools/apps/server/static
   会补上平台账号名（库里只存 `actor_id`）。
 - 写入失败同样只告警，工具本身照常返回。
 
-### 2.6 ERP 工号直连换 key（兼容 / CLI）
+### 2.6 ERP 会话自动续期（加密保存密码）
 
-**密码是每个使用者自己的，不进配置文件、不进容器、不落盘。** 谁要用，谁用自己的
+ERP 的 cookie 会过期（ASP.NET 会话 + 闲置超时），而重新登录需要「工号 + 密码 + 验证码」。
+为了不让用户 MCP 调用突然全线失败，服务端默认**把密码加密存起来**，过期时自己重登：
+
+```
+调用工具 → 探测 /Admin/index.html 被跳回登录页
+        → 解密 erp_credentials 里的密文
+        → 后台重新登录（验证码走 ddddocr）
+        → 会话替换，工具照常返回（用户完全无感，token 不作废）
+```
+
+| 项 | 说明 |
+| --- | --- |
+| 表 | `erp_credentials(erp_username PK, secret, updated_at)`；`secret` 是 `v1:` + AES-256-GCM 密文 |
+| 密钥 | `<数据目录>/erp_credentials.key`（首次启动自动生成，`chmod 600`）；**与数据库分开**，只泄露库拿不到明文 |
+| 密钥生命周期 | **只生成一次**：文件存在就复用，重启 / 重建容器 / 重新 `up.sh` 都不会变；只有删掉它（或 `docker compose down -v` 删卷）才会生成新的 |
+| 写入时机 | `POST /v1/platform/erp/bind`、`POST /v1/auth/login` 成功后 |
+| 清除时机 | 换绑到别的工号、管理员解绑 / 删账号、用户点「删除已存密码」 |
+| 失败退避 | 重登失败按 60s → 120s → 240s…（上限 30 分钟）退避，不会把 ERP 账号打到锁定 |
+| 审计 | 每次自动重登写一行 `erp.relogin`（成功/失败都在管理员后台「审计日志」可见） |
+| 关闭 | `config.yaml` 里 `server.store_erp_password: false`（或 `erp serve --no-store-erp-password`） |
+
+```yaml
+server:
+  store_erp_password: true     # 默认开；关掉后过期只能人工重新绑定
+```
+
+> 安全提示：这等于「服务端持有 ERP 密码」。若合规上不允许，就把 `store_erp_password`
+> 关掉并删除 `<数据目录>/erp_credentials.key`（旧密文随之作废）。
+> 关闭后行为回到「过期即作废 token，用户重新绑定」。
+
+**备份/迁移时把密钥和数据一起带走**：`docker compose` 部署下密钥在 `erpdata` 卷的
+`/data/erp_credentials.key`，与 PostgreSQL 的 `pgdata` 卷配对使用。
+只恢复其中一半不会报错，只是解密失败 → 表现为「ERP 会话过期需重新绑定」
+（审计日志里是 `erp.relogin` 失败，`/v1/platform/me` 会显示 `stored: false`）。
+源码直接跑 `erp serve` 时数据目录是**当前工作目录**，换目录启动等于换了密钥文件，
+建议显式设置 `ERP_DATA_DIR` 固定下来。
+
+接口：`GET /v1/platform/me` 会返回
+`erp_credential: {store_enabled, stored}`；`DELETE /v1/platform/erp/credentials`
+清掉密文（审计动作 `platform.erp.credential_delete`）。
+
+### 2.7 ERP 工号直连换 key（兼容 / CLI）
+
+**密码只存在于本次登录请求里（明文），落库的是密文。** 谁要用，谁用自己的
 ERP 工号/密码换一把自己的 key：
 
 ```powershell
@@ -208,17 +256,18 @@ $r.api_key      # erp_xxx —— 只显示这一次，库里只存 sha256
 | 事件 | 结果 |
 | --- | --- |
 | 签发 | **不设过期时间** |
-| **ERP 会话过期** | api-key **一并作废**（`401 erp_session_expired`），需重新登录 |
-| 服务进程重启 | 仍有效（会话从 `cookies/<工号>.json` 恢复） |
+| **ERP 会话过期** | 默认**自动重登**（用加密保存的密码），key 继续可用；<br>重登失败（密码改了/账号锁了）才作废：`401 erp_session_expired` |
+| 服务进程重启 | 仍有效（会话从 `cookies/<工号>.json` 恢复；cookie 也没了就自动重登） |
 | `POST /v1/auth/logout` | 只撤当前这把，同账号其它设备/AI 不受影响 |
 
-- **密码不落盘**：只在登录请求的调用栈里存在，成功后立刻丢弃；`api_keys` 表里只有
-  key 的 sha256 与工号，**没有密码列**。
+- **明文密码不落库**：只在登录请求的调用栈里存在，成功后立刻丢弃；`api_keys` 表里只有
+  key 的 sha256 与工号。`erp_credentials` 表里是 AES-GCM 密文，密钥在数据目录的
+  `erp_credentials.key`（与库分开存放，`chmod 600`）。
 - 多个人/多个 AI 客户端 = 多把 key，可分别撤销；同一 ERP 账号的多把 key 共用一份 ERP 会话。
 - `ERP_USERNAME` / `ERP_PASSWORD` 环境变量**只给 CLI 用**；`erp serve` 完全不读，
   配了会打印一条提示建议删掉。
 
-### 2.7 注册 MCP 服务信息（`POST /v1/mcp/register`）
+### 2.8 注册 MCP 服务信息（`POST /v1/mcp/register`）
 
 登记的是**服务本身**（本项目即 HB-MCP）：名称、版本、访问地址、传输方式、环境、负责人、描述。
 不涉及任何 ERP 账号，所以无需 api-key；按 `name` **幂等**（同名再提交＝更新元数据）。
@@ -481,7 +530,7 @@ erp serve --bind 127.0.0.1:8765 --trust-proxy `
 | `421 Invalid Host header` | 请求的 `Host` 不在白名单 | 把客户端实际用的 `host:port` 加进去（带正确 key 时才走到这一步） |
 | `self signed certificate` / `ERR_TLS_CERT_ALTNAME_INVALID` | 没装 CA 或 SAN 不含该地址 | 装 `erp-tools.crt`；重签时补 `--host` |
 | `401 missing_bearer` / `invalid_api_key` | 没带 key / key 传错 | 先 `POST /v1/auth/login` 拿 key |
-| `401 erp_session_expired` | 该 key 的 ERP 会话过期 | 重新登录换新 key（服务端不存密码） |
+| `401 erp_session_expired` | 该 key 的 ERP 会话过期，且自动重登失败 | 检查 `erp_credentials` 里的密码是否还有效（ERP 改过密码就重新绑定一次），或看审计日志里的 `erp.relogin` 失败原因 |
 | `502 erp_unreachable` | 网关连不上 ERP | 查 `ERP_HOST` 与网络；这**不是**账号问题，不消耗锁定次数 |
 | 附件链接打得开但**下载不到** | ERP 直链是内网地址，跨网段不可达 | 用工具返回的 `proxy_url`（走 `/v1/files`），见 5.8 |
 | 浏览器打开附件地址是**一页 404 / 没反应** | ERP 弹窗给的端口不对（如 `:8887`），文件实际在 `:8889` | 用列表里的 `url`（已探测）或 `proxy_url`；原值在 `url_erp` |
@@ -594,7 +643,9 @@ curl --cacert certs/erp-tools.crt https://localhost:8443/healthz
 
 - compose **不用 `env_file`**，`.env` 只服务于 compose 自身（PG 密码 / 对外地址），
   应用只读挂进去的 `config.yaml`；`ERP_PASSWORD` 没有位置可写。
-- 登录发生在 `/v1/auth/login` 那一刻，密码只存在于该请求的调用栈。
+- 登录发生在 `/v1/auth/login` 那一刻，明文密码只存在于该请求的调用栈；落库的是
+  AES-GCM 密文（`erp_credentials`，密钥在 `erpdata` 卷里的 `erp_credentials.key`），
+  用于会话过期后自动重登。
 
 ### 6.1 Docker 模式下不用敲 `erp serve`
 
@@ -771,7 +822,7 @@ curl --cacert /srv/erp-tools/certs/erp-tools.crt https://localhost:8443/healthz
 | 401 | `invalid_credentials` | 账号或密码错（统一文案，不区分原因） |
 | 401 | `login_required` / `session_expired` | 没登录 / 登录会话已过期 |
 | 401 | `missing_bearer` / `invalid_api_key` / `api_key_revoked` | key 缺失 / 不存在 / 已撤销 |
-| 401 | `erp_session_expired` | ERP 会话过期，key 已一并作废 |
+| 401 | `erp_session_expired` | ERP 会话过期**且自动重登失败**（没存密码 / 密码改了 / 账号被锁）→ key 一并作废 |
 | 403 | `account_disabled` | 账号已被管理员禁用（会话与 token 都已失效） |
 | 403 | `admin_required` | 需要管理员权限 |
 | 403 | `signup_disabled` | 本实例关闭了平台账号自助注册（`--no-signup`） |
@@ -791,7 +842,8 @@ api-key 只存 sha256，日志经 `SensitiveFilter` 脱敏。
 ## 8. 已知限制
 
 - **api-key 无过期时间**：寿命等于绑定的 ERP 会话；主动作废用 `POST /v1/auth/logout`。
-- **ERP 会话过期后无法自动续期**：服务端不保存密码，只能重新登录。
+- **自动重登依赖加密保存的密码**：关闭 `store_erp_password` 后过期只能人工重新绑定；
+  密码在 ERP 侧被改掉时自动重登会失败（审计日志可见），需要重新绑定一次。
 - **限流与锁定是进程内内存态**：重启即清零，当前不支持多实例横向部署（需要时换 Redis）。
 - **全局并发默认 6**：进程级闸门，所有用户共享；调大只会让单请求变慢。
 - **一个进程一套会话池**：同一 ERP 账号的多个 key 共用一份 ERP 会话。

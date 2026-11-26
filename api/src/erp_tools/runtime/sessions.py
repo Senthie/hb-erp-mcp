@@ -1,8 +1,12 @@
 """ERP 会话池。
 
-因为**不保存用户密码**（见 README「服务端模式」），所以这里的 login 只在
-`POST /v1/auth/login` 的调用栈里短暂持有明文密码；登录成功立刻重建一个
+因为**默认不长期保存用户密码**（除非开启了「加密保存 ERP 密码」，见
+:mod:`erp_tools.runtime.secrets_box`），这里的 login 只在
+`POST /v1/auth/login` / 绑定 ERP 的调用栈里短暂持有明文密码；登录成功立刻重建一个
 `password=""` 的干净配置，密码对象随栈帧一起被回收。
+
+会话过期时：如果 `secret_lookup` 能给回密码（数据库里存的是密文，由调用方解密），
+就**自动重新登录一次**，用户的 MCP token 不会因此失效（`auto_relogin`）。
 
 两类并发控制：
 
@@ -13,6 +17,7 @@
 
 from __future__ import annotations
 
+import logging
 import threading
 import time
 from collections.abc import Callable, Iterator
@@ -25,9 +30,21 @@ from ..core.config import ErpConfig
 from ..core.errors import ErpError
 from ..core.session import ErpClient
 
+_log = logging.getLogger("erp_tools.server.sessions")
+
 
 class SessionExpired(ErpError):
-    """绑定的 ERP 会话已失效 → 对应的 api-key 应一并作废。"""
+    """绑定的 ERP 会话已失效，且无法自动重新登录 → 对应的 api-key 应一并作废。"""
+
+
+@dataclass
+class _ReloginState:
+    """某 ERP 账号的自动重登簿记（与 UserSession 分开，避免占位对象污染会话池）。"""
+
+    attempts: int = 0
+    failures: int = 0
+    last_attempt: float = 0.0
+    last_error: str | None = None
 
 
 @dataclass
@@ -43,6 +60,9 @@ class UserSession:
     alive_checked_at: float = 0.0
     #: 最近一次探测的网络异常（仅诊断用，不代表会话失效）
     last_error: str | None = None
+    #: 这个会话被「自动重新登录」替换过几次、最后一次的时间
+    relogin_count: int = 0
+    relogin_at: float = 0.0
 
 
 class SessionProvider:
@@ -50,6 +70,9 @@ class SessionProvider:
 
     :param login_impl: 测试注入点，签名 `(username, password) -> UserSession`
     :param alive_impl: 测试注入点，签名 `(AuthManager) -> bool`
+    :param secret_lookup: 给回该 ERP 账号的**明文密码**（由调用方从库里解密）；
+        提供时，会话过期会自动重登一次，用户无感
+    :param on_relogin: 重登结果回调 `(username, ok, error)`，用于写审计日志
     """
 
     def __init__(
@@ -61,14 +84,21 @@ class SessionProvider:
         login_impl: Callable[[str, str], UserSession] | None = None,
         alive_impl: Callable[[AuthManager], bool] | None = None,
         alive_ttl: float = 30.0,
+        secret_lookup: Callable[[str], str | None] | None = None,
+        on_relogin: Callable[[str, bool, str | None], None] | None = None,
+        relogin_min_interval: float = 60.0,
     ) -> None:
         self._cfg = cfg
         self._cookie_dir = Path(cookie_dir) if cookie_dir else cfg.cookie_dir
         self._login_impl = login_impl
         self._alive_impl = alive_impl
         self._alive_ttl = max(0.0, float(alive_ttl))
+        self._secret_lookup = secret_lookup
+        self._on_relogin = on_relogin
+        self._relogin_min_interval = max(0.0, float(relogin_min_interval))
 
         self._sessions: dict[str, UserSession] = {}
+        self._relogin_state: dict[str, _ReloginState] = {}
         self._lock = threading.RLock()
         self._slots = threading.BoundedSemaphore(max(1, int(global_concurrency)))
         self.global_concurrency = max(1, int(global_concurrency))
@@ -129,6 +159,8 @@ class SessionProvider:
         if session is None:
             session = self._restore(username)
         if session is None:
+            session = self._relogin(username)
+        if session is None:
             raise SessionExpired(f"账号 {username} 没有可用的 ERP 会话，请重新登录")
         if check_alive and not self.is_alive(username):
             raise SessionExpired(f"账号 {username} 的 ERP 会话已过期，请重新登录")
@@ -150,6 +182,70 @@ class SessionProvider:
         with self._lock:
             self._sessions.setdefault(username, session)
             return self._sessions[username]
+
+    # ══════════════════ 自动重新登录 ══════════════════
+    @property
+    def auto_relogin_enabled(self) -> bool:
+        return self._secret_lookup is not None
+
+    def relogin_state(self, username: str) -> "_ReloginState":
+        """查看某账号的重登簿记（诊断/测试用）。"""
+        with self._lock:
+            return self._relogin_state.setdefault(username, _ReloginState())
+
+    def _cooldown_left(self, state: "_ReloginState", now: float) -> float:
+        """连续失败时指数退避：60s、120s、240s…最长 30 分钟。"""
+        if state.failures <= 0:
+            return 0.0
+        delay = min(self._relogin_min_interval * (2 ** (state.failures - 1)), 1800.0)
+        return max(0.0, delay - (now - state.last_attempt))
+
+    def _relogin(self, username: str) -> UserSession | None:
+        """用库里存的密码重新登录一次（失败返回 None，并记冷却）。"""
+        if self._secret_lookup is None:
+            return None
+
+        state = self.relogin_state(username)
+        now = time.time()
+        if self._cooldown_left(state, now) > 0:
+            return None
+
+        try:
+            password = self._secret_lookup(username)
+        except Exception as exc:  # noqa: BLE001 - 取密文/解密失败不该炸请求
+            password = None
+            _log.warning("读取 %s 的 ERP 密码密文失败：%s", username, exc)
+        if not password:
+            return None
+
+        state.last_attempt = now
+        try:
+            with self.slot(timeout=60):  # 全局闸门：重登也走同一份 ERP 并发额度
+                session = self.login(username, password)
+        except Exception as exc:  # noqa: BLE001 - 登录失败按「会话确实死了」处理
+            state.failures += 1
+            state.last_error = str(exc)[:256]
+            _log.warning("自动重登 %s 失败（连续 %d 次）：%s",
+                         username, state.failures, exc)
+            self._notify_relogin(username, False, state.last_error)
+            return None
+
+        state.attempts += 1
+        state.failures = 0
+        state.last_error = None
+        session.relogin_count = state.attempts
+        session.relogin_at = now
+        _log.info("已自动重新登录 ERP 账号 %s（累计 %d 次）", username, state.attempts)
+        self._notify_relogin(username, True, None)
+        return session
+
+    def _notify_relogin(self, username: str, ok: bool, error: str | None) -> None:
+        if self._on_relogin is None:
+            return
+        try:
+            self._on_relogin(username, ok, error)
+        except Exception:  # noqa: BLE001 - 审计写失败不能影响登录
+            _log.warning("重登回调失败（%s）", username, exc_info=True)
 
     # ══════════════════ 存活探测 ══════════════════
     def is_alive(self, username: str, *, refresh: bool = False) -> bool:
@@ -177,6 +273,12 @@ class SessionProvider:
             session.alive_checked_at = now
             return session.alive
 
+        if not alive:
+            # 会话真的过期了：先尝试自动重登（用户无感），失败才算过期
+            revived = self._relogin(username)
+            if revived is not None:
+                return True
+
         session.alive = alive
         session.alive_checked_at = now
         session.last_error = None
@@ -192,6 +294,7 @@ class SessionProvider:
     def close(self) -> None:
         with self._lock:
             self._sessions.clear()
+            self._relogin_state.clear()
 
 
 __all__ = ["SessionExpired", "SessionProvider", "UserSession"]
