@@ -12,6 +12,19 @@
 #     服务端只存 key 的 sha256；
 #   * 证书与 api-key 库通过 volume / 反向代理挂进来（见 docker-compose.yml）。
 
+# ───────────────────── 前端构建（React + Tailwind）─────────────────────
+FROM node:22-alpine AS web
+
+WORKDIR /web
+
+# 先只装依赖，让这一层能被缓存（改界面不会重装依赖）
+COPY web/package.json web/package-lock.json ./
+RUN npm ci --no-fund --no-audit
+
+COPY web ./
+# 产物按 web/vite.config.ts 的配置落到 /api/src/erp_tools/apps/server/static
+RUN npm run build
+
 # ───────────────────────── 构建阶段 ─────────────────────────
 FROM python:3.11-slim AS builder
 
@@ -22,14 +35,16 @@ ENV UV_COMPILE_BYTECODE=1 \
     UV_LINK_MODE=copy \
     UV_PYTHON_DOWNLOADS=never
 
-WORKDIR /app
+WORKDIR /app/api
 
 # 先只装依赖，让这一层能被缓存（改源码不会重装依赖）
-COPY pyproject.toml uv.lock README.md ./
+COPY api/pyproject.toml api/uv.lock api/README.md ./
 RUN --mount=type=cache,target=/root/.cache/uv \
     uv sync --frozen --no-install-project --extra server
 
-COPY src ./src
+COPY api/src ./src
+# 前端构建产物（node 阶段生成），Starlette 在 /ui 上以 SPA 方式提供
+COPY --from=web /api/src/erp_tools/apps/server/static ./src/erp_tools/apps/server/static
 RUN --mount=type=cache,target=/root/.cache/uv \
     uv sync --frozen --extra server
 
@@ -50,17 +65,16 @@ RUN useradd --uid 10001 --create-home --shell /usr/sbin/nologin erp \
  && mkdir -p /data \
  && chown -R erp:erp /data
 
-WORKDIR /app
-COPY --from=builder /app/.venv /app/.venv
-COPY --from=builder /app/src /app/src
-COPY pyproject.toml README.md ./
+WORKDIR /app/api
+COPY --from=builder /app/api/.venv /app/api/.venv
+COPY --from=builder /app/api/src /app/api/src
+COPY api/pyproject.toml api/README.md ./
 
-ENV PATH="/app/.venv/bin:$PATH" \
+ENV PATH="/app/api/.venv/bin:$PATH" \
     PYTHONUNBUFFERED=1 \
     PYTHONIOENCODING=utf-8 \
     ERP_DATA_DIR=/data \
     COOKIE_DIR=/data/cookies \
-    ERPSRV_DB=/data/auth.db \
     ERPSRV_BIND=0.0.0.0:8765 \
     ERPSRV_CONCURRENCY=6
 

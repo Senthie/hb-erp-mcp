@@ -3,9 +3,9 @@
 只读：默认只发 GET；加 `--search` 才会带默认日期区间做一次 btn_Search 回发（不写数据）。
 
 ```powershell
-.venv\\Scripts\\python.exe scripts\\probe-bj-khbj.py
-.venv\\Scripts\\python.exe scripts\\probe-bj-khbj.py --search
-.venv\\Scripts\\python.exe scripts\\probe-bj-khbj.py --user 21146 --qxid 860
+api\\.venv\\Scripts\\python.exe scripts\\probe-bj-khbj.py
+api\\.venv\\Scripts\\python.exe scripts\\probe-bj-khbj.py --search
+api\\.venv\\Scripts\\python.exe scripts\\probe-bj-khbj.py --user 21146 --qxid 860
 ```
 
 产物（tmp/bj-khbj/，含真实业务数据，别提交）：
@@ -24,7 +24,7 @@ from datetime import date
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-sys.path.insert(0, str(ROOT / "src"))
+sys.path.insert(0, str(ROOT / "api" / "src"))
 
 from erp_tools.core.aspnet import soup_of  # noqa: E402
 from erp_tools.core.auth import AuthManager  # noqa: E402

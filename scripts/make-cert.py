@@ -1,8 +1,8 @@
 #!/usr/bin/env python
 """生成团队模式用的自签 TLS 证书（PEM 证书 + PEM 私钥）。
 
-    .\\.venv\\Scripts\\python.exe scripts\\make-cert.py
-    .\\.venv\\Scripts\\python.exe scripts\\make-cert.py --host 192.168.1.226 --host erp-tools.lan
+    api\\.venv\\Scripts\\python.exe scripts\\make-cert.py
+    api\\.venv\\Scripts\\python.exe scripts\\make-cert.py --host 192.168.1.226 --host erp-tools.lan
 
 为什么需要它：`erp serve` 绑定非回环地址时**强制要求** `--tls-cert/--tls-key`，
 否则 api-key 会在内网明文传输。

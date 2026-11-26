@@ -98,7 +98,7 @@ one = fetch_quote_by_bdbh(auth, "BJXQ261105013")
 
 返回结构是「ERP 客户订单需求」字段字典（`BDBH` / `KHMC` / `CPMC` / `CPSL1..10` / `SL` …
 以及 `Remark1/3/4` 等），字段含义见
-[quote_request/README.md](../src/erp_tools/tools/quote_request/README.md)。
+[quote_request/README.md](../api/src/erp_tools/tools/quote_request/README.md)。
 
 > `CPSL1..10` 是**多语言数量明细**，页面没有明细时是 `None`（**不会用汇总数量兜底**）。
 > 汇总数量在另一个字段里——两者语义不同。
@@ -172,7 +172,7 @@ svc.delete_quote(created["record_id"], confirm=True)
 
 所有写入方法都是 `confirm=False` 默认只预演，**必须显式传 `confirm=True` 才会落库**，
 且都会写后回读校验。能力与已知限制见
-[quote_create/README.md](../src/erp_tools/tools/quote_create/README.md)。
+[quote_create/README.md](../api/src/erp_tools/tools/quote_create/README.md)。
 
 ## 6. 与 MCP 服务复用同一套代码
 

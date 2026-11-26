@@ -72,4 +72,4 @@
 - 子页里「列表」和「左侧编辑表单」行宽往往相同 → 解析器找到表头后锁定在**那一张表**取行。
 - `node=all` = 1 次详情 GET + 14 次子页 + 8 次面板回发，实测约 370 KB / 20 秒；
   单节点失败只记进 `errors`，不影响其它。
-- 详细协议与坑见 [tools/quote_price/README.md](../../src/erp_tools/tools/quote_price/README.md)。
+- 详细协议与坑见 [tools/quote_price/README.md](../../api/src/erp_tools/tools/quote_price/README.md)。

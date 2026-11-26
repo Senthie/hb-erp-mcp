@@ -10,7 +10,9 @@
             ┌───────────────── erp serve（一个进程）────────────────┐
 CLI ────────┤ core/*  + tools/*  ← 同一份请求 / 解析 / 并发逻辑        │
             │                                                     │
+浏览器 ────►│ /ui             → React 登录 / 服务注册页             │
 curl ──────►│ /v1/auth/login  → 换取 api-key                       │
+服务端 ────►│ /v1/mcp/register → 登记 MCP 服务信息（PG）            │
 MCP 客户端 ─►│ /mcp            → Streamable HTTP（必须带 Bearer）    │
             └─────────────────────────────────────────────────────┘
 ```
@@ -18,24 +20,140 @@ MCP 客户端 ─►│ /mcp            → Streamable HTTP（必须带 Bearer�
 ## 1. 安装与启动
 
 ```powershell
-uv sync --extra server                 # mcp + uvicorn；只用 CLI 不需要
-.\.venv\Scripts\erp.exe serve          # 默认 127.0.0.1:8765
+cd api
+uv sync --extra dev --extra server        # mcp + uvicorn + psycopg；只用 CLI 不需要
+Copy-Item ..\packaging\config.example.yaml config.yaml
+.\.venv\Scripts\erp.exe serve `           # 默认 127.0.0.1:8765
+    --pg-dsn postgresql://erp:secret@127.0.0.1:5432/erp
 ```
 
 | 选项 | 默认 | 说明 |
 | --- | --- | --- |
 | `--bind` | `127.0.0.1:8765` | 监听地址；非回环必须配 TLS 或 `--allow-plaintext` |
-| `--db` | `<数据目录>/auth.db` | api-key 库（SQLite） |
+| `--pg-dsn` | 空（必填） | api-key 与 MCP 服务注册信息的 PostgreSQL 连接串 |
+| `--db` | 空 | **仅本地开发/测试**：显式给 SQLite 文件，给了就不再连 PostgreSQL |
+| `--register-secret` | 空 | 服务注册接口的共享密钥；留空则只按 IP 限流 |
 | `--global-concurrency` | `6` | 全局 ERP 并发闸门（实测 4~8 饱和） |
 | `--tls-cert` / `--tls-key` | 空 | TLS 证书/私钥（团队模式必填，成对出现） |
 | `--allow-host` | 空 | MCP DNS-rebinding 白名单，可重复，写 `host:port` |
 | `--trust-proxy` | 关 | 信任 `X-Forwarded-For`（放在反向代理后面时开） |
 | `--allow-plaintext` | 关 | 显式允许「非回环 + 明文 HTTP」，**只在 TLS 由上游终止时用** |
 
-对应环境变量：`ERPSRV_BIND` / `ERPSRV_DB` / `ERPSRV_CONCURRENCY` / `ERPSRV_TLS_CERT` /
-`ERPSRV_TLS_KEY` / `ERPSRV_ALLOW_HOST` / `ERPSRV_TRUST_PROXY` / `ERPSRV_ALLOW_PLAINTEXT`。
+对应环境变量：`ERPSRV_BIND` / `ERPSRV_PG_DSN` / `ERPSRV_DB` / `ERPSRV_REGISTER_SECRET` /
+`ERPSRV_CONCURRENCY` / `ERPSRV_TLS_CERT` / `ERPSRV_TLS_KEY` / `ERPSRV_ALLOW_HOST` /
+`ERPSRV_TRUST_PROXY` / `ERPSRV_ALLOW_PLAINTEXT`。
 
-## 2. 换 api-key
+> 存储默认且推荐 **PostgreSQL**：`ERPSRV_PG_DSN` 没配又没给 `--db` 时直接拒绝启动，
+> 避免「以为在用 PG，其实写进了本地文件」。表结构启动时自动建（`api_keys` / `mcp_services`）。
+
+## 2. 换 api-key 与平台账号
+
+有两条路，按使用者是「命令行/脚本」还是「人」来选：
+
+| 方式 | 入口 | 适用 |
+| --- | --- | --- |
+| **平台账号 → Token 管理**（推荐给所有人） | `/ui` 网页或 `/v1/platform/*` | 浏览器里注册登录、绑定 ERP、申请/撤销 MCP token |
+| ERP 工号直连换 key（兼容保留） | `POST /v1/auth/login` / `erp key` | 本机 CLI、脚本、CI |
+
+两条路签出来的都是同一种 `erp_xxx` token，`: /mcp` 用法完全一样。
+平台账号签发的 token 额外记录了 owner，可以在网页里按账号列出与撤销。
+
+### 2.1 可视化界面（`/ui`）：平台账号 → Token 管理
+
+前端在 [`web/`](../web)（React 19 + Tailwind 4），构建产物落进后端包目录，由 `erp serve` 托管：
+
+```powershell
+cd web
+npm install
+npm run dev      # 开发：http://127.0.0.1:5173/ui/（自动把 /v1、/healthz 代理到 8765）
+npm run build    # 产物 → api/src/erp_tools/apps/server/static
+```
+
+访问 <http://127.0.0.1:8765/ui/>，页面分三层：
+
+1. **平台登录 / 注册** —— 这是 HB-MCP 自己的账号（用户名 + 密码，scrypt 存储），
+   **不是 ERP 工号**。会话只放在 HttpOnly cookie 里，7 天有效。
+2. **Token 管理** —— 绑定 ERP 账号（**一个平台账号只能绑一个工号**，密码只用于验证、
+   不落盘）；换绑到别的工号会**自动撤销**该账号下所有旧 token。
+3. **申请 Token** —— 在「我的 Token」右上角点**新增**，弹窗里填写备注（必填）后点创建；
+   成功后**同一个弹窗内**展示结果：**上方是 API Key、下方是使用指南**（`mcp.json` 配置 +
+   可粘贴给 AI 的提示），三者都能一键复制。结果态必须点「完成」才关闭（Esc/点遮罩不会关，
+   避免手滑丢掉只显示一次的 token）；关掉后列表只保留 id 与状态，可随时撤销。
+
+关闭自助注册：`--no-signup`（或 `ERPSRV_ALLOW_SIGNUP=0`）。
+
+### 2.2 平台账号接口（`/v1/platform/*`，cookie 会话）
+
+| 方法 | 路径 | 说明 |
+| --- | --- | --- |
+| POST | `/v1/platform/register` | `{username, password}` → 建号并登录（201） |
+| POST | `/v1/platform/login` | `{username, password}` → 登录，下发 `hb_session` cookie |
+| POST | `/v1/platform/logout` | 注销当前会话（204） |
+| GET | `/v1/platform/me` | 当前账号 + ERP 绑定 + token 列表 |
+| POST | `/v1/platform/erp/bind` | `{username, password}`＝**ERP 工号密码**，验证后绑定 |
+| GET | `/v1/platform/tokens` | 我的 token（只给 id 前缀，不含明文） |
+| POST | `/v1/platform/tokens` | `{label}` → 签发 token，返回明文 + `mcp` 配置/提示 |
+| POST | `/v1/platform/tokens/{id}/revoke` | 撤销一把 token |
+
+用户名 3~32 位（字母/数字/`.`/`_`/`-`，会转小写），密码至少 8 位；
+登录失败连续 10 次锁定 15 分钟，登录/注册每 IP 10 次/分钟。
+
+### 2.3 管理员后台（`/v1/admin/*`，需要 admin 角色）
+
+把用户名写进 `ERPSRV_ADMIN_USERS`（或 `--admin-user`）后，该账号注册/登录时自动获得
+`admin` 角色；登录后页面顶部会出现「管理后台」，也可以直接用 cookie 会话调接口：
+
+| 方法 | 路径 | 说明 |
+| --- | --- | --- |
+| GET | `/v1/admin/overview` | 用户 / token 统计 + 可用动作清单 |
+| GET | `/v1/admin/users?query=&limit=&offset=` | 账号列表（含 token 数、会话数） |
+| GET | `/v1/admin/users/{id}` | 账号详情 + 最近 20 条审计 + 最近 20 条 MCP 调用（含 `call_count`） |
+| POST | `/v1/admin/users/{id}/update` | `{role?, disabled?}`；**禁用会踢掉会话并撤销全部 token** |
+| POST | `/v1/admin/users/{id}/unbind-erp` | 解绑 ERP（同时撤销该账号 token） |
+| POST | `/v1/admin/users/{id}/revoke-tokens` | 撤销该账号全部 token |
+| DELETE | `/v1/admin/users/{id}` | 删除账号（会话删除、token 撤销，保留审计） |
+| GET | `/v1/admin/audit?action=&actor=&result=&since=&until=&limit=&offset=` | 审计日志 |
+| GET | `/v1/admin/calls?tool=&actor=&status=&since=&until=&limit=&offset=` | **MCP 工具调用日志** |
+
+安全约束：管理员不能禁用 / 降级 / 删除**自己**（409 `cannot_modify_self` /
+`cannot_delete_self`），避免把自己锁在门外。
+
+### 2.4 审计日志（PostgreSQL `audit_logs`）
+
+所有关键动作都会落一行，字段：`created_at` / `action` / `result` / `actor_id` /
+`actor_name` / `actor_type` / `target_type` / `target_id` / `status_code` / `ip` /
+`user_agent` / `detail`（JSONB）。
+
+- 覆盖：平台注册 / 登录（含失败）/ 登出、绑定 ERP、申请 / 撤销 token、ERP 直连换 key
+  （`/v1/auth/login`）、MCP 服务登记、管理员改用户 / 删用户 / 解绑 / 撤销 token。
+- **不写敏感信息**：没有密码、没有 api-key 明文、没有 cookie；`detail` 只放工号、备注、
+  token id 前缀这类定位信息。
+- 写日志失败只告警，绝不影响业务请求。
+
+### 2.5 MCP 调用日志（PostgreSQL `mcp_call_logs`）
+
+每个 MCP 工具调用（`tools/call`）单独一行——这是「谁通过 MCP 访问了 ERP 的哪个页面」
+的答案；账号 / 管理动作仍走上面的 `audit_logs`，两者分表：
+
+| 字段 | 说明 |
+| --- | --- |
+| `created_at` | 调用完成时间 |
+| `tool` | 工具名，如 `erp_quote_list` |
+| `status` | `success` / `failure`（工具抛错或返回 `isError`） |
+| `duration_ms` | 耗时 |
+| `actor_id` / `actor_name` / `actor_type` | 平台账号 id、用户名 / ERP 工号、`api_key` |
+| `token_id` | 用的是哪把 token（前缀；**不存明文 key**） |
+| `erp_username` | 实际访问 ERP 的身份 |
+| `ip` / `user_agent` | 调用方来源（`ERPSRV_TRUST_PROXY=1` 时取 `X-Forwarded-For`） |
+| `error` | 失败原因（截断 500 字，已打码） |
+| `arguments` | 定位用入参摘要：最多 12 个键、每值 160 字，`password`/`token`/`cookie` 等置 `***` |
+
+- 后台「管理后台 → MCP 调用」按工具名 / 用户 / 结果筛选，概览里有累计调用数。
+- 接口：`GET /v1/admin/calls`，返回 `{limit, offset, has_more, items[]}`，`items[].owner_name`
+  会补上平台账号名（库里只存 `actor_id`）。
+- 写入失败同样只告警，工具本身照常返回。
+
+### 2.6 ERP 工号直连换 key（兼容 / CLI）
 
 **密码是每个使用者自己的，不进 `.env`、不进容器、不落盘。** 谁要用，谁用自己的
 ERP 工号/密码换一把自己的 key：
@@ -67,11 +185,45 @@ $r.api_key      # erp_xxx —— 只显示这一次，库里只存 sha256
 | 服务进程重启 | 仍有效（会话从 `cookies/<工号>.json` 恢复） |
 | `POST /v1/auth/logout` | 只撤当前这把，同账号其它设备/AI 不受影响 |
 
-- **密码不落盘**：只在登录请求的调用栈里存在，成功后立刻丢弃；`auth.db` 里只有
+- **密码不落盘**：只在登录请求的调用栈里存在，成功后立刻丢弃；`api_keys` 表里只有
   key 的 sha256 与工号，**没有密码列**。
 - 多个人/多个 AI 客户端 = 多把 key，可分别撤销；同一 ERP 账号的多把 key 共用一份 ERP 会话。
 - `ERP_USERNAME` / `ERP_PASSWORD` 环境变量**只给 CLI 用**；`erp serve` 完全不读，
   配了会打印一条提示建议删掉。
+
+### 2.7 注册 MCP 服务信息（`POST /v1/mcp/register`）
+
+登记的是**服务本身**（本项目即 HB-MCP）：名称、版本、访问地址、传输方式、环境、负责人、描述。
+不涉及任何 ERP 账号，所以无需 api-key；按 `name` **幂等**（同名再提交＝更新元数据）。
+
+```powershell
+curl.exe -X POST http://127.0.0.1:8765/v1/mcp/register `
+  -H "content-type: application/json" `
+  -d '{\"name\":\"HB-MCP\",\"version\":\"0.3.0\",\"endpoint\":\"https://erp-tools.lan:8443/mcp\",
+      \"transport\":\"streamable-http\",\"environment\":\"production\",\"owner\":\"陈小美\",
+      \"description\":\"华博 ERP 工具网关\"}'
+# → 201 {"status":"registered","service":{...}}
+```
+
+| 字段 | 必填 | 说明 |
+| --- | --- | --- |
+| `name` | ✓ | 服务名，唯一键（≤64 字符） |
+| `version` | | 版本（≤32 字符） |
+| `endpoint` | | `http(s)://` 地址；`stdio` 传输可留空 |
+| `transport` | | `streamable-http`（默认）/ `sse` / `websocket` / `stdio` |
+| `environment` | | `production`（默认）/ `staging` / `development` / `test`（`prod`/`dev` 等别名可用） |
+| `owner` / `description` | | 负责人 / 服务描述 |
+| `tools` | | 工具数量（整数） |
+| `metadata` | | 任意 JSON 对象（≤8KB），存进 `JSONB` |
+
+查询已登记服务（公开、只读）：
+
+```powershell
+curl.exe "http://127.0.0.1:8765/v1/mcp/services?limit=20"
+```
+
+防护：每 IP **10 次/分钟**限流；如果配了 `ERPSRV_REGISTER_SECRET`，请求头必须带
+`X-Register-Secret`（否则 `403 register_secret_invalid`）。
 
 ## 3. MCP 客户端配置
 
@@ -164,7 +316,7 @@ erp_quote_product_form       看明细子页能填什么（控件名/别名/下�
   若某个客户端不解析 `$defs`，可在 `register_tools()` 之后把 `$ref` 就地展开。
 
 字段细节与踩坑记录见
-[quote_create/README.md](../src/erp_tools/tools/quote_create/README.md)。
+[quote_create/README.md](../api/src/erp_tools/tools/quote_create/README.md)。
 
 ## 5. 让其他设备访问（团队模式，必须 TLS）
 
@@ -214,7 +366,7 @@ erp serve --bind 0.0.0.0:8765 `
           --tls-cert certs\erp-tools.crt --tls-key certs\erp-tools.key `
           --allow-host 192.168.1.226:8765 `
           --allow-host erp-tools.lan:8765 `
-          --db auth.db
+          --pg-dsn postgresql://erp:secret@127.0.0.1:5432/erp
 ```
 
 `--allow-host` 是 MCP 的 Host 白名单，**逐个写 `host:port`**，客户端可能用的每种写法都要列。
@@ -227,18 +379,18 @@ erp serve --bind 0.0.0.0:8765 `
 
 ```powershell
 # A. 后台窗（最简单，注销/重启后要再跑一次）
-Start-Process .\.venv\Scripts\erp.exe -WindowStyle Hidden `
+Start-Process api\.venv\Scripts\erp.exe -WindowStyle Hidden `
   -ArgumentList "serve","--bind","0.0.0.0:8765","--allow-host","192.168.1.226:8765"
 
 # B. 计划任务（开机自启，仍以当前用户身份跑）
 schtasks /Create /TN "erp-tools MCP" /SC ONSTART /RU $env:USERNAME /RL LIMITED `
-  /TR "\"$PWD\.venv\Scripts\erp.exe\" serve --bind 0.0.0.0:8765 --allow-host 192.168.1.226:8765"
+  /TR "\"$PWD\api\.venv\Scripts\erp.exe\" serve --bind 0.0.0.0:8765 --allow-host 192.168.1.226:8765"
 
 # C. Docker（见第 6 节，nginx 终止 TLS，最省心）
 docker compose up -d
 ```
 
-> **重启网关不用重新换 api-key**：key 存在 `auth.db`，ERP 会话靠 `cookies/` 里的 cookie 自动恢复。
+> **重启网关不用重新换 api-key**：key 存在 PostgreSQL，ERP 会话靠 `cookies/` 里的 cookie 自动恢复。
 > 只有 ERP 会话真的过期（`401 erp_session_expired`）才需要重新 `erp key` 登录。
 
 ### 5.3 放行防火墙
@@ -330,8 +482,9 @@ GET /v1/files?path=/Admin/FuJian/<模块>/Picture/<guid>.zip&t=<exp>.<hmac>
   不接受调用方指定 host → 不会被拿来当 SSRF 跳板。
 - 基地址优先级：`ERP_PUBLIC_BASE` → 当前请求的 `Host` → `http://127.0.0.1:8765`。
   客户端从 `https://erp-tools.lan` 连进来，代理链接就是同一个域名。
-- 签名密钥在 `<auth.db 所在目录>/proxy.secret`（首次启动自动生成），
-  网关与 CLI 共用；**换机器要一起拷**，否则旧链接全部失效（重新调工具即可）。
+- 签名密钥在运行时数据目录的 `proxy.secret`（首次启动自动生成；SQLite 模式下与库同目录，
+  PostgreSQL 模式下就是 `ERP_DATA_DIR`），网关与 CLI 共用；**换机器要一起拷**，
+  否则旧链接全部失效（重新调工具即可）。
 
 ```powershell
 # 拿到带 proxy_url 的清单
@@ -410,6 +563,8 @@ curl --cacert certs/erp-tools.crt https://localhost:8443/healthz
 | --- | --- |
 | 对外暴露 | nginx 的 `ports:`（`ERP_HTTP_PORT` / `ERP_HTTPS_PORT`），app 只 `expose: 8765` |
 | bind / 明文 | `ERPSRV_BIND=0.0.0.0:8765` + `ERPSRV_ALLOW_PLAINTEXT=1`（TLS 在 nginx） |
+| 数据库 | `ERPSRV_PG_DSN`（默认拼自 `POSTGRES_USER` / `POSTGRES_PASSWORD` / `POSTGRES_DB` + `db:5432`） |
+| 服务注册密钥 | `ERPSRV_REGISTER_SECRET`（留空＝只按 IP 限流） |
 | Host 白名单 | `ERPSRV_ALLOW_HOST: ${ERP_PUBLIC_HOST}`，即客户端实际写的 `host:port` |
 | 限流 IP | `ERPSRV_TRUST_PROXY=1`（确实有 nginx 才开） |
 | **附件代理基地址** | `ERP_PUBLIC_BASE`（留空 = 自动用 `X-Forwarded-Proto` + `Host`，经 nginx 进来时就是对的） |
@@ -422,8 +577,8 @@ curl --cacert certs/erp-tools.crt https://localhost:8443/healthz
 - 要让外部 MCP 客户端连 → 把 `ERP_PUBLIC_HOST` 设成对外地址、证书 SAN 写全，
   `ERPSRV_ALLOW_HOST` 会自动跟着它走。
 
-> 数据都在命名卷 `erpdata`（`/data/auth.db`、`/data/cookies`、`/data/proxy.secret`），
-> 重建堆栈不丢 api-key 与代理签名密钥；`docker compose down -v` 会清空它们。
+> 数据分两处：api-key 与 MCP 服务注册信息在 PostgreSQL 命名卷 `pgdata`，
+> cookie / `proxy.secret` 在 `erpdata`；重建堆栈都不丢，`docker compose down -v` 会清空两者。
 
 **必须对齐的一处配置**
 
@@ -452,19 +607,21 @@ compose 里有两类挂载，**重建（`up -d --build`）都不会丢**，区�
 
 | 挂载 | 类型 | 内容 | 会不会丢 |
 | --- | --- | --- | --- |
-| `erpdata:/data` | **命名卷**（默认名 `erp-tools-erpdata`） | `auth.db`（api-key 的 sha256）、`cookies/<工号>.json`、`qxid-<工号>.json` | `up -d` / `restart` / `down` 都保留；只有 **`down -v`** 或 `docker volume rm` 才删 |
+| `pgdata:/var/lib/postgresql/data` | **命名卷**（默认名 `erp-tools-pgdata`） | `api_keys`（api-key 的 sha256）、`mcp_services`（服务注册信息） | `up -d` / `restart` / `down` 都保留；只有 **`down -v`** 或 `docker volume rm` 才删 |
+| `erpdata:/data` | **命名卷**（默认名 `erp-tools-erpdata`） | `cookies/<工号>.json`、`qxid-<工号>.json`、`proxy.secret` | 同上 |
 | `${ERP_CERT_DIR:-./certs}` | 绑定挂载 | nginx 的 `.crt` / `.key` | 与容器无关，宿主机文件在就一直在 |
 | `./${NGINX_CONF:-docker/nginx.conf}` | 绑定挂载 | nginx 站点配置 | 来自仓库，**跟着 git 更新** |
 
 要点：
 
-- **卷名被显式固定**成 `erp-tools-erpdata`（`volumes.erpdata.name`），所以换目录 clone、
+- **卷名被显式固定**（`erp-tools-pgdata` / `erp-tools-erpdata`），所以换目录 clone、
   或用 `-p` 指定别的项目名，都不会「凭空多出一个空卷」导致所有人 key 失效。
 - `docker compose down` 只删容器和网络；**永远不要**图省事敲 `down -v`，
   那等于让所有人重新 `erp key` 一次。
-- 备份只需要这一个卷：
+- 备份两个卷（PG 建议走 `pg_dump`，比拷数据目录干净）：
 
   ```bash
+  docker compose exec -T db pg_dump -U erp erp | gzip > backup/erp-$(date +%F).sql.gz
   docker run --rm -v erp-tools-erpdata:/data -v "$PWD":/backup alpine \
       tar czf /backup/erpdata-$(date +%F).tar.gz -C /data .
   ```
@@ -568,11 +725,24 @@ curl --cacert /srv/erp-tools/certs/erp-tools.crt https://localhost:8443/healthz
 | 状态 | `error` | 含义 |
 | --- | --- | --- |
 | 400 | `bad_request` | 请求体缺字段 |
+| 400 | `invalid_service_info` | 服务注册字段非法（名称缺失、地址不是 http(s)、传输方式未知…） |
+| 400 | `invalid_account` | 平台账号用户名/密码不符合规则 |
+| 400 | `invalid_erp_credentials` | 绑定 ERP 时工号或密码错 |
 | 401 | `invalid_credentials` | 账号或密码错（统一文案，不区分原因） |
+| 401 | `login_required` / `session_expired` | 没登录 / 登录会话已过期 |
 | 401 | `missing_bearer` / `invalid_api_key` / `api_key_revoked` | key 缺失 / 不存在 / 已撤销 |
 | 401 | `erp_session_expired` | ERP 会话过期，key 已一并作废 |
+| 403 | `account_disabled` | 账号已被管理员禁用（会话与 token 都已失效） |
+| 403 | `admin_required` | 需要管理员权限 |
+| 403 | `signup_disabled` | 本实例关闭了平台账号自助注册（`--no-signup`） |
+| 403 | `register_secret_invalid` | 服务端配了 `ERPSRV_REGISTER_SECRET`，请求头密钥不对 |
+| 404 | `token_not_found` | 撤销的 token 不属于当前账号或已撤销 |
+| 404 | `user_not_found` | 管理员操作的账号不存在 |
+| 409 | `username_taken` | 平台用户名已被占用 |
+| 409 | `erp_not_bound` | 还没绑定 ERP 账号就申请 token |
+| 409 | `cannot_modify_self` / `cannot_delete_self` | 管理员不能禁用/降级/删除自己 |
 | 423 | `locked` | 同一账号连续失败 10 次，锁 15 分钟 |
-| 429 | `rate_limited` | 登录限流（5 次/分钟） |
+| 429 | `rate_limited` | 登录/注册限流（各 5~10 次/分钟） |
 | 502 | `erp_unreachable` | 连不上 ERP（网络问题，不消耗锁定次数） |
 
 安全设计：登录失败统一文案 + 恒定耗时哈希比对；限流按 **IP + 账号** 双维度；
@@ -586,7 +756,7 @@ api-key 只存 sha256，日志经 `SensitiveFilter` 脱敏。
 - **全局并发默认 6**：进程级闸门，所有用户共享；调大只会让单请求变慢。
 - **一个进程一套会话池**：同一 ERP 账号的多个 key 共用一份 ERP 会话。
 - 写入能力的两处缺口（产品类别、多语言数量明细）见
-  [quote_create/README.md](../src/erp_tools/tools/quote_create/README.md) 的「已知限制」。
+  [quote_create/README.md](../api/src/erp_tools/tools/quote_create/README.md) 的「已知限制」。
 - 同一个 ERP 可能有多**端口实例**（实测 `8889` 与 `8890` 数据不互通），
   所有读写都落在 `ERP_HOST` 指向的那个实例上。
 
@@ -631,20 +801,22 @@ cd /srv/hb-erp-mcp
 cp .env.example .env
 ```
 
-`.env` 必须改这四项（其余保持注释即可）：
+`.env` 必须改这五项（其余保持注释即可）：
 
 ```ini
 ERP_HOST=http://192.168.1.199:8889
 ERP_PUBLIC_HOST=erp-tools.lan:8443        # ★ 等于客户端实际访问的 host:port
+POSTGRES_PASSWORD=change-me               # ★ 请用 URL 安全字符（会拼进连接串）
 ERP_CERT_DIR=/srv/erp-tools/certs         # 证书放仓库外，重新 clone 也不丢
 # 可选：ERP_CAPTCHA_HOST / ERP_HTTPS_PORT / ERP_HTTP_PORT / ERPSRV_CONCURRENCY
+#       POSTGRES_USER / POSTGRES_DB / ERPSRV_PG_DSN / ERPSRV_REGISTER_SECRET
 ```
 
 证书二选一：
 
 ```powershell
 # A) 在自己的 Windows 上签好再传（服务器上什么都不用装）
-.\.venv\Scripts\python.exe scripts\make-cert.py `
+.\api\.venv\Scripts\python.exe scripts\make-cert.py `
     --host erp-tools.lan --host 192.168.1.226 --out-dir certs
 scp certs\erp-tools.crt certs\erp-tools.key user@server:/srv/erp-tools/certs/
 ```
@@ -683,7 +855,8 @@ docker compose ps                 # app 应为 healthy，nginx 应为 running/he
 
 ```bash
 curl --cacert /srv/erp-tools/certs/erp-tools.crt https://localhost:8443/healthz
-# → {"status":"ok","version":"0.3.0","keys":0,"global_concurrency":6}
+# → {"status":"ok","service":"HB-MCP","version":"0.3.0","keys":0,
+#    "global_concurrency":6,"store":"postgresql","register_secret_required":false}
 ```
 
 ### 5. 放行端口（只开对外那一个）
@@ -764,7 +937,8 @@ systemctl list-timers erp-tools-deploy.timer
 ### 9. 日常运维
 
 ```bash
-# 备份（只有这一个卷有状态）
+# 备份（两处有状态：PostgreSQL + 运行时卷）
+docker compose exec -T db pg_dump -U erp erp | gzip > /srv/erp-tools/backup/erp-$(date +%F).sql.gz
 docker run --rm -v erp-tools-erpdata:/data -v /srv/erp-tools/backup:/backup alpine \
     tar czf /backup/erpdata-$(date +%F).tar.gz -C /data .
 

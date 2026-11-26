@@ -60,5 +60,5 @@
 - 本机没有 `docs/menu.tree.json` 时返回 `tree_available=false`，只给能力清单。
 - 同一页面可能挂在多个菜单下（见 `duplicate_paths`），QXID 是**菜单项**维度，
   所以能力清单按「页面路径」而不是「菜单路径」索引。
-- 追加能力的流程：改 `src/erp_tools/menu_catalog.py` →
+- 追加能力的流程：改 `api/src/erp_tools/menu_catalog.py` →
   `erp menu --write` → 测试 `tests/test_menu_docs.py` 保证不会漂。

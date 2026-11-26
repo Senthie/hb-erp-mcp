@@ -35,4 +35,4 @@
 - **只有 `uploadable=true` 的字段（实测 51 个）能被 `erp_quote_create` 写入**；
   折叠面板里的 142 个隐藏字段会被拒绝。
 - 键名拼错会直接报错，不做静默忽略。
-- 字段全量口径见 [tools/quote_create/README.md](../../src/erp_tools/tools/quote_create/README.md)。
+- 字段全量口径见 [tools/quote_create/README.md](../../api/src/erp_tools/tools/quote_create/README.md)。

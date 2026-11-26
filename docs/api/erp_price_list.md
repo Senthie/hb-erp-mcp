@@ -41,4 +41,4 @@
 - `btn_Search` 是 `input type=submit`，必须回发 `btn_Search=搜索`；只发 `.x/.y` 会让**所有条件被忽略**。
 - 默认列表 ≠ 搜索结果（同一天：默认 89 行 / 显式搜索后 123 行），要数据一律带日期区间。
 - 下拉值既接受显示文字也接受代码，写错会报错并列出真实选项。
-- 字段清单与坑见 [tools/quote_price/README.md](../../src/erp_tools/tools/quote_price/README.md)。
+- 字段清单与坑见 [tools/quote_price/README.md](../../api/src/erp_tools/tools/quote_price/README.md)。

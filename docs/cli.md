@@ -10,7 +10,7 @@
 
 ```powershell
 uv sync --extra dev        # 核心依赖（含验证码自动识别 ddddocr）
-.\.venv\Scripts\erp.exe --version
+api\.venv\Scripts\erp.exe --version
 ```
 
 只用 CLI **不需要** `--extra server`（那是 MCP 服务端依赖 `mcp` + `uvicorn`）。
@@ -28,7 +28,7 @@ uv sync --extra dev        # 核心依赖（含验证码自动识别 ddddocr）
 
 ```powershell
 Copy-Item packaging\config.example.yaml config.yaml
-.\.venv\Scripts\erp.exe setup          # 向导：地址 / 工号 / 密码，并缓存 cookie
+api\.venv\Scripts\erp.exe setup          # 向导：地址 / 工号 / 密码，并缓存 cookie
 ```
 
 ```yaml
@@ -125,7 +125,7 @@ erp query --where "报价状态~需求审批" --dry-run
 
 - 服务端只支持「日期 + 两个关键字」，多条件一律本地过滤。
 - 查不到时 ERP 会返回**一行全空占位**，解析时已丢弃。
-- 列名与含义见 [quote_index/README.md](../src/erp_tools/tools/quote_index/README.md)。
+- 列名与含义见 [quote_index/README.md](../api/src/erp_tools/tools/quote_index/README.md)。
 
 ### `erp price` — 客户报价列表
 
@@ -282,7 +282,7 @@ erp pages --module sales_order         # 只看客户订单
 
 打印每个模块的列表页/QXID、详情页、服务端过滤下拉、日期字段和**全部弹窗子页**
 （子页名 + 打开它的按钮 + 中文说明）。代码侧见
-`src/erp_tools/tools/grid_module/README.md`。
+`api/src/erp_tools/tools/grid_module/README.md`。
 
 ### `erp costing-list` / `erp production-list` / `erp purchase-list` / `erp sales-order-list` — 四个列表
 
@@ -368,7 +368,7 @@ erp quote --csv orders.csv --out data\quote.jsonl     # 18496 条，约 2 小时
 ```
 
 `--bdbh` 会用单号里编码的制单日期（`BJXQ` + `YYMMDD` + 流水号）自动定位记录 ID，
-不需要先跑列表。字段说明见 [quote_request/README.md](../src/erp_tools/tools/quote_request/README.md)。
+不需要先跑列表。字段说明见 [quote_request/README.md](../api/src/erp_tools/tools/quote_request/README.md)。
 
 ### `erp attachment` — 通用附件（五模块复用）
 
@@ -418,7 +418,7 @@ erp attendance --month 2026-11 --emp 21146 --out out\att.md
 ```
 
 查不到人通常是**账号数据权限**只到本部门，不是工具问题。
-字段说明见 [attendance/README.md](../src/erp_tools/tools/attendance/README.md)。
+字段说明见 [attendance/README.md](../api/src/erp_tools/tools/attendance/README.md)。
 
 ### `erp menu` — 菜单 → 接口对照
 
@@ -432,7 +432,7 @@ ERP 左侧菜单树（`GET /Admin/indexAjax.ashx?FunName=GetMenuTree`）是**按
 | `--coverage` | 覆盖率统计（**默认行为**）：模块 / 菜单页 / 已接入 / 未接入 |
 | `--write` | 生成 `docs/erp-menu.md` |
 | `--check` | 校验生成物与代码一致（CI 用，不一致退出码 1） |
-| `--root` | 仓库根目录（默认自动向上找 `pyproject.toml`） |
+| `--root` | 仓库根目录（默认自动向上找含 `api/pyproject.toml` 的目录） |
 
 ```powershell
 erp menu                    # 看覆盖率
@@ -446,7 +446,7 @@ erp menu --tree             # 看完整菜单树
   完整树，每个页面后面跟「动作 → 接口 → 文档」，没接入的标 ⬜。
 - `docs/menu.tree.json` —— 菜单树快照（账号 / 时间 / 来源 / 树）。
 
-追加能力的流程：在 `src/erp_tools/menu_catalog.py` 的 `PAGE_CAPABILITIES` 里给对应页面
+追加能力的流程：在 `api/src/erp_tools/menu_catalog.py` 的 `PAGE_CAPABILITIES` 里给对应页面
 加一行（动作 + 接口名 + `docs/api/<接口名>.md`），然后 `erp menu --write`。
 忘了重新生成、或接口名/文档路径写错时，`tests/test_menu_docs.py` 会失败。
 

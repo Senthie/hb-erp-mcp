@@ -35,4 +35,4 @@
 - 只给 `bdbh` 时按 **单号自带日期** 反查；历史已归档单号查不到（返回明确错误）。
 - 页面有 A/B 两种布局（textarea 行在 `td#tdCPZLLIst` 里 vs 在 `div#Pan_gridView7` 里），
   解析按优先级多作用域查找，别只认一个容器。
-- 字段口径见 [tools/quote_request/README.md](../../src/erp_tools/tools/quote_request/README.md)。
+- 字段口径见 [tools/quote_request/README.md](../../api/src/erp_tools/tools/quote_request/README.md)。

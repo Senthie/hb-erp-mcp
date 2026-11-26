@@ -15,6 +15,7 @@ MANIFEST
 
 # ── 虚拟环境 / 包管理器 ───────────────────────────────────
 /.venv/
+/api/.venv/
 /venv/
 /env/
 /ENV/
@@ -51,7 +52,7 @@ local.settings.yaml
 # 团队模式的 TLS 证书（scripts/make-cert.py 的输出目录）
 /certs/
 
-# 服务端 api-key 库（sqlite + WAL 旁路文件）
+# 服务端 api-key 库（sqlite + WAL 旁路文件；仅本地开发/测试）
 auth.db
 auth.db-wal
 auth.db-shm
@@ -72,6 +73,11 @@ proxy.secret
 # ── 日志 ─────────────────────────────────────────────────
 *.log
 /logs/
+
+# ── 前端（web/：React + Tailwind）─────────────────────────
+/web/node_modules/
+# `npm run build` 的产物（Docker 构建阶段会重新生成，不入库）
+/api/src/erp_tools/apps/server/static/
 
 # ── 测试 / 静态检查缓存 ───────────────────────────────────
 .pytest_cache/

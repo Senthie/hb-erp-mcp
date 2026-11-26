@@ -3,10 +3,10 @@
 只读：只发 GET，不发任何 POST，不会写 ERP。
 
 ```powershell
-.venv\\Scripts\\python.exe scripts\\probe-bj-khbj-detail.py                # 取列表第一条
-.venv\\Scripts\\python.exe scripts\\probe-bj-khbj-detail.py --id <GUID>
-.venv\\Scripts\\python.exe scripts\\probe-bj-khbj-detail.py --bdbh KHBJ261112003-01
-.venv\\Scripts\\python.exe scripts\\probe-bj-khbj-detail.py --menu       # 只打印菜单 QXID
+api\\.venv\\Scripts\\python.exe scripts\\probe-bj-khbj-detail.py                # 取列表第一条
+api\\.venv\\Scripts\\python.exe scripts\\probe-bj-khbj-detail.py --id <GUID>
+api\\.venv\\Scripts\\python.exe scripts\\probe-bj-khbj-detail.py --bdbh KHBJ261112003-01
+api\\.venv\\Scripts\\python.exe scripts\\probe-bj-khbj-detail.py --menu       # 只打印菜单 QXID
 ```
 
 产物（tmp/bj-khbj/，含真实业务数据，别提交）：
@@ -23,7 +23,7 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-sys.path.insert(0, str(ROOT / "src"))
+sys.path.insert(0, str(ROOT / "api" / "src"))
 
 from erp_tools.core.aspnet import soup_of  # noqa: E402
 from erp_tools.core.auth import AuthManager, parse_menu_urls  # noqa: E402

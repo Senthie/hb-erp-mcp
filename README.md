@@ -8,6 +8,8 @@
 
 | 能力 | CLI | MCP 工具 | 读写 |
 | --- | --- | --- | --- |
+| 平台账号 / ERP 绑定 / MCP Token 管理 | — | `/ui` 或 `/v1/platform/*` | 读写 |
+| 管理员后台（用户管理 + 审计日志 + MCP 调用日志） | — | `/ui#/admin` 或 `/v1/admin/*` | 读写 |
 | 登录 / 权限号探测 / 自检 | `erp login` `erp doctor` `erp qxid` | `erp_whoami` `erp_capabilities` | — |
 | 报价需求列表查询、导出 CSV | `erp query` | `erp_quote_list` | 读 |
 | 报价需求详情 → 订单需求 JSON | `erp quote` | `erp_quote_detail` | 读 |
@@ -32,32 +34,38 @@
 ## 目录结构
 
 ```
-src/erp_tools/
-├─ core/      通用能力：配置 / 会话 / 登录与 QXID 探测 / ASP.NET 表单 / 安全 / 限流
-├─ tools/     业务工具（每个目录都有自己的 README.md）
-│  ├─ quote_index/    列表查询 + CSV 导出（BJ_KHBJXQ/Index.aspx）
-│  ├─ quote_request/  报价需求详情（BJ_KHBJXQ/Add.aspx）
-│  ├─ quote_create/   报价需求读写：新增 / 改表头 / 改产品行 / 删除（BJ_KHBJXQ/Add_CPZL.aspx）
-│  └─ attendance/     月度考勤（RS_KQDA_M/Add.aspx）
-├─ runtime/   服务端运行时：api-key 存储、会话池、身份上下文
-├─ apps/      服务端入口：server（认证网关 + /mcp）、mcp（工具注册）
-├─ output/    jsonl（断点续跑）/ csv / markdown
-├─ cli.py     命令行入口
-└─ api.py     库入口
+api/             Python 后端（见 api/README.md）
+├─ src/erp_tools/
+│  ├─ core/      通用能力：配置 / 会话 / 登录与 QXID 探测 / ASP.NET 表单 / 安全 / 限流
+│  ├─ tools/     业务工具（每个目录都有自己的 README.md）
+│  │  ├─ quote_index/    列表查询 + CSV 导出（BJ_KHBJXQ/Index.aspx）
+│  │  ├─ quote_request/  报价需求详情（BJ_KHBJXQ/Add.aspx）
+│  │  ├─ quote_create/   报价需求读写：新增 / 改表头 / 改产品行 / 删除（BJ_KHBJXQ/Add_CPZL.aspx）
+│  │  └─ attendance/     月度考勤（RS_KQDA_M/Add.aspx）
+│  ├─ runtime/   服务端运行时：api-key 存储（PostgreSQL / SQLite）、会话池、MCP 服务注册
+│  ├─ apps/      服务端入口：server（认证网关 + /ui + /mcp）、mcp（工具注册）
+│  ├─ output/    jsonl（断点续跑）/ csv / markdown
+│  ├─ cli.py     命令行入口
+│  └─ api.py     库入口
+├─ tests/        离线测试 + fixtures 真实页面夹具
+└─ pyproject.toml / uv.lock
 
+web/          React + Tailwind 可视化界面（登录换取 api-key / 注册 MCP 服务）
 docker/       nginx 反代配置（HTTPS / 纯 HTTP 两套）
 docs/         cli.md / api.md / mcp.md
 packaging/    PyInstaller + Inno Setup 打包
 scripts/      up.sh 一条命令起栈、gen-cert.sh 签证书、deploy.sh 定时拉取重建、build.ps1 打包
 scripts/deploy.sh 服务器上按需重建（配合 cron / systemd timer）
-tests/        离线测试 + fixtures 真实页面夹具
 ```
 
 ## 快速开始
 
+后端在 `api/`，前端在 `web/`，各自独立构建：
+
 ```powershell
+cd api
 uv sync --extra dev --extra server                    # --extra server 仅 MCP 服务需要
-Copy-Item packaging\config.example.yaml config.yaml   # 填 ERP 地址 / 工号 / 密码
+Copy-Item ..\packaging\config.example.yaml config.yaml   # 填 ERP 地址 / 工号 / 密码
 .\.venv\Scripts\erp.exe setup                         # 向导：写配置 + 缓存 cookie
 ```
 
@@ -71,14 +79,24 @@ Copy-Item packaging\config.example.yaml config.yaml   # 填 ERP 地址 / 工号 
 跑一次查询：
 
 ```powershell
-.\.venv\Scripts\erp.exe query --customer IBL --status 需求审批 --out out\ibl.csv
+.\.venv\Scripts\erp.exe query --customer IBL --status 需求审批 --out ..\out\ibl.csv
 ```
 
 启动 MCP 服务（可选）：
 
 ```powershell
-.\.venv\Scripts\erp.exe serve                                       # 默认 127.0.0.1:8765
+.\.venv\Scripts\erp.exe serve --db .\dev.db                          # 本地 SQLite，默认 127.0.0.1:8765
+.\.venv\Scripts\erp.exe serve --pg-dsn postgresql://erp:secret@127.0.0.1:5432/erp
 .\.venv\Scripts\erp.exe key --server http://127.0.0.1:8765 -u 21146  # 换一把 api-key
+```
+
+可视化界面（http://127.0.0.1:8765/ui/）：平台账号登录/注册 → 绑定 ERP → 申请 MCP Token。
+
+```powershell
+cd web
+npm install
+npm run dev      # 开发模式（自动代理 /v1、/healthz 到 127.0.0.1:8765）
+npm run build    # 产物落进 api/src/erp_tools/apps/server/static，由 erp serve 托管
 ```
 
 配置优先级：命令行 `--host/--user/--password` > 真实环境变量 > `config.yaml`
@@ -95,10 +113,10 @@ Copy-Item packaging\config.example.yaml config.yaml   # 填 ERP 地址 / 工号 
 | [docs/cli.md](docs/cli.md) | 全部命令的选项与示例、翻页策略、排错、页面协议速查 |
 | [docs/api.md](docs/api.md) | `erp_tools.api` 函数签名、返回结构、异常体系、进阶用法 |
 | [docs/mcp.md](docs/mcp.md) | MCP 服务、api-key、18 个工具、团队模式 TLS、Docker + nginx、错误码 |
-| [tools/quote_index](src/erp_tools/tools/quote_index/README.md) | 列表查询字段与 CSV 输出 |
-| [tools/quote_request](src/erp_tools/tools/quote_request/README.md) | 详情字段与解析规则 |
-| [tools/quote_create](src/erp_tools/tools/quote_create/README.md) | 写入协议、必填链、已知限制 |
-| [tools/attendance](src/erp_tools/tools/attendance/README.md) | 考勤字段与输出格式 |
+| [tools/quote_index](api/src/erp_tools/tools/quote_index/README.md) | 列表查询字段与 CSV 输出 |
+| [tools/quote_request](api/src/erp_tools/tools/quote_request/README.md) | 详情字段与解析规则 |
+| [tools/quote_create](api/src/erp_tools/tools/quote_create/README.md) | 写入协议、必填链、已知限制 |
+| [tools/attendance](api/src/erp_tools/tools/attendance/README.md) | 考勤字段与输出格式 |
 | [packaging/README.md](packaging/README.md) | 打包成 exe / 安装包、体积、签名、升级 |
 
 ## 设计要点（都是踩坑换来的）
@@ -109,7 +127,7 @@ Copy-Item packaging\config.example.yaml config.yaml   # 填 ERP 地址 / 工号 
 | **QXID 运行时探测** | 权限号跟账号角色绑定，写死 `876/2553` 换个人就错。登录后 GET `indexAjax.ashx?FunName=GetMenuTree` 解析菜单。注意该接口**必须用 GET**，POST 返回空。 |
 | **全局限流** | 实测 ERP 约 4~8 并发即饱和（8/16 线程时单请求从 ~0.95s 涨到 ~1.6s，吞吐不再上升）。并发上限属于「ERP 实例」，不能每工具各开一个线程池。 |
 | **JSONL + 主键续跑** | 每条记录一个 JSON 文件会产生 18496 个目录，重跑时无法判断完成情况；JSONL 追加写 + 按 `id` 去重，天然支持中断续跑。 |
-| **夹具回归测试** | 页面改版过去只能靠跑很久才发现。现在 `tests/fixtures/` 存真实页面，解析器改动先跑单测。 |
+| **夹具回归测试** | 页面改版过去只能靠跑很久才发现。现在 `api/tests/fixtures/` 存真实页面，解析器改动先跑单测。 |
 | **`Connection: close`** | 老旧 IIS 7.5 上 Keep-Alive 极易导致连接池超时。 |
 | **服务端不存密码** | 每个使用者用自己的工号密码换自己的 api-key，密码只在一次请求的调用栈里；会话过期只能重新登录。 |
 
@@ -117,7 +135,7 @@ Copy-Item packaging\config.example.yaml config.yaml   # 填 ERP 地址 / 工号 
 
 - 解析依赖中文标签定位；ERP 改文案需同步更新对应 `tools/*/parser.py` 并补夹具。
 - 报价需求写入已跑通，但 **产品类别（树形下拉）不落库**、**多语言数量明细（`CPSLID`）不自动建**；
-  细节见 [quote_create/README.md](src/erp_tools/tools/quote_create/README.md)。
+  细节见 [quote_create/README.md](api/src/erp_tools/tools/quote_create/README.md)。
 - **api-key 无过期时间**：寿命等于绑定的 ERP 会话；主动作废用 `POST /v1/auth/logout`。
 - **cookie 以明文保存在 `cookies/<工号>.json`**：建议收紧目录 ACL（接 DPAPI 尚未实现）。
 - **限流与锁定是进程内内存态**：重启即清零，暂不支持多实例横向部署。
@@ -127,7 +145,8 @@ Copy-Item packaging\config.example.yaml config.yaml   # 填 ERP 地址 / 工号 
 ## 测试
 
 ```powershell
-.\.venv\Scripts\python.exe -m pytest -q     # 314 项，全部离线（不连真实 ERP）
+cd api
+.\.venv\Scripts\python.exe -m pytest -q     # 全部离线（不连真实 ERP）
 ```
 
 | 测试文件 | 覆盖内容 |
@@ -135,11 +154,12 @@ Copy-Item packaging\config.example.yaml config.yaml   # 填 ERP 地址 / 工号 
 | `test_security` / `test_ratelimit` | api-key 生成校验、日志脱敏、令牌桶、登录锁定 |
 | `test_auth_store` / `test_sessions` | key 签发撤销与持久化；会话池复用与全局并发闸门 |
 | `test_server_auth` / `test_server_config` | `/v1/*` 端到端、监听与 TLS/白名单校验 |
+| `test_mcp_register` | MCP 服务注册：校验、按名幂等、共享密钥、IP 限流、`/ui` 入口 |
 | `test_mcp_server` | MCP 握手、工具清单与 inputSchema、身份传递、撤销后 401 |
 | `test_cli_key` / `test_auth_captcha` | 换 key 命令、验证码网络错误的分类 |
 | `test_quote_create_parser` / `_qty` | 页面解析、提交体组装、产品数量回读 |
 | `test_menu_parser` / `test_menu_docs` | 菜单树解析；对照表生成物一致、接口名与文档路径不漂移 |
 | 其余 | 各页面解析器 + CLI 配置 + CSV 输出 |
 
-夹具 `tests/fixtures/` 存真实页面（报价详情 / 列表 / 考勤 / 客户选择 / 菜单响应），
+夹具 `api/tests/fixtures/` 存真实页面（报价详情 / 列表 / 考勤 / 客户选择 / 菜单响应），
 解析器改动先跑单测。

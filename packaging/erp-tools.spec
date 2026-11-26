@@ -31,7 +31,7 @@ for package in ("ddddocr", "onnxruntime"):
 
 a = Analysis(  # noqa: F821
     [str(ROOT / "packaging" / "_entry.py")],
-    pathex=[str(ROOT / "src")],
+    pathex=[str(ROOT / "api" / "src")],
     binaries=binaries,
     # 随包携带的配置模板（用户级配置缺失时作为兜底）
     datas=datas + [(str(ROOT / "packaging" / "config.example.yaml"), ".")],

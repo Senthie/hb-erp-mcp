@@ -43,4 +43,4 @@
 - 日期区间必填语义：`txtKSRQ/txtJZRQ` 留空时服务端会套默认区间并**忽略关键字**。
 - 搜索按钮是 `input type=submit`，必须回发 `btn_Search=搜索`；只发 `.x/.y` 会让所有条件失效。
 - 查不到时接口返回一行全空占位，已丢弃。
-- 详细字段与翻页策略见 [tools/quote_index/README.md](../../src/erp_tools/tools/quote_index/README.md)。
+- 详细字段与翻页策略见 [tools/quote_index/README.md](../../api/src/erp_tools/tools/quote_index/README.md)。

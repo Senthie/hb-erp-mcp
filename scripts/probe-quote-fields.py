@@ -3,8 +3,8 @@
 只读：全程只发 GET，不发任何 POST，不会写 ERP。
 
 ```powershell
-.venv\\Scripts\\python.exe scripts\\probe-quote-fields.py            # 默认选最近一单
-.venv\\Scripts\\python.exe scripts\\probe-quote-fields.py BJXQ261110003
+api\\.venv\\Scripts\\python.exe scripts\\probe-quote-fields.py            # 默认选最近一单
+api\\.venv\\Scripts\\python.exe scripts\\probe-quote-fields.py BJXQ261110003
 ```
 
 产物落在 `tmp/quote-fields/`（已被 .gitignore 忽略，含真实客户数据，别提交）：
@@ -24,7 +24,7 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-sys.path.insert(0, str(ROOT / "src"))
+sys.path.insert(0, str(ROOT / "api" / "src"))
 
 from erp_tools.core.aspnet import soup_of  # noqa: E402
 from erp_tools.core.auth import AuthManager  # noqa: E402

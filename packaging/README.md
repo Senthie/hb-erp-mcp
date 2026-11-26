@@ -5,7 +5,7 @@
 
 ```
 uv sync --extra dev
-.\.venv\Scripts\python.exe -m PyInstaller packaging\erp-tools.spec --noconfirm
+.\api\.venv\Scripts\python.exe -m PyInstaller packaging\erp-tools.spec --noconfirm
     → dist\erp-tools\erp.exe            （onedir，整个目录一起分发）
 ISCC.exe packaging\installer.iss
     → dist\erp-tools-0.3.0-setup.exe    （安装包）
@@ -44,7 +44,7 @@ ISCC.exe packaging\installer.iss
 | QXID 缓存（`qxid-<工号>.json`） | 同上 |
 | 导出文件 | 用户 `--out` 指定的位置（默认当前目录） |
 
-判定依据是 `sys.frozen`（见 `src/erp_tools/core/paths.py`）；也可用环境变量 `ERP_DATA_DIR` 整体覆盖，便于做绿色版或测试。
+判定依据是 `sys.frozen`（见 `api/src/erp_tools/core/paths.py`）；也可用环境变量 `ERP_DATA_DIR` 整体覆盖，便于做绿色版或测试。
 
 用 `erp config` 随时查看实际路径：
 

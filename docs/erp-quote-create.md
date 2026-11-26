@@ -1,9 +1,9 @@
 # `erp_quote_create` 入参协议
 
 > 本文逐字段对照以下实现校对（2026-11-12）：
-> [`service.py`](../src/erp_tools/tools/quote_create/service.py)（`prepare()` / `create()`）、
-> [`fields.py`](../src/erp_tools/tools/quote_create/fields.py)（明细字段注册表）、
-> [`parser.py`](../src/erp_tools/tools/quote_create/parser.py)（`HEADER_FIELDS` / `PRODUCT_ARG_FIELDS`）。
+> [`service.py`](../api/src/erp_tools/tools/quote_create/service.py)（`prepare()` / `create()`）、
+> [`fields.py`](../api/src/erp_tools/tools/quote_create/fields.py)（明细字段注册表）、
+> [`parser.py`](../api/src/erp_tools/tools/quote_create/parser.py)（`HEADER_FIELDS` / `PRODUCT_ARG_FIELDS`）。
 > 字段清单来自真实页面抓取：`scripts/probe-quote-fields.py`。
 
 **会写入 ERP。** 新建一条「客户报价需求」= 主表 + 1 条产品明细（含产品数量）。
@@ -540,5 +540,5 @@ erp_quote_customer_search           确认客户唯一命中 + 默认业务员
 ---
 
 字段级踩坑记录另见
-[quote_create/README.md](../src/erp_tools/tools/quote_create/README.md)；
+[quote_create/README.md](../api/src/erp_tools/tools/quote_create/README.md)；
 工具总览见 [mcp.md](mcp.md)。

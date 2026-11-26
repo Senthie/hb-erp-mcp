@@ -1,0 +1,22 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: ui-sans-serif, system-ui, "Segoe UI", "PingFang SC",
+    "Microsoft YaHei", sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, "JetBrains Mono", Consolas,
+    monospace;
+}
+
+html,
+body,
+#root {
+  min-height: 100%;
+}
+
+body {
+  @apply bg-slate-950 font-sans text-slate-100 antialiased;
+  background-image:
+    radial-gradient(60rem 40rem at 15% -10%, rgb(56 189 248 / 0.16), transparent 60%),
+    radial-gradient(50rem 35rem at 90% 0%, rgb(129 140 248 / 0.16), transparent 55%);
+  background-attachment: fixed;
+}

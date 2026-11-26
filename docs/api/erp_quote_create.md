@@ -72,4 +72,4 @@
 - 明细字段只接受 DOM 首屏可见的 51 个（见 `erp_quote_product_form`），隐藏字段会被拒绝。
 - **写后一律回读校验**（明细 `CPMC` + 产品数量），不符就返回 `partial` 并说明卡在哪一步，不假报成功。
 - 已知限制：多语言数量明细（`CPSLID`）不自动建；产品类别（树形下拉）不落库。
-- 协议细节见 [tools/quote_create/README.md](../../src/erp_tools/tools/quote_create/README.md)。
+- 协议细节见 [tools/quote_create/README.md](../../api/src/erp_tools/tools/quote_create/README.md)。

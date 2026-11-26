@@ -1,7 +1,7 @@
-# erp-tools 网关：app（Python/MCP）+ nginx（TLS 终止）
+# erp-tools 网关：app（Python/MCP）+ PostgreSQL（api-key / 服务注册）+ nginx（TLS 终止）
 #
 # 启动：
-#   在 .env 里只写 ERP_HOST（**不要写 ERP_PASSWORD**）
+#   在 .env 里只写 ERP_HOST、POSTGRES_PASSWORD（**不要写 ERP_PASSWORD**）
 #   python scripts\make-cert.py --host <域名或IP> --out-dir certs
 #   docker compose up -d --build
 #
@@ -9,6 +9,7 @@
 #   erp key --server https://<域名或IP>:8443
 #
 # 访问：
+#   https://<域名或IP>:8443/ui                # 可视化登录 / 服务注册
 #   https://<域名或IP>:8443/mcp               # MCP 端点（需 Bearer api-key）
 #   https://<域名或IP>:8443/healthz           # 健康检查（无需 key）
 #
@@ -18,10 +19,30 @@
 name: erp-tools
 
 services:
+  db:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-erp}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?请在 .env 里设置 POSTGRES_PASSWORD（URL 安全字符）}
+      POSTGRES_DB: ${POSTGRES_DB:-erp}
+    volumes:
+      # api-key（sha256）与 MCP 服务注册信息；**down -v 会清空**
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-erp} -d ${POSTGRES_DB:-erp}"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 10s
+
   app:
     build: .
     image: erp-tools:0.3.0
     restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
     # 注意：**不用 env_file**。容器只需要「连哪个 ERP」，
     # 账号密码一律不进容器 —— 每个使用者自己 POST /v1/auth/login 换 api-key。
     environment:
@@ -30,6 +51,10 @@ services:
       ERP_PAGE_SIZE_MAX: ${ERP_PAGE_SIZE_MAX:-5000}
       ERP_REQUEST_DELAY: ${ERP_REQUEST_DELAY:-0.0}
       ERPSRV_BIND: 0.0.0.0:8765
+      # 生产存储：PostgreSQL。也可以直接给整串 ERPSRV_PG_DSN 覆盖
+      ERPSRV_PG_DSN: ${ERPSRV_PG_DSN:-postgresql://${POSTGRES_USER:-erp}:${POSTGRES_PASSWORD:?请在 .env 里设置 POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-erp}}
+      # 服务注册接口的共享密钥（留空＝仅按 IP 限流）
+      ERPSRV_REGISTER_SECRET: ${ERPSRV_REGISTER_SECRET:-}
       # TLS 由 nginx 终止，所以本进程说 HTTP —— 必须显式声明，否则拒绝启动
       ERPSRV_ALLOW_PLAINTEXT: "1"
       # 前面确实有 nginx，才开；否则限流会把所有客户端当成 127.0.0.1
@@ -42,11 +67,10 @@ services:
       ERP_PUBLIC_BASE: ${ERP_PUBLIC_BASE:-}
       ERP_DATA_DIR: /data
       COOKIE_DIR: /data/cookies
-      ERPSRV_DB: /data/auth.db
       TZ: Asia/Shanghai
     volumes:
-      # 运行时数据（auth.db / cookie / qxid 缓存）：命名卷，**重建堆栈不丢**
-      # 注意：`docker compose down -v` 会删掉它（= 所有人需要重新拿 api-key）
+      # 运行时文件（cookie / qxid 缓存 / proxy.secret）：命名卷，**重建堆栈不丢**
+      # 注意：api-key 与注册信息在 PostgreSQL（pgdata 卷）里
       - erpdata:/data
     expose:
       - "8765"
@@ -82,3 +106,6 @@ volumes:
   # 显式固定卷名：即使换目录 clone、或用 -p 指定别的项目名，数据卷还是同一个
   erpdata:
     name: ${ERP_DATA_VOLUME:-erp-tools-erpdata}
+  # PostgreSQL 数据（api-key 的 sha256 + MCP 服务注册信息）
+  pgdata:
+    name: ${ERP_PG_VOLUME:-erp-tools-pgdata}

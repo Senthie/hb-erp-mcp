@@ -11,16 +11,16 @@ $ErrorActionPreference = 'Stop'
 $root = Split-Path $PSScriptRoot -Parent
 Push-Location $root
 try {
-    $py = Join-Path $root '.venv\Scripts\python.exe'
+    $py = Join-Path $root 'api\.venv\Scripts\python.exe'
 
     Write-Host '== 0/4 检查环境 ==' -ForegroundColor Cyan
     if (-not (Test-Path $py)) {
         $uv = (Get-Command uv -ErrorAction SilentlyContinue).Source
         if (-not $uv) { $uv = Join-Path $env:USERPROFILE '.local\bin\uv.exe' }
         if (-not (Test-Path $uv)) {
-            throw '未找到 .venv 也没有 uv；请先执行：uv sync --extra dev'
+            throw '未找到 api\.venv 也没有 uv；请先执行：cd api; uv sync --extra dev'
         }
-        & $uv sync --extra dev
+        & $uv sync --project api --extra dev
         if ($LASTEXITCODE -ne 0) { throw 'uv sync 失败' }
     }
 
@@ -29,8 +29,8 @@ try {
         $uv = (Get-Command uv -ErrorAction SilentlyContinue).Source
         if (-not $uv) { $uv = Join-Path $env:USERPROFILE '.local\bin\uv.exe' }
         if (Test-Path $uv) {
-            Write-Host '   安装打包依赖：uv sync --extra dev' -ForegroundColor DarkGray
-            & $uv sync --extra dev
+            Write-Host '   安装打包依赖：uv sync --project api --extra dev' -ForegroundColor DarkGray
+            & $uv sync --project api --extra dev
         } else {
             Write-Host '   安装 PyInstaller：pip install pyinstaller' -ForegroundColor DarkGray
             & $py -m pip install --quiet "pyinstaller>=6.0"
@@ -40,14 +40,15 @@ try {
 
     if (-not $SkipTests) {
         Write-Host '== 2/4 运行测试 ==' -ForegroundColor Cyan
-        & .\.venv\Scripts\python.exe -m pytest -q
+        Push-Location (Join-Path $root 'api')
+        try { & $py -m pytest -q } finally { Pop-Location }
         if ($LASTEXITCODE -ne 0) { throw '测试未通过，终止打包' }
     } else {
         Write-Host '== 2/4 跳过测试 ==' -ForegroundColor DarkGray
     }
 
     Write-Host '== 3/4 PyInstaller 打包 ==' -ForegroundColor Cyan
-    & .\.venv\Scripts\python.exe -m PyInstaller packaging\erp-tools.spec --noconfirm
+    & $py -m PyInstaller packaging\erp-tools.spec --noconfirm
     if ($LASTEXITCODE -ne 0) { throw 'PyInstaller 打包失败' }
 
     $exe = Join-Path $root 'dist\erp-tools\erp.exe'

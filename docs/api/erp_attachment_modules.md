@@ -39,6 +39,6 @@
 
 - 这是**离线**清单（代码里的注册表），不会去 ERP 探测；实际附件页路径若变化，
   `erp_attachment` 会在首次调用时自动重新发现。
-- 新增模块只需在 `src/erp_tools/tools/attachments.py` 的 `MODULES` 里加一行，
+- 新增模块只需在 `api/src/erp_tools/tools/attachments.py` 的 `MODULES` 里加一行，
   该工具会自动列出。
 - 各模块的详细差异表见 [erp_attachment.md](erp_attachment.md)。

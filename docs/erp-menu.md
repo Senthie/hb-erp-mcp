@@ -1,7 +1,7 @@
 # ERP 菜单 → 接口 对照表
 
 > **自动生成，请勿手改**：`erp menu --write`
-> 数据源：`docs/menu.tree.json`（菜单树）+ `src/erp_tools/menu_catalog.py`（能力清单）
+> 数据源：`docs/menu.tree.json`（菜单树）+ `api/src/erp_tools/menu_catalog.py`（能力清单）
 >
 > | 项 | 值 |
 > | --- | --- |
@@ -1148,4 +1148,4 @@
 
 ---
 
-追加能力的步骤：在 `src/erp_tools/menu_catalog.py` 的 `PAGE_CAPABILITIES` 里给对应页面加一行（动作 + 接口名 + `docs/api/<接口名>.md`），然后跑 `erp menu --write`。忘了重新生成时 `tests/test_menu_docs.py` 会失败。
+追加能力的步骤：在 `api/src/erp_tools/menu_catalog.py` 的 `PAGE_CAPABILITIES` 里给对应页面加一行（动作 + 接口名 + `docs/api/<接口名>.md`），然后跑 `erp menu --write`。忘了重新生成时 `tests/test_menu_docs.py` 会失败。
