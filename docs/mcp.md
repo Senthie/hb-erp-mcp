@@ -539,7 +539,18 @@ flowchart LR
 
 **一条命令起栈**
 
+前置（Ubuntu/Debian 之类，租一台内网 Linux 也能跑）：
+
 ```bash
+docker --version && docker compose version    # 需要 Docker 23+ 与 compose v2 插件
+sudo usermod -aG docker "$USER"              # 免 sudo；改完重新登录一次
+# 若服务器上没有 openssl（签证书用它），脚本会自动退回 docker 里的 alpine+openssl
+```
+
+```bash
+git clone git@github.com:Senthie/hb-erp-mcp.git /srv/hb-erp-mcp
+cd /srv/hb-erp-mcp
+
 # 1) .env 只有 3~4 个值
 cp docker/env.example .env
 #    ERP_HOST=http://192.168.1.199:8889
@@ -549,6 +560,10 @@ cp docker/env.example .env
 
 # 2) 起栈：生成 config.yaml → 缺证书就自签 → 构建 → 启动 → 健康检查
 bash scripts/up.sh
+
+# 3) 放行端口后打开网页注册（详见下方各节）
+sudo ufw allow 8443/tcp
+#    https://erp-tools.lan:8443/ui
 ```
 
 `up.sh` 做的事：
@@ -873,12 +888,15 @@ certs 的 source 指向 `/srv/erp-tools/certs`，`config.yaml` 里 `storage: pos
 ### 4. 首次构建与启动
 
 ```bash
-bash scripts/up.sh                # 缺证书就自签 → build → up → 健康检查（推荐）
+bash scripts/up.sh                # 生成 config.yaml → 缺证书就自签 → build → up → 健康检查（推荐）
 
-# 或者手动三步：
-bash scripts/gen-cert.sh --ensure
+# 或者手动四步：
+erp init --mode mcp --bind 0.0.0.0:8765 --storage postgres \
+    --pg-host db --pg-password "$POSTGRES_PASSWORD" \
+    --public-host "$ERP_PUBLIC_HOST"              # 生成 config.yaml（已存在则跳过）
+bash scripts/gen-cert.sh --ensure                 # nginx 用的证书
 docker compose up -d --build
-docker compose ps                 # app 应为 healthy，nginx 应为 running/healthy
+docker compose ps                                 # app 应为 healthy，nginx 应为 running/healthy
 ```
 
 自检（不经过客户端证书信任也能验）：
@@ -886,8 +904,11 @@ docker compose ps                 # app 应为 healthy，nginx 应为 running/he
 ```bash
 curl --cacert /srv/erp-tools/certs/erp-tools.crt https://localhost:8443/healthz
 # → {"status":"ok","service":"HB-MCP","version":"0.3.0","keys":0,
-#    "global_concurrency":6,"store":"postgresql","register_secret_required":false}
+#    "global_concurrency":6,"store":"postgresql","register_secret_required":true}
 ```
+
+`register_secret_required: true` 说明注册接口已启用共享密钥（`register_secret: auto`
+自动生成）；要读它：`docker compose exec app cat /data/register.secret`。
 
 ### 5. 放行端口（只开对外那一个）
 
@@ -903,11 +924,14 @@ sudo ufw status numbered
 
 ```bash
 erp key --server https://erp-tools.lan:8443 --user 21146 \
-        --cacert /path/to/erp-tools.crt        # Windows 用 --cacert certs\erp-tools.crt
-# → stdout 输出 erp_xxx
+        --cacert /path/to/erp-tools.crt \      # Windows 用 --cacert certs\erp-tools.crt
+        --write-mcp-json ./mcp.json            # 直接把 key 写进客户端配置，不用手抄
+# → stdout 输出 erp_xxx；mcp.json 里已带 Authorization: Bearer <key>
 ```
 
 每个人/每台 AI 各自执行一次，各拿各的 key；密码只在那一次请求里用。
+也可以完全不开终端：浏览器打开 `https://erp-tools.lan:8443/ui`，
+注册 → 绑定 ERP → 新增 Token，弹窗里那份 `mcp.json` 复制即可。
 
 ### 7. 客户端接入 + 冒烟测试
 
