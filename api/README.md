@@ -29,13 +29,14 @@ docker/         nginx 反代配置
 
 ```powershell
 cd api
-uv sync --extra dev --extra server      # server：MCP + uvicorn + psycopg
+uv sync --extra dev --extra server      # server：MCP + uvicorn + psycopg + cryptography
 uv run pytest -q                        # 全部离线，不连真实 ERP
 
 # 起网关（可视化界面在 http://127.0.0.1:8765/ui/）
-uv run erp serve --db .\dev.db          # 本地用 SQLite
-uv run erp serve --pg-dsn postgresql://erp:secret@127.0.0.1:5432/erp   # 生产用 PostgreSQL
+uv run erp init --mode mcp              # 生成 config.yaml（只问必要项）
+uv run erp serve                        # 默认 SQLite；生产把 storage 改成 postgres
 ```
 
-生产存储是 **PostgreSQL**（`ERPSRV_PG_DSN`）；`--db` 只用于本地开发与测试。
+存储二选一，写在 `config.yaml` 的 `server` 段：`storage: sqlite`（本地开发/测试）
+或 `storage: postgres` + `pg_dsn`（生产）。`--db` / `--pg-dsn` 可临时覆盖。
 完整说明见仓库根目录的 [README.md](../README.md) 与 [docs/mcp.md](../docs/mcp.md)。

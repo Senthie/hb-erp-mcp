@@ -75,7 +75,8 @@ def test_config_file_priority_user_then_program(frozen_with_yaml):
     assert paths.find_config_file() == frozen_with_yaml / "program" / "config.yaml"
 
 
-def test_env_beats_yaml_beats_dotenv(tmp_path, monkeypatch, frozen_with_yaml):
+def test_env_beats_yaml_and_legacy_dotenv_is_ignored(tmp_path, monkeypatch,
+                                                     frozen_with_yaml):
     for key in ("ERP_HOST", "ERP_USERNAME", "ERP_PASSWORD"):
         monkeypatch.delenv(key, raising=False)
 
@@ -88,12 +89,26 @@ def test_env_beats_yaml_beats_dotenv(tmp_path, monkeypatch, frozen_with_yaml):
                       encoding="utf-8")
 
     cfg = ErpConfig.from_env(env_file=dotenv)
-    assert cfg.host == "http://yaml:8889"          # yaml 覆盖 .env
+    assert cfg.host == "http://yaml:8889"          # yaml 优先
     assert cfg.username == "from-yaml"
+    assert cfg.username != "from-dotenv"           # .env 已不再读取
 
     monkeypatch.setenv("ERP_HOST", "http://real-env:8889")
     cfg = ErpConfig.from_env(env_file=dotenv)
-    assert cfg.host == "http://real-env:8889"      # 真实环境变量最高
+    assert cfg.host == "http://real-env:8889"      # 临时环境变量最高
+
+
+def test_legacy_dotenv_alone_is_not_loaded(tmp_path, monkeypatch) -> None:
+    """只剩 .env、没有 config.yaml 时，不再把 .env 当配置源。"""
+    monkeypatch.setattr(sys, "frozen", False, raising=False)
+    monkeypatch.delenv("ERP_DATA_DIR", raising=False)
+    monkeypatch.delenv("ERP_HOST", raising=False)
+    monkeypatch.chdir(tmp_path)
+    (tmp_path / ".env").write_text("ERP_HOST=http://dotenv:8889\n", encoding="utf-8")
+
+    cfg = ErpConfig.from_env()
+
+    assert cfg.host != "http://dotenv:8889"
 
 
 def test_missing_yaml_is_ignored(monkeypatch, tmp_path):

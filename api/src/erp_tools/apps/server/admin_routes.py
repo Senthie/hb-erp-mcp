@@ -26,7 +26,7 @@ async def _require_admin(state: ServerState, request: Request) -> PlatformUser:
     if not user.is_admin:
         raise Forbidden(
             "需要管理员权限", code="admin_required",
-            hint="用 ERPSRV_ADMIN_USERS 指定的账号登录",
+            hint="用 config.yaml 的 server.admin_users（或 erp init 时的「第一个管理员」）指定的账号登录",
         )
     return user
 

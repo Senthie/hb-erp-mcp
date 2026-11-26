@@ -1,11 +1,13 @@
 #!/usr/bin/env bash
-# 一条命令把栈跑起来：读 .env → 缺证书就自签 → docker compose up -d --build → 健康检查
+# 一条命令把栈跑起来：读 .env → 生成 config.yaml → 缺证书就自签
+#                       → docker compose up -d --build → 健康检查
 #
 #   bash scripts/up.sh              # 日常启动/更新（证书已存在且有效时自动跳过）
 #   bash scripts/up.sh --no-cert    # 不碰证书（证书由外部提供）
 #   bash scripts/up.sh --no-health  # 不做健康检查
 #
-# 前置：同目录有 .env，且里面 ERP_HOST 已填（ERP_PUBLIC_HOST 用来签证书 SAN）。
+# 前置：同目录有 .env（cp docker/env.example .env，只有 3 个值）。
+# 应用配置 config.yaml 由本脚本按 .env 生成；已存在则沿用，不再覆盖。
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -33,8 +35,9 @@ usage() {
   --no-health    跳过健康检查
   -h, --help     显示本帮助
 
-流程：读 .env → 缺证书就自签（gen-cert.sh --ensure）→ docker compose up -d --build → 健康检查
-环境变量: ERP_CERT_DIR / ERP_HTTPS_PORT / ERP_HTTP_PORT（也可写在 .env 里）
+流程：读 .env → 生成 config.yaml（应用配置）→ 缺证书就自签（gen-cert.sh --ensure）
+      → docker compose up -d --build → 健康检查
+环境变量: ERP_CERT_DIR / ERP_HTTPS_PORT / ERP_HTTP_PORT / ERP_ADMIN_USER（也可写在 .env 里）
 USAGE
 }
 
@@ -51,12 +54,53 @@ command -v docker >/dev/null 2>&1 || { log "没装 docker"; exit 2; }
 docker info >/dev/null 2>&1 || { log "docker 守护进程没起来（或当前用户没权限）"; exit 2; }
 
 if [ ! -f .env ]; then
-  log "缺少 .env：先 cp .env.example .env，并填 ERP_HOST / ERP_PUBLIC_HOST"
+  log "缺少 .env：先 cp docker/env.example .env（只有 3 个值）"
   exit 2
 fi
 if ! grep -qE '^[[:space:]]*ERP_HOST=.+' .env; then
-  log ".env 里没有 ERP_HOST（compose 会用 \${ERP_HOST:?} 直接拒绝启动）"
+  log ".env 里没有 ERP_HOST（应用连哪个 ERP 主站）"
   exit 2
+fi
+
+# ── 0. 应用配置：config.yaml 由 .env 生成（不用手写一堆变量）──────
+if [ ! -f config.yaml ]; then
+  pg_user="$(dotenv_get POSTGRES_USER erp)"
+  pg_pass="$(dotenv_get POSTGRES_PASSWORD '')"
+  pg_db="$(dotenv_get POSTGRES_DB erp)"
+  erp_host="$(dotenv_get ERP_HOST '')"
+  public_host="$(dotenv_get ERP_PUBLIC_HOST '')"
+  admin_user="$(dotenv_get ERP_ADMIN_USER '')"
+  if [ -z "$pg_pass" ]; then
+    log ".env 里没有 POSTGRES_PASSWORD（compose 也会因此拒绝启动）"
+    exit 2
+  fi
+  if [ -n "$admin_user" ]; then
+    admin_line="  admin_users: [$admin_user]"
+  else
+    admin_line="  admin_users: []"
+  fi
+  cat > config.yaml <<YAML
+# 由 scripts/up.sh 按 .env 生成（mode: mcp）。要改并发/管理员等直接编辑本文件。
+mode: mcp
+erp:
+  host: ${erp_host}
+server:
+  bind: 0.0.0.0:8765
+  storage: postgres
+  pg_dsn: "postgresql://${pg_user}:${pg_pass}@db:5432/${pg_db}"
+${admin_line}
+  # TLS 由 nginx 终止：本进程说 HTTP，且信任 X-Forwarded-For
+  tls: off
+  allow_plaintext: true
+  trust_proxy: true
+  public_host: "${public_host}"
+  allow_hosts: auto
+  register_secret: auto
+YAML
+  chmod 600 config.yaml 2>/dev/null || true
+  log "已生成 config.yaml（PostgreSQL + nginx 终止 TLS；管理员：${admin_user:-未设置}）"
+else
+  log "沿用已有 config.yaml（要重新生成先删掉它）"
 fi
 
 # ── 1. 证书（幂等：有效就跳过）─────────────────────────────
@@ -141,7 +185,7 @@ docker compose ps
 
 if [ "$ok" = 1 ]; then
   log "OK 栈已就绪（$url 返回 200）"
-  log "下一步：在客户端机器上换 api-key → erp key --server $scheme://<ERP_PUBLIC_HOST> --user <工号>"
+  log "下一步：在客户端机器上换 api-key → erp key --server $scheme://<ERP_PUBLIC_HOST> --write-mcp-json ./mcp.json"
   exit 0
 fi
 

@@ -39,7 +39,7 @@ ISCC.exe packaging\installer.iss
 
 | 数据 | 位置 |
 | --- | --- |
-| `.env` 配置 | `%APPDATA%\erp-tools\.env` |
+| `config.yaml` 配置 | `%APPDATA%\erp-tools\config.yaml` |
 | 登录 cookie（`<工号>.json`） | `%APPDATA%\erp-tools\cookies\` |
 | QXID 缓存（`qxid-<工号>.json`） | 同上 |
 | 导出文件 | 用户 `--out` 指定的位置（默认当前目录） |
@@ -52,7 +52,8 @@ ISCC.exe packaging\installer.iss
 运行方式        PyInstaller 打包
 程序位置        C:\Users\me\AppData\Local\Programs\erp-tools\erp.exe
 数据目录        C:\Users\me\AppData\Roaming\erp-tools
-配置文件        C:\Users\me\AppData\Roaming\erp-tools\.env
+配置(yaml)      C:\Users\me\AppData\Roaming\erp-tools\config.yaml
+模式            cli
 Cookie 目录     C:\Users\me\AppData\Roaming\erp-tools\cookies
 ```
 
@@ -61,12 +62,14 @@ Cookie 目录     C:\Users\me\AppData\Roaming\erp-tools\cookies
 | 位置 | 优先级 | 说明 |
 | --- | --- | --- |
 | 命令行 `--host/--user/--password` | 最高 | 临时覆盖 |
-| 系统环境变量 `ERP_*` | 高 | CI / 临时切换 |
-| `%APPDATA%\erp-tools\config.yaml` | 中 | **用户级**，`erp setup` 写这里 |
-| `<安装目录>\config.yaml` | 低 | 随包携带（构建时生成） |
-| `.\.env` | 最低 | 旧版机制，仍兼容 |
+| 系统环境变量 `ERP_*` | 高 | CI / 临时切换（不作为文档化配置） |
+| `%APPDATA%\erp-tools\config.yaml` | 中 | **用户级**，`erp init` 写这里 |
+| `<安装目录>\config.example.yaml` | 低 | 随包携带的模板（只读） |
 
-- 构建时会把 `packaging\config.example.yaml` 复制成 `dist\erp-tools\config.yaml`；
+（`.env` 自 0.4 起不再读取。）
+
+- 构建时会把 `packaging\config.example.yaml` 一起放进 `dist\erp-tools\`（模板，只读）；
+  用户实际配置由 `erp init` 写到 `%APPDATA%\erp-tools\config.yaml`。
   若要预填账号密码再分发，就放一份 `packaging\config.local.yaml`（已 gitignore），
   构建脚本优先用它：
 
@@ -76,12 +79,12 @@ Cookie 目录     C:\Users\me\AppData\Roaming\erp-tools\cookies
   .\scripts\build.ps1
   ```
 - 安装器还会把该文件一起装进安装目录；但**程序只读不写**它，用户级改动写到 `%APPDATA%`。
-- 示例（`packaging\config.example.yaml`）：
+- 示例（`packaging\config.example.yaml`，`erp init --mode cli` 生成的就是这个形状）：
 
   ```yaml
+  mode: cli
   erp:
     host: http://192.168.1.199:8889
-    captcha_host: ""
     username: "21146"
     password: ""
   runtime:
@@ -93,8 +96,8 @@ Cookie 目录     C:\Users\me\AppData\Roaming\erp-tools\cookies
 ## 首次使用流程（给最终用户）
 
 1. 运行安装包 → 选目录 → 完成；
-2. 勾选「立即运行配置向导」或从开始菜单打开；
-3. 向导里填 ERP 地址 / 工号 / 密码 → 自动登录并把 cookie 存进 `%APPDATA%\erp-tools\cookies`；
+2. 勾选「立即运行配置向导」或从开始菜单打开（等价于 `erp init --mode cli`）；
+3. 只填 ERP 地址 / 工号（密码可留空，登录时再输）→ cookie 存进 `%APPDATA%\erp-tools\cookies`；
 4. 之后直接用 `erp query` / `erp quote`，无需再登录（cookie 失效会自动重登）。
 
 ```powershell

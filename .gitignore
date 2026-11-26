@@ -60,6 +60,10 @@ auth.db-shm
 # 附件代理（/v1/files）的签名密钥，与 auth.db 同目录生成
 proxy.secret
 /proxy.secret*
+# `erp serve` 自动生成的注册共享密钥与自签证书（tls: auto）
+register.secret
+/api/tls/
+/tls/
 
 # ── 抓取中间产物 / 临时目录 ───────────────────────────────
 /.scratch/

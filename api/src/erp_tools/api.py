@@ -34,7 +34,7 @@ def connect(*, username: str | None = None, password: str | None = None,
             captcha: str | None = None) -> AuthManager:
     """建立并（默认）验证登录态，返回可复用的 AuthManager。
 
-    env_file=None 时自动查找 `./.env` 与 `%APPDATA%\\erp-tools\\.env`。
+    配置来自 `config.yaml`（`erp init --mode cli` 生成）；显式传入的参数优先。
     """
     cfg = ErpConfig.from_env(env_file)
     kwargs = {}

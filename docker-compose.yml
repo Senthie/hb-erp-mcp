@@ -1,12 +1,14 @@
 # erp-tools 网关：app（Python/MCP）+ PostgreSQL（api-key / 服务注册）+ nginx（TLS 终止）
 #
-# 启动：
-#   在 .env 里只写 ERP_HOST、POSTGRES_PASSWORD（**不要写 ERP_PASSWORD**）
-#   python scripts\make-cert.py --host <域名或IP> --out-dir certs
-#   docker compose up -d --build
+# 启动（一条命令，.env 只有 3 个值，应用配置自动生成）：
+#   cp docker/env.example .env      # 填 ERP_PUBLIC_HOST / POSTGRES_PASSWORD / ERP_HOST
+#   bash scripts/up.sh              # 生成 config.yaml + 自签证书 + compose up
+#
+# 应用配置在 ./config.yaml（mode: mcp，由 scripts/up.sh 按 .env 生成；也可用
+#   `erp init --mode mcp` 手工生成后自己改）。
 #
 # 取 api-key（每个使用者用自己的工号密码，密码不进容器、不落盘）：
-#   erp key --server https://<域名或IP>:8443
+#   erp key --server https://<域名或IP>:8443 --write-mcp-json ./mcp.json
 #
 # 访问：
 #   https://<域名或IP>:8443/ui                # 可视化登录 / 服务注册
@@ -43,35 +45,16 @@ services:
     depends_on:
       db:
         condition: service_healthy
-    # 注意：**不用 env_file**。容器只需要「连哪个 ERP」，
+    # 应用配置全部在这份 config.yaml 里（mode: mcp）；容器里只保留路径与时钟，
     # 账号密码一律不进容器 —— 每个使用者自己 POST /v1/auth/login 换 api-key。
+    volumes:
+      - ./config.yaml:/app/api/config.yaml:ro
+      # 运行时文件（cookie / qxid 缓存 / proxy.secret / register.secret）：命名卷，**重建堆栈不丢**
+      - erpdata:/data
     environment:
-      ERP_HOST: ${ERP_HOST:?请在 .env 里设置 ERP_HOST，如 http://192.168.1.199:8889}
-      ERP_CAPTCHA_HOST: ${ERP_CAPTCHA_HOST:-}
-      ERP_PAGE_SIZE_MAX: ${ERP_PAGE_SIZE_MAX:-5000}
-      ERP_REQUEST_DELAY: ${ERP_REQUEST_DELAY:-0.0}
-      ERPSRV_BIND: 0.0.0.0:8765
-      # 生产存储：PostgreSQL。也可以直接给整串 ERPSRV_PG_DSN 覆盖
-      ERPSRV_PG_DSN: ${ERPSRV_PG_DSN:-postgresql://${POSTGRES_USER:-erp}:${POSTGRES_PASSWORD:?请在 .env 里设置 POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-erp}}
-      # 服务注册接口的共享密钥（留空＝仅按 IP 限流）
-      ERPSRV_REGISTER_SECRET: ${ERPSRV_REGISTER_SECRET:-}
-      # TLS 由 nginx 终止，所以本进程说 HTTP —— 必须显式声明，否则拒绝启动
-      ERPSRV_ALLOW_PLAINTEXT: "1"
-      # 前面确实有 nginx，才开；否则限流会把所有客户端当成 127.0.0.1
-      ERPSRV_TRUST_PROXY: "1"
-      # ★ 必须等于客户端实际访问的 host:port（$http_host 原样透传后逐字比对）
-      ERPSRV_ALLOW_HOST: ${ERP_PUBLIC_HOST:-localhost:8443}
-      ERPSRV_CONCURRENCY: ${ERPSRV_CONCURRENCY:-6}
-      # 附件代理 /v1/files 生成的链接用哪个对外地址。
-      # 留空 = 自动跟当前请求的 X-Forwarded-Proto + Host（经 nginx 进来时就是对的）
-      ERP_PUBLIC_BASE: ${ERP_PUBLIC_BASE:-}
       ERP_DATA_DIR: /data
       COOKIE_DIR: /data/cookies
       TZ: Asia/Shanghai
-    volumes:
-      # 运行时文件（cookie / qxid 缓存 / proxy.secret）：命名卷，**重建堆栈不丢**
-      # 注意：api-key 与注册信息在 PostgreSQL（pgdata 卷）里
-      - erpdata:/data
     expose:
       - "8765"
     healthcheck:

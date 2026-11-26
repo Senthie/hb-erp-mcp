@@ -1,14 +1,18 @@
-# erp-tools 配置文件
+# erp-tools 配置（随包携带的模板）
+#
+# 一般不用手改：运行 `erp init --mode cli`（本机命令行）或
+# `erp init --mode mcp`（MCP 网关）会写出用户级 config.yaml，只问必要的几项。
 #
 # 读取顺序（前者优先）：
 #   1. 命令行参数  --host / --user / --password / --config
-#   2. 系统环境变量 ERP_HOST / ERP_USERNAME / ERP_PASSWORD ...
+#   2. 临时环境变量（容器 / 测试用，不作为文档化配置方式）
 #   3. 用户级配置  %APPDATA%\erp-tools\config.yaml
-#   4. 程序目录    <安装目录>\config.yaml      ← 随包携带的这份
-#   5. 当前目录    .\config.yaml
-#   6. 旧版 .env   （仍兼容，优先级最低）
+#   4. 程序目录    <安装目录>\config.yaml          ← 构建时由这份复制而来
 #
-# 修改后可用 `erp config` 确认生效来源。
+# `.env` 自 0.4 起不再读取。修改后可用 `erp config` 确认生效来源。
+
+#: cli = 本机命令行直连 ERP；mcp = MCP 网关（erp serve）
+mode: cli
 
 erp:
   # 内网：http://192.168.1.199:8889    外网：http://14.12.0.172:8889
@@ -16,7 +20,7 @@ erp:
   # 验证码服务在另一个端口；留空 = 自动用 host 的 8887 端口
   captcha_host: ""
   username: "21146"
-  # 密码明文存放，请自行控制文件权限；也可留空改用环境变量 ERP_PASSWORD
+  # 密码明文存放，请自行控制文件权限；留空 = 登录时交互输入
   password: ""
   # 请求业务页面前是否强制登录
   require_auth: true
@@ -37,3 +41,18 @@ qxid:
   quote: ""
   quote_index: ""
   attendance: ""
+
+# MCP 网关（mode: mcp）才用；`erp init --mode mcp` 会自动生成
+# server:
+#   bind: 127.0.0.1:8765
+#   storage: sqlite              # sqlite | postgres
+#   sqlite_path: auth.db         # storage: sqlite 时
+#   # pg_dsn: "postgresql://erp:***@127.0.0.1:5432/erp"   # storage: postgres 时
+#   admin_users: [root]
+#   tls: auto                    # 非回环监听时首次启动自签证书，不用回填路径
+#   allow_hosts: auto            # 由 bind / public_host 派生
+#   register_secret: auto        # 首次启动随机生成到 <数据目录>/register.secret
+#   concurrency: 6
+#   public_host: ""              # 反向代理 / docker 对外地址
+#   trust_proxy: false
+#   allow_plaintext: false

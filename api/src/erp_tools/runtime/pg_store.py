@@ -227,7 +227,7 @@ class PgStore:
 
     def __init__(self, dsn: str, *, connect_timeout: int = 10) -> None:
         if not (dsn or "").strip():
-            raise ConfigError("PostgreSQL 连接串（ERPSRV_PG_DSN）不能为空")
+            raise ConfigError("PostgreSQL 连接串（server.pg_dsn）不能为空")
         self.dsn = dsn.strip()
         self.connect_timeout = max(1, int(connect_timeout))
         self._lock = threading.RLock()

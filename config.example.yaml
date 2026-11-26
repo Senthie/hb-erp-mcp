@@ -1,0 +1,86 @@
+# erp-tools 配置示例（`erp init` 会自动生成 config.yaml，一般不用手写）
+#
+# 只有两种模式，用 `mode` 区分；生成的每一项都有默认值，回车就能过：
+#
+#   erp init --mode cli     # 本机命令行直连 ERP（erp login / query / attendance ...）
+#   erp init --mode mcp     # 作为 MCP 网关（erp serve，浏览器 /ui 管账号与 token）
+#
+# 优先级：命令行参数 > 临时环境变量 > 本文件 > 内置默认值。
+# `.env` 自 0.4 起不再读取；检测到旧文件只会提示一次。
+
+# ══════════════════ 模式 A：CLI（只有 ERP 连接）══════════════════
+# 生成的配置就这么几行：
+#
+#   mode: cli
+#   erp:
+#     host: http://192.168.1.199:8889
+#     username: "21146"
+#     # password 留空 = 每次 login 时交互输入（推荐，不落盘）
+#
+# 之后：erp login
+
+mode: cli
+
+erp:
+  # 内网：http://192.168.1.199:8889    外网：http://14.12.0.172:8889
+  host: http://192.168.1.199:8889
+  # 验证码服务在另一个端口；留空 = 自动用 host 的 8887 端口
+  captcha_host: ""
+  username: "21146"
+  # 密码明文存放，请自行控制文件权限；留空 = 登录时交互输入
+  password: ""
+  # 请求业务页面前是否强制登录
+  require_auth: true
+
+runtime:
+  # 实测该 ERP 约 4~8 并发即饱和
+  max_concurrency: 8
+  request_delay: 0.0
+  timeout_connect: 10
+  timeout_read: 60
+  # 单页最多记录数（考勤/列表页一次取全靠它）
+  page_size_max: 5000
+  # 留空 = 数据目录下的 cookies
+  cookie_dir: ""
+
+qxid:
+  # 留空则登录后从菜单自动探测
+  quote: ""
+  quote_index: ""
+  attendance: ""
+
+# ══════════════════ 模式 B：MCP 网关 ══════════════════
+# 把上面的 `mode` 换成 mcp，再加一段 server（`erp init --mode mcp` 会自动写好）：
+#
+#   mode: mcp
+#   erp:
+#     host: http://192.168.1.199:8889
+#   server:
+#     bind: 0.0.0.0:8765
+#     storage: postgres
+#     pg_dsn: "postgresql://erp:***@db:5432/erp"
+#     admin_users: [root]
+#     tls: auto
+#     allow_hosts: auto
+#     register_secret: auto
+#
+# 三个 auto 都不需要回填：
+#   tls: auto            非回环监听时，首次启动自动签发自签证书到 <数据目录>/tls/
+#   allow_hosts: auto    由 bind（和可选的 public_host）自动派生 Host 白名单
+#   register_secret: auto 首次启动随机生成到 <数据目录>/register.secret
+#
+# 后端存储二选一，用 storage 决定，不再两套变量并存：
+#   storage: sqlite     单机试跑；sqlite_path 默认 auth.db（相对数据目录）
+#   storage: postgres   生产；pg_dsn 也可以由 init 用 host/port/user/password/db 拼好
+#
+# server:
+#   bind: 127.0.0.1:8765        # 0.0.0.0 表示团队模式（必需 TLS）
+#   storage: sqlite
+#   sqlite_path: auth.db
+#   # storage: postgres 时改成：
+#   # pg_dsn: "postgresql://erp:***@127.0.0.1:5432/erp"
+#   admin_users: [root]         # 第一个管理员（注册同名账号即自动获得 admin）
+#   concurrency: 6              # 全局 ERP 并发上限，实测 4~8 饱和
+#   public_host: ""             # 反向代理 / docker 对外地址，如 erp-tools.lan:8443
+#   trust_proxy: false          # 前面有反向代理时才打开
+#   allow_plaintext: false      # TLS 由代理终止时打开（docker + nginx）

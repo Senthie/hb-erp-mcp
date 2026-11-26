@@ -17,49 +17,43 @@ api\.venv\Scripts\erp.exe --version
 
 ## 2. 配置
 
+只有**一份** `config.yaml`，由 `erp init` 生成（只问必要项，其余自动派生）：
+
+```powershell
+api\.venv\Scripts\erp.exe init --mode cli     # 本机命令行模式
+```
+
+生成的内容就这么几行：
+
+```yaml
+mode: cli
+erp:
+  host: http://192.168.1.199:8889   # 内网；外网用 http://14.12.0.172:8889
+  username: "21146"
+  # password 留空 = erp login 时交互输入（推荐，密码不落盘）
+```
+
 优先级（高 → 低）：
 
 ```
-命令行 --host/--user/--password  >  真实环境变量  >  config.yaml  >  旧版 .env  >  内置默认值
+命令行 --host/--user/--password  >  临时环境变量  >  config.yaml  >  内置默认值
 ```
 
 `config.yaml` 查找顺序：用户数据目录 `%APPDATA%\erp-tools` → 程序目录（随包携带）→ 当前目录。
 `erp config` 可随时确认**最终生效的来源**。
 
-```powershell
-Copy-Item packaging\config.example.yaml config.yaml
-api\.venv\Scripts\erp.exe setup          # 向导：地址 / 工号 / 密码，并缓存 cookie
-```
+> `.env` 自 0.4 起不再读取；检测到旧文件只会提示一次（提示后删掉即可）。
+> 需要更多可调项时参考 [config.example.yaml](../config.example.yaml)，`erp init` 会保留你手工改过的段落。
 
-```yaml
-erp:
-  host: http://192.168.1.199:8889   # 内网；外网用 http://14.12.0.172:8889
-  captcha_host: ""                  # 留空 = host 的 8887 端口
-  username: "21146"
-  password: ""                      # 也可用环境变量 ERP_PASSWORD
-runtime:
-  max_concurrency: 8                # 实测该 ERP 4~8 并发即饱和
-  page_size_max: 5000
-qxid:
-  quote_index: ""                   # 留空自动探测
-```
-
-常用环境变量（等价于 `.env`）：
-
-| 变量 | 说明 |
-| --- | --- |
-| `ERP_HOST` | ERP 地址，如 `http://192.168.1.199:8889` |
-| `ERP_CAPTCHA_HOST` | 验证码服务地址；留空 = 主机 + 8887 端口 |
-| `ERP_USERNAME` / `ERP_PASSWORD` | **只给 CLI 用**（`erp serve` 完全不读，见 [mcp.md](mcp.md)） |
-| `ERP_MAX_CONCURRENCY` / `ERP_REQUEST_DELAY` | 并发上限 / 最小请求间隔（秒） |
-| `COOKIE_DIR` | 登录态缓存目录，默认 `./cookies` |
-| `ERP_QXID_*` | 手工指定 QXID；留空则登录后从菜单自动探测 |
+`erp init --mode cli` 之外，也支持 `--yes`（全默认、不提问）与直给参数：
+`--host/--user/--password/--config`。
 
 ## 3. 命令总览
 
 | 命令 | 作用 |
 | --- | --- |
-| `erp setup` | 首次配置向导（写 `config.yaml` + 缓存 cookie） |
+| `erp init --mode cli\|mcp` | 生成 `config.yaml`（cli=命令行，mcp=网关；只问必要项） |
+| `erp setup` | `erp init --mode cli` 的别名 |
 | `erp doctor` | 自检：配置来源、端口连通、登录页/验证码、OCR、cookie 有效性 |
 | `erp login` | 登录并缓存 cookie、探测 QXID |
 | `erp config` | 打印生效配置、数据目录、cookie 路径 |
@@ -91,14 +85,26 @@ qxid:
 
 ## 4. 命令详解
 
-### `erp setup` / `erp doctor` / `erp login` / `erp config` / `erp qxid`
+### `erp init` / `erp doctor` / `erp login` / `erp config` / `erp qxid`
 ```powershell
-erp setup        # 交互式向导
+erp init --mode cli   # 生成 config.yaml（mcp 模式见 docs/mcp.md）
 erp doctor       # 排障第一条命令，会打印实际 host/账号/验证码识别结果
 erp login        # 缓存 cookie；--force 强制重新登录
-erp config       # 看配置到底从哪来
+erp config       # 看配置到底从哪来（含 mode）
 erp qxid         # 页面 -> QXID；--json 输出 JSON
 ```
+
+`erp init` 的选项：
+
+| 选项 | 说明 |
+| --- | --- |
+| `--mode cli\|mcp` | cli=本机命令行；mcp=MCP 网关 |
+| `--yes` | 不提问，全用默认值（适合脚本 / CI） |
+| `--force` | 重新询问每一项（默认沿用已有值，避免覆盖手改过的配置） |
+| `--config` | 写到哪个文件（默认 `./config.yaml`，打包后写数据目录） |
+| `--erp-host` / `--erp-user` / `--erp-password` | 直给 ERP 连接信息 |
+| `--bind` / `--storage` / `--pg-*` / `--admin-user` | 仅 mcp 模式：监听地址、存储、第一个管理员 |
+| `--mcp-json` / `--no-mcp-json` | 仅 mcp 模式：生成 MCP 客户端配置模板 |
 
 `erp login` 输出成功后会列出探测到的页面与 QXID（`873` 报价需求页、`876` 列表页、`2553` 考勤页）。
 
@@ -512,4 +518,4 @@ Cookie 值是「带前缀」的：`LoginUserID=LoginUserID=2474`，真实 ID 要
 - 列表页只能查到**库里仍在**的单据：`orders.csv` 里 2021~2022 的单号多已归档，不能当测试样本。
 - 考勤页的「查询范围」受账号数据权限限制。
 - 同一个 ERP 可能存在**多端口实例**（实测 `8889` 与 `8890` 数据不互通），切环境前先 `erp config`。
-- 打包运行时 `.env` / `cookies/` / QXID 缓存落在 `%APPDATA%\erp-tools`（安装目录不可写）。
+- 打包运行时 `config.yaml` / `cookies/` / QXID 缓存落在 `%APPDATA%\erp-tools`（安装目录不可写）。

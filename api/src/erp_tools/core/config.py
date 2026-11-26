@@ -1,19 +1,22 @@
-"""集中配置：环境变量 > .env 文件 > 默认值。
+"""集中配置：config.yaml > 内置默认值（`.env` 已废弃，不再读取）。
 
 设计要点：
   * 主机/端口/QXID **不再写死在代码里**（历史教训：两个脚本分别硬编码了内网与外网 IP）；
-  * 验证码端口默认由 ERP 端口推导（8889 → 8887），可用 ERP_CAPTCHA_HOST 覆盖；
-  * QXID 允许留空，运行期由 auth.discover_qxid_map() 从菜单探测。
+  * 验证码端口默认由 ERP 端口推导（8889 → 8887），可用 captcha_host 覆盖；
+  * QXID 允许留空，运行期由 auth.discover_qxid_map() 从菜单探测；
+  * 配置来源只有一份 `config.yaml`（`erp init --mode cli|mcp` 生成）。
+    环境变量仍可用作**临时覆盖**（测试 / 容器），但不作为文档化的配置方式。
 """
 
 from __future__ import annotations
 
 import os
+import sys
 from dataclasses import dataclass, field
 from pathlib import Path
 from urllib.parse import urlsplit
 
-from .paths import resolve_cookie_dir, find_env_file
+from .paths import find_env_file, resolve_cookie_dir
 from .settings import load_config_file
 
 DEFAULT_HOST = "http://192.168.1.199:8889"
@@ -31,32 +34,30 @@ def _is_ours(key: str, current: str | None) -> bool:
     return key in _LOADED_VALUES and _LOADED_VALUES[key] == current
 
 
-def _apply_env(values: dict[str, str]) -> None:
-    """写入环境变量，但不覆盖用户真实设置的值。"""
-    for key, value in values.items():
-        current = os.environ.get(key)
-        if current is None or _is_ours(key, current):
-            os.environ[key] = value
-            _LOADED_VALUES[key] = value
-
-
-def load_env_file(path: str | Path = ".env") -> None:
-    """把 .env 里的键值写进 os.environ（不覆盖用户真实环境变量）。"""
-    p = Path(path)
-    if not p.is_file():
-        return
-    parsed: dict[str, str] = {}
-    for raw in p.read_text(encoding="utf-8").splitlines():
-        line = raw.strip()
-        if not line or line.startswith("#") or "=" not in line:
-            continue
-        key, _, value = line.partition("=")
-        parsed[key.strip()] = value.strip().strip('"').strip("'")
-    _apply_env(parsed)
-
-
 def _env_str(name: str, default: str = "") -> str:
     return (os.environ.get(name) or default).strip()
+
+
+_LEGACY_ENV_WARNED = False
+
+
+def _warn_legacy_env_file() -> None:
+    """`.env` 已废弃：检测到旧文件时提示一次（不读取、不删除）。"""
+    global _LEGACY_ENV_WARNED
+    if _LEGACY_ENV_WARNED:
+        return
+    _LEGACY_ENV_WARNED = True
+    try:
+        found = find_env_file()
+    except OSError:  # pragma: no cover - 路径不可读
+        return
+    if found is not None:
+        print(
+            f"[WARN] 不再读取 {found}：配置已统一到 config.yaml。"
+            "请运行 `erp init --mode cli`（或 --mode mcp）生成配置，然后删掉 .env。",
+            file=sys.stderr,
+            flush=True,
+        )
 
 
 def _env_int(name: str, default: int) -> int:
@@ -162,19 +163,19 @@ class ErpConfig:
                  config_file: str | Path | None = None) -> "ErpConfig":
         """读取配置。
 
-        优先级（高 → 低）：**真实环境变量 > config.yaml > .env > 内置默认值**。
-        `config.yaml` 自动查找顺序：用户数据目录 → 程序目录 → 当前目录 → 内置模板。
+        优先级（高 → 低）：**临时环境变量 > config.yaml > 内置默认值**。
+        `.env` 文件自 0.4 起不再读取；检测到旧文件时只提示一次，请改用
+        `erp init --mode cli` 生成 config.yaml。
         """
-        # 先把「调用方真实设置的环境变量」记下来，它们不会被文件覆盖
+        del env_file  # 兼容旧调用签名：.env 已废弃
+        _warn_legacy_env_file()
+
+        # 先把「调用方真实设置的环境变量」记下来，它们不会被 config.yaml 覆盖
         real_env = {
             key: value
             for key, value in os.environ.items()
             if (key.startswith("ERP_") or key == "COOKIE_DIR") and not _is_ours(key, value)
         }
-
-        found_env = find_env_file(env_file)
-        if found_env is not None:
-            load_env_file(found_env)
 
         yaml_env, _yaml_path = load_config_file(config_file)
         for key, value in yaml_env.items():

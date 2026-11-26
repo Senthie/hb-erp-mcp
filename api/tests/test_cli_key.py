@@ -90,6 +90,28 @@ def test_key_requires_server() -> None:
     assert cli.cmd_key(_args(server="  ")) == 2
 
 
+def test_key_guesses_server_from_config(tmp_path, monkeypatch, fake_post) -> None:
+    """本机有 server 段时不必再写 --server。"""
+    (tmp_path / "config.yaml").write_text(
+        "mode: mcp\nserver:\n  bind: 127.0.0.1:8765\n  storage: sqlite\n",
+        encoding="utf-8",
+    )
+    monkeypatch.chdir(tmp_path)
+
+    assert cli.cmd_key(_args(server="")) == 0
+    assert fake_post[0]["url"] == "http://127.0.0.1:8765/v1/auth/login"
+
+
+def test_key_write_mcp_json_fills_real_key(tmp_path, fake_post) -> None:
+    path = tmp_path / "mcp.json"
+    assert cli.cmd_key(_args(write_mcp_json=str(path))) == 0
+
+    config = json.loads(path.read_text(encoding="utf-8"))
+    server = config["servers"]["hb-mcp"]
+    assert server["headers"]["Authorization"] == "Bearer erp_abc"
+    assert server["url"] == "https://erp-tools.lan:8443/mcp"
+
+
 def test_key_refuses_non_interactive_without_password(monkeypatch) -> None:
     monkeypatch.setattr(cli.sys.stdin, "isatty", lambda: False, raising=False)
     assert cli.cmd_key(_args(password="")) == 2

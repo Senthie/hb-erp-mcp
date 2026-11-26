@@ -6,11 +6,12 @@
 #   docker run --rm -p 8080:8765 -v erpdata:/data erp-tools:0.3.0
 #
 # 注意：镜像里**不含任何账号密码/证书**。
-#   * ERP 地址走环境变量（ERP_HOST 等）；
+#   * 应用配置是一份 config.yaml（mode: mcp），运行时挂载到 /app/api/config.yaml；
+#     `erp init --mode mcp` 生成，或由 scripts/up.sh 按 .env 自动生成；
 #   * ERP 账号密码**永不进镜像/环境** —— 每个使用者自己调 POST /v1/auth/login
 #     （或 `erp key --server ...`）用**自己的**工号密码换**自己的** api-key，
 #     服务端只存 key 的 sha256；
-#   * 证书与 api-key 库通过 volume / 反向代理挂进来（见 docker-compose.yml）。
+#   * 证书（tls: auto 时自动签）、注册密钥都在 /data 卷里，重建容器不丢。
 
 # ───────────────────── 前端构建（React + Tailwind）─────────────────────
 FROM node:22-alpine AS web
@@ -74,9 +75,7 @@ ENV PATH="/app/api/.venv/bin:$PATH" \
     PYTHONUNBUFFERED=1 \
     PYTHONIOENCODING=utf-8 \
     ERP_DATA_DIR=/data \
-    COOKIE_DIR=/data/cookies \
-    ERPSRV_BIND=0.0.0.0:8765 \
-    ERPSRV_CONCURRENCY=6
+    COOKIE_DIR=/data/cookies
 
 USER erp
 VOLUME ["/data"]

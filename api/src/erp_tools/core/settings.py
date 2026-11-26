@@ -1,11 +1,14 @@
 """YAML 配置文件。
 
-随包携带一份 `config.yaml`（模板），用户级覆盖写 `%APPDATA%\\erp-tools\\config.yaml`。
-为了与既有的环境变量/`.env` 机制兼容，这里把 YAML 的嵌套结构**拍平成 ERP_* 环境变量**，
-后续 `ErpConfig` 的读取逻辑完全不变。
+随包携带一份 `config.example.yaml`（模板），用户级覆盖写 `%APPDATA%\\erp-tools\\config.yaml`。
+生成的配置由 `erp init --mode cli|mcp` 写出（只问必要项）。
+
+为了与既有读取逻辑兼容，这里把 YAML 的嵌套结构**拍平成 ERP_* 环境变量**，
+后续 `ErpConfig` 的读取逻辑完全不变。服务端（`server` 段）由
+`apps.server.config.ServerConfig.from_settings()` 直接读 YAML，不经环境变量。
 
 优先级（高 → 低）：
-    命令行参数 > 真实环境变量 > config.yaml > .env > 内置默认值
+    命令行参数 > 临时环境变量 > config.yaml > 内置默认值
 """
 
 from __future__ import annotations

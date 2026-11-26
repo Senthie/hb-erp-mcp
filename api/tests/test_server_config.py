@@ -73,25 +73,64 @@ def test_tls_pair_must_be_complete(tmp_path) -> None:
     assert any("成对出现" in p for p in cfg.validate())
 
 
-def test_env_flags_are_parsed(monkeypatch, tmp_path) -> None:
-    monkeypatch.setenv("ERPSRV_BIND", "0.0.0.0:9000")
-    monkeypatch.setenv("ERPSRV_ALLOW_PLAINTEXT", "1")
-    monkeypatch.setenv("ERPSRV_TRUST_PROXY", "yes")
-    monkeypatch.setenv("ERPSRV_ALLOW_HOST", "erp.lan:9000; 10.0.0.5:9000")
-
-    cfg = ServerConfig.from_env()
+def test_settings_flags_are_parsed() -> None:
+    """config.yaml 的 server 段被正确解析（auto 项留给启动时展开）。"""
+    cfg = ServerConfig.from_settings({
+        "mode": "mcp",
+        "server": {
+            "bind": "0.0.0.0:9000",
+            "storage": "sqlite",
+            "sqlite_path": "auth.db",
+            "allow_plaintext": True,
+            "trust_proxy": "yes",
+            "public_host": "erp.lan:9000",
+            "admin_users": ["Root"],
+        },
+    })
 
     assert cfg.bind == "0.0.0.0:9000"
     assert cfg.allow_plaintext is True
     assert cfg.trust_proxy is True
-    assert cfg.allow_hosts == ["erp.lan:9000", "10.0.0.5:9000"]
+    assert cfg.db_path is not None and cfg.db_path.name == "auth.db"
+    assert cfg.admin_users == ["root"]
+    assert cfg.allow_hosts == []  # allow_hosts: 未给 → auto，启动时派生
 
 
-def test_cli_flags_override_env(monkeypatch) -> None:
-    monkeypatch.setenv("ERPSRV_BIND", "127.0.0.1:8765")
-    args = SimpleNamespace(bind="0.0.0.0:8765", db=None, global_concurrency=None,
-                           tls_cert=None, tls_key=None, allow_host=["erp.lan:8443"],
-                           trust_proxy=True, allow_plaintext=True)
+def test_allow_hosts_auto_is_derived_from_bind(tmp_path, monkeypatch) -> None:
+    monkeypatch.setenv("ERP_DATA_DIR", str(tmp_path))  # 自动生成的证书/密钥落在这里
+    cfg = ServerConfig.from_settings({
+        "server": {"bind": "0.0.0.0:9000", "allow_hosts": "auto",
+                   "public_host": "erp.lan:9000"},
+    }).resolve()
+
+    assert "erp.lan:9000" in cfg.allow_hosts
+    assert all(h.startswith("0.0.0.0") is False for h in cfg.allow_hosts)
+    assert (tmp_path / "tls").is_dir(), "非回环监听应自动签发证书"
+
+
+def test_register_secret_auto_generates_once(tmp_path) -> None:
+    cfg = ServerConfig(bind="127.0.0.1:8765", db_path=tmp_path / "auth.db",
+                       register_secret="auto")
+
+    first = cfg.load_register_secret()
+    assert first
+    assert (tmp_path / "register.secret").read_text(encoding="utf-8").strip() == first
+
+    again = ServerConfig(bind="127.0.0.1:8765", db_path=tmp_path / "auth.db",
+                         register_secret="auto").load_register_secret()
+    assert again == first, "重启不能换密钥，否则客户端要重新配置"
+
+
+def test_cli_flags_override_config_file(tmp_path) -> None:
+    config = tmp_path / "config.yaml"
+    config.write_text(
+        "server:\n  bind: 127.0.0.1:8765\n  storage: sqlite\n  sqlite_path: auth.db\n",
+        encoding="utf-8",
+    )
+    args = SimpleNamespace(config=str(config), bind="0.0.0.0:8765", db=None,
+                           global_concurrency=None, tls_cert=None, tls_key=None,
+                           allow_host=["erp.lan:8443"], trust_proxy=True,
+                           allow_plaintext=True)
 
     cfg = ServerConfig.from_args(args)
 

@@ -71,8 +71,9 @@ def build_store(server_cfg: ServerConfig) -> ApiKeyStore:
     if server_cfg.pg_dsn:
         return PgStore(server_cfg.pg_dsn).init_schema()
     raise ConfigError(
-        "未配置数据库：请设置 ERPSRV_PG_DSN（PostgreSQL），"
-        "或显式 --db <sqlite 路径>（仅本地开发/测试）"
+        "未配置数据库：请在 config.yaml 的 server 段写 storage: postgres + pg_dsn，"
+        "或 storage: sqlite（本地开发/测试）。`erp init --mode mcp` 会自动生成；"
+        "也可以用 --db / --pg-dsn 临时指定"
     )
 
 

@@ -21,30 +21,56 @@ MCP 客户端 ─►│ /mcp            → Streamable HTTP（必须带 Bearer�
 
 ```powershell
 cd api
-uv sync --extra dev --extra server        # mcp + uvicorn + psycopg；只用 CLI 不需要
-Copy-Item ..\packaging\config.example.yaml config.yaml
-.\.venv\Scripts\erp.exe serve `           # 默认 127.0.0.1:8765
-    --pg-dsn postgresql://erp:secret@127.0.0.1:5432/erp
+uv sync --extra dev --extra server        # mcp + uvicorn + psycopg + cryptography
+.\.venv\Scripts\erp.exe init --mode mcp   # 只问 4 项，生成 config.yaml
+.\.venv\Scripts\erp.exe serve             # 默认 127.0.0.1:8765
 ```
+
+`erp init --mode mcp` 只问这些（回车取默认）：**ERP 地址**、**监听地址**、
+**存储（sqlite/postgres）**、**第一个管理员**。其余全部自动：
+
+| 配置项 | 生成方式 |
+| --- | --- |
+| `server.tls: auto` | 非回环监听时，首次启动自动签发自签证书到 `<数据目录>/tls/` |
+| `server.allow_hosts: auto` | 由 `bind`（通配地址时用本机 IPv4 / 127.0.0.1）与 `public_host` 派生 |
+| `server.register_secret: auto` | 首次启动随机生成到 `<数据目录>/register.secret` |
+| `server.pg_dsn` | postgres 模式由 host/port/user/password/db 直接拼好（密码自动 percent-encoding） |
+| `mcp.json` | 生成 MCP 客户端配置模板（token 待申请后自动写入） |
+
+生成的 `config.yaml`（`mode: mcp`）大致长这样：
+
+```yaml
+mode: mcp
+erp:
+  host: http://192.168.1.199:8889
+server:
+  bind: 127.0.0.1:8765
+  storage: sqlite            # 生产改成 postgres + pg_dsn
+  sqlite_path: auth.db
+  admin_users: [root]
+  tls: auto
+  allow_hosts: auto
+  register_secret: auto
+  concurrency: 6
+```
+
+`erp serve` 的命令行参数仍可**临时覆盖**配置文件里的对应项：
 
 | 选项 | 默认 | 说明 |
 | --- | --- | --- |
-| `--bind` | `127.0.0.1:8765` | 监听地址；非回环必须配 TLS 或 `--allow-plaintext` |
-| `--pg-dsn` | 空（必填） | api-key 与 MCP 服务注册信息的 PostgreSQL 连接串 |
-| `--db` | 空 | **仅本地开发/测试**：显式给 SQLite 文件，给了就不再连 PostgreSQL |
-| `--register-secret` | 空 | 服务注册接口的共享密钥；留空则只按 IP 限流 |
+| `--bind` | 取 `server.bind`（`127.0.0.1:8765`） | 非回环自动签 TLS；或 `--tls-cert/--tls-key` 用现成证书 |
+| `--pg-dsn` / `--db` | 取 `server.storage` | 临时改用 PostgreSQL / SQLite |
+| `--register-secret` | auto | 覆盖自动生成的注册密钥（留空字符串＝关闭校验） |
+| `--tls auto\|off` | auto | `off` = 明确不加密（配合 `--allow-plaintext`） |
+| `--allow-host` | auto | Host 白名单，可重复 |
+| `--public-host` | 取 `server.public_host` | 反向代理 / docker 的对外地址 |
 | `--global-concurrency` | `6` | 全局 ERP 并发闸门（实测 4~8 饱和） |
-| `--tls-cert` / `--tls-key` | 空 | TLS 证书/私钥（团队模式必填，成对出现） |
-| `--allow-host` | 空 | MCP DNS-rebinding 白名单，可重复，写 `host:port` |
-| `--trust-proxy` | 关 | 信任 `X-Forwarded-For`（放在反向代理后面时开） |
-| `--allow-plaintext` | 关 | 显式允许「非回环 + 明文 HTTP」，**只在 TLS 由上游终止时用** |
+| `--trust-proxy` | 取配置 | 信任 `X-Forwarded-For` |
+| `--allow-plaintext` | 取配置 | 显式允许「非回环 + 明文 HTTP」（TLS 由上游终止时） |
 
-对应环境变量：`ERPSRV_BIND` / `ERPSRV_PG_DSN` / `ERPSRV_DB` / `ERPSRV_REGISTER_SECRET` /
-`ERPSRV_CONCURRENCY` / `ERPSRV_TLS_CERT` / `ERPSRV_TLS_KEY` / `ERPSRV_ALLOW_HOST` /
-`ERPSRV_TRUST_PROXY` / `ERPSRV_ALLOW_PLAINTEXT`。
-
-> 存储默认且推荐 **PostgreSQL**：`ERPSRV_PG_DSN` 没配又没给 `--db` 时直接拒绝启动，
-> 避免「以为在用 PG，其实写进了本地文件」。表结构启动时自动建（`api_keys` / `mcp_services`）。
+> 存储默认 `sqlite`（单机试跑）；生产把 `server.storage` 改成 `postgres` 并填 `pg_dsn`。
+> 用 `--pg-dsn`/`--db` 都没给、配置里也没有时直接拒绝启动，
+> 避免「以为在用 PG，其实写进了本地文件」。表结构启动时自动建。
 
 ## 2. 换 api-key 与平台账号
 
@@ -80,7 +106,7 @@ npm run build    # 产物 → api/src/erp_tools/apps/server/static
    可粘贴给 AI 的提示），三者都能一键复制。结果态必须点「完成」才关闭（Esc/点遮罩不会关，
    避免手滑丢掉只显示一次的 token）；关掉后列表只保留 id 与状态，可随时撤销。
 
-关闭自助注册：`--no-signup`（或 `ERPSRV_ALLOW_SIGNUP=0`）。
+关闭自助注册：`--no-signup`，或把配置里的 `server.allow_signup` 改成 `false`。
 
 ### 2.2 平台账号接口（`/v1/platform/*`，cookie 会话）
 
@@ -100,8 +126,9 @@ npm run build    # 产物 → api/src/erp_tools/apps/server/static
 
 ### 2.3 管理员后台（`/v1/admin/*`，需要 admin 角色）
 
-把用户名写进 `ERPSRV_ADMIN_USERS`（或 `--admin-user`）后，该账号注册/登录时自动获得
-`admin` 角色；登录后页面顶部会出现「管理后台」，也可以直接用 cookie 会话调接口：
+把用户名写进配置的 `server.admin_users`（或 `erp init` 时填「第一个管理员」，也可用
+`--admin-user`）后，该账号注册/登录时自动获得 `admin` 角色；
+登录后页面顶部会出现「管理后台」，也可以直接用 cookie 会话调接口：
 
 | 方法 | 路径 | 说明 |
 | --- | --- | --- |
@@ -144,7 +171,7 @@ npm run build    # 产物 → api/src/erp_tools/apps/server/static
 | `actor_id` / `actor_name` / `actor_type` | 平台账号 id、用户名 / ERP 工号、`api_key` |
 | `token_id` | 用的是哪把 token（前缀；**不存明文 key**） |
 | `erp_username` | 实际访问 ERP 的身份 |
-| `ip` / `user_agent` | 调用方来源（`ERPSRV_TRUST_PROXY=1` 时取 `X-Forwarded-For`） |
+| `ip` / `user_agent` | 调用方来源（配置里 `trust_proxy: true` 时取 `X-Forwarded-For`） |
 | `error` | 失败原因（截断 500 字，已打码） |
 | `arguments` | 定位用入参摘要：最多 12 个键、每值 160 字，`password`/`token`/`cookie` 等置 `***` |
 
@@ -155,7 +182,7 @@ npm run build    # 产物 → api/src/erp_tools/apps/server/static
 
 ### 2.6 ERP 工号直连换 key（兼容 / CLI）
 
-**密码是每个使用者自己的，不进 `.env`、不进容器、不落盘。** 谁要用，谁用自己的
+**密码是每个使用者自己的，不进配置文件、不进容器、不落盘。** 谁要用，谁用自己的
 ERP 工号/密码换一把自己的 key：
 
 ```powershell
@@ -222,8 +249,9 @@ curl.exe -X POST http://127.0.0.1:8765/v1/mcp/register `
 curl.exe "http://127.0.0.1:8765/v1/mcp/services?limit=20"
 ```
 
-防护：每 IP **10 次/分钟**限流；如果配了 `ERPSRV_REGISTER_SECRET`，请求头必须带
-`X-Register-Secret`（否则 `403 register_secret_invalid`）。
+防护：每 IP **10 次/分钟**限流；`register_secret: auto`（默认）时首次启动会生成
+`<数据目录>/register.secret`，请求头必须带 `X-Register-Secret`（否则 `403 register_secret_invalid`）。
+不需要校验时把它改成空字符串 `""`。
 
 ## 3. MCP 客户端配置
 
@@ -320,60 +348,52 @@ erp_quote_product_form       看明细子页能填什么（控件名/别名/下�
 
 ## 5. 让其他设备访问（团队模式，必须 TLS）
 
-非回环地址若缺 TLS（且没开 `--allow-plaintext`）或缺 `--allow-host`，**直接拒绝启动**。
+非回环地址若既没 TLS 又没开 `allow_plaintext`，**直接拒绝启动**；
+`allow_hosts` 同样自动派生，不再需要逐个手写。
 
-### 5.1 生成证书
+### 5.1 证书：默认自动签发
 
-```bash
-# 最省事：什么都不用给，SAN 自动取自 .env 的 ERP_PUBLIC_HOST
-bash scripts/gen-cert.sh
+`erp init --mode mcp` 生成 `tls: auto`，所以**什么都不用准备**：
 
-# 也可以显式指定（优先级最高）
-bash scripts/gen-cert.sh --host 192.168.1.10 --host erp-tools.lan
-
-# 幂等模式：证书已存在且 7 天内不过期就跳过（up.sh / deploy.sh 内部就是这么调的）
-bash scripts/gen-cert.sh --ensure
+```yaml
+server:
+  bind: 0.0.0.0:8765
+  tls: auto            # 首次启动签 <数据目录>/tls/erp-tools.crt|key
+  allow_hosts: auto    # 由 bind（通配时用本机 IPv4/127.0.0.1）派生
 ```
 
-来源优先级：`--host` 参数 > 同目录 `.env` 的 `ERP_PUBLIC_HOST`（逗号分隔，自动去掉 `:端口`）
-> 自动探测本机 IPv4。无论哪种都会补上 `localhost` / `127.0.0.1`，保证宿主机自检能过。
-输出目录取 `$ERP_CERT_DIR`（也会从 `.env` 读），再默认 `./certs`。
+首次 `erp serve` 会打印 `已自动签发自签证书：<数据目录>/tls/erp-tools.crt`。
+SAN 自动包含 `localhost` / `127.0.0.1` / 本机 IPv4 / `public_host` 里的域名，
+客户端用 IP 或域名访问都能过校验；证书持久化在数据目录，重启不会重新签。
 
-脚本按可用性自动挑后端，**不需要往项目里装 Python 依赖、也不会在仓库里留 venv**：
+需要**正式证书**（公司 CA / Let's Encrypt）时，把 `tls` 换成路径即可：
 
-| 顺序 | 后端 | 说明 |
-| --- | --- | --- |
-| 1 | 系统 `openssl`（≥ 1.1.1） | 绝大多数 Linux 服务器自带，最省事，不联网 |
-| 2 | `docker` | 拉 `alpine:3.20` 现场 `apk add openssl` 再签（主机没 openssl 时） |
-| 3 | `python3` + `cryptography` | 交给 `scripts/make-cert.py` |
+```yaml
+  tls_cert: /etc/erp-tools/certs/erp-tools.crt
+  tls_key:  /etc/erp-tools/certs/erp-tools.key
+```
 
-> ⚠️ **不要用 nginx 镜像签证书**：`nginx:*-alpine` 只带 `libssl`，**没有 `openssl` 命令**，
-> 直接 `docker run nginx ... openssl` 会报 `exec: line 47: openssl: not found`。
-> 脚本已改用 alpine 后端。
-
-产出 `erp-tools.crt` + `erp-tools.key`（PEM，无口令，自签且 `CA:TRUE`，可直接当受信任根分发）。
+> 仍想用脚本签一大批 SAN（老部署 / 给 nginx 用）：
+> `bash scripts/gen-cert.sh --host 192.168.1.10 --host erp-tools.lan`。
+> 它按 `openssl` → `docker` → `python cryptography` 顺序挑后端，产出 `erp-tools.crt|key`。
+> ⚠️ 别用 `nginx:*-alpine` 签：镜像里没有 `openssl` 命令。
 
 **SAN 必须写全客户端实际使用的地址**：用 IP 访问就写 IP，用域名就写域名，否则 Node 客户端报
-`ERR_TLS_CERT_ALTNAME_INVALID`。`--ensure` 模式会检查现有证书的 SAN，缺了会打 WARN 但不会动你的证书。
-
-> 想自己控制细节也可以直接调 `python scripts/make-cert.py --host ... --out-dir ...`
-> （需要本机有 `cryptography`），它和脚本的 python 分支是同一份实现。
+`ERR_TLS_CERT_ALTNAME_INVALID`。用 `tls: auto` 时这一步已经自动完成。
 
 ### 5.2 启动
 
 ```powershell
-erp serve --bind 0.0.0.0:8765 `
-          --tls-cert certs\erp-tools.crt --tls-key certs\erp-tools.key `
-          --allow-host 192.168.1.226:8765 `
-          --allow-host erp-tools.lan:8765 `
-          --pg-dsn postgresql://erp:secret@127.0.0.1:5432/erp
+erp serve --bind 0.0.0.0:8765 --public-host 192.168.1.226:8765
+# 或直接把 bind / public_host 写进 config.yaml，然后只敲 erp serve
 ```
 
-`--allow-host` 是 MCP 的 Host 白名单，**逐个写 `host:port`**，客户端可能用的每种写法都要列。
+`allow_hosts` 由上面的两项自动派生（`192.168.1.226:8765` + 本机其它 IPv4 + `127.0.0.1`），
+不用再一条条 `--allow-host`。
 
 > 还是**同一个进程**，不是再开一个——把平时那条启动命令换成这条即可（同时跑两个会抢 8765 端口）。
-> 只访问回环、又要给别人用附件代理时，可以继续 `--bind 127.0.0.1:8765`，
-> 只把 `ERP_PUBLIC_BASE` 指到 nginx/隧道对外地址。
+> 只访问回环、又要给别人用附件代理时，可以继续 `bind: 127.0.0.1:8765`，
+> 只把 `public_host` 指到 nginx/隧道对外地址。
 
 想让它常驻（不开着终端也在跑），三选一：
 
@@ -443,12 +463,13 @@ erp serve --bind 127.0.0.1:8765 --trust-proxy `
           --allow-host erp-tools.lan:8443        # 对外访问用的 host:port
 ```
 
-- 回环地址不需要 `--tls-*`，也不需要 `--allow-plaintext`（TLS 在代理层）。
-- 但 **`--allow-host` 仍然要填**：MCP 拿 `Host` 逐字比对白名单，不填会退化成
-  「只认 `localhost:*` / `127.0.0.1:*`」，外部域名访问会收到 `421`。
-- 如果监听的不是回环地址（例如容器里 `--bind 0.0.0.0:8765`），必须显式加
-  `--allow-plaintext`（`ERPSRV_ALLOW_PLAINTEXT=1`），启动时打印一条 WARN。
-- `--trust-proxy` 不开的话，限流会把所有客户端都当成代理的 IP。
+- 回环地址不需要 `tls`，也不需要 `allow_plaintext`（TLS 在代理层）。
+- 但 **`allow_hosts` 仍然要覆盖外部域名**（写 `auto` 时会带上 `public_host`）：
+  MCP 拿 `Host` 逐字比对白名单，缺了会退化成「只认 `localhost:*` / `127.0.0.1:*`」，
+  外部域名访问会收到 `421`。
+- 如果监听的不是回环地址（例如容器里 `bind: 0.0.0.0:8765`），必须显式写
+  `allow_plaintext: true`，启动时打印一条 WARN。
+- `trust_proxy` 不开的话，限流会把所有客户端都当成代理的 IP。
 
 ### 5.7 排错对照
 
@@ -503,8 +524,9 @@ curl.exe -OJ "https://erp-tools.lan/v1/files?path=/Admin/FuJian/...&t=1750000000
 | 文件 | 作用 |
 | --- | --- |
 | `Dockerfile` | 两阶段构建（uv 装依赖 → slim 运行时），非 root，`/data` 挂卷 |
-| `.dockerignore` | 排除 `.env` / `cookies` / `certs` / 业务数据，**凭据不进镜像** |
-| `docker-compose.yml` | `app`（MCP）+ `nginx`（TLS 终止） |
+| `.dockerignore` | 排除 `cookies` / `certs` / 业务数据，**凭据不进镜像** |
+| `docker-compose.yml` | `app`（读 `./config.yaml`）+ `db` + `nginx`（TLS 终止） |
+| `docker/env.example` | docker 部署只需要这几个值（复制成 `.env`） |
 | `docker/nginx.conf` | 80→443 跳转 + 443 SSL 反代（SSE 不缓冲、Host 原样透传） |
 | `docker/nginx-http.conf` | 纯 HTTP 内网版（临时验证用，**明文传 api-key**） |
 
@@ -518,13 +540,14 @@ flowchart LR
 **一条命令起栈**
 
 ```bash
-# 1) 只写 .env（ERP_PASSWORD 请不要写），证书 SAN 直接从这里取
-cp .env.example .env
+# 1) .env 只有 3~4 个值
+cp docker/env.example .env
 #    ERP_HOST=http://192.168.1.199:8889
 #    ERP_PUBLIC_HOST=erp-tools.lan:8443      # 客户端实际访问的 host:port
-#    ERP_CERT_DIR=./certs                    # 服务器上建议放仓库外，见 6.1
+#    POSTGRES_PASSWORD=change-me             # 只用 URL 安全字符
+#    ERP_ADMIN_USER=root                     # 可选：第一个管理员
 
-# 2) 起栈：缺证书就自签 → 构建 → 启动 → 健康检查
+# 2) 起栈：生成 config.yaml → 缺证书就自签 → 构建 → 启动 → 健康检查
 bash scripts/up.sh
 ```
 
@@ -533,6 +556,7 @@ bash scripts/up.sh
 | 步骤 | 说明 |
 | --- | --- |
 | 前置 | `docker info` 通；`.env` 存在且 `ERP_HOST` 非空（否则直接报错退出） |
+| 应用配置 | **按 `.env` 生成 `config.yaml`**（`mode: mcp` + postgres DSN 拼好；已存在则沿用） |
 | 证书 | `gen-cert.sh --ensure`：**已有证书且 7 天内不过期就跳过**，缺失才签；SAN 取自 `ERP_PUBLIC_HOST` |
 | 启动 | `docker compose up -d --build --remove-orphans` |
 | 自检 | 用 `docker compose port nginx 443` 拿真实端口，`curl --cacert` 打 `/healthz`，最多等 40s |
@@ -542,52 +566,54 @@ bash scripts/up.sh
 **等价的手动步骤**（想逐步看输出时用）：
 
 ```bash
-bash scripts/gen-cert.sh --ensure        # 幂等；也可以显式 --host 覆盖 SAN
+erp init --mode mcp --bind 0.0.0.0:8765 --storage postgres \
+    --pg-host db --pg-password "$POSTGRES_PASSWORD" \
+    --public-host erp-tools.lan:8443 --admin-user root   # 生成 config.yaml
+bash scripts/gen-cert.sh --ensure                        # nginx 用的证书
 docker compose up -d --build
-erp key --server https://erp-tools.lan:8443 --user 21146   # 在客户端机器上执行
+erp key --server https://erp-tools.lan:8443 --write-mcp-json ./mcp.json
 curl --cacert certs/erp-tools.crt https://localhost:8443/healthz
 ```
 
 **为什么容器里没有密码**
 
-- compose **不用 `env_file`**，只显式传 `ERP_HOST` 这类非敏感项；
-  `.env` 里的 `ERP_PASSWORD` 不会被注入容器。
+- compose **不用 `env_file`**，`.env` 只服务于 compose 自身（PG 密码 / 对外地址），
+  应用只读挂进去的 `config.yaml`；`ERP_PASSWORD` 没有位置可写。
 - 登录发生在 `/v1/auth/login` 那一刻，密码只存在于该请求的调用栈。
 
 ### 6.1 Docker 模式下不用敲 `erp serve`
 
-容器里跑的就是同一个 `erp serve`，参数**全部写在 `docker-compose.yml` 的 `environment`**，
-你只需要编辑 `.env` 然后 `bash scripts/up.sh`（或 `docker compose up -d`）：
+容器里跑的就是同一个 `erp serve`，配置**全部在 `./config.yaml`（挂到 `/app/api/config.yaml`）**，
+你只需要编辑 `.env` 然后 `bash scripts/up.sh`：
 
 | 需求 | 改哪里 |
 | --- | --- |
 | 对外暴露 | nginx 的 `ports:`（`ERP_HTTP_PORT` / `ERP_HTTPS_PORT`），app 只 `expose: 8765` |
-| bind / 明文 | `ERPSRV_BIND=0.0.0.0:8765` + `ERPSRV_ALLOW_PLAINTEXT=1`（TLS 在 nginx） |
-| 数据库 | `ERPSRV_PG_DSN`（默认拼自 `POSTGRES_USER` / `POSTGRES_PASSWORD` / `POSTGRES_DB` + `db:5432`） |
-| 服务注册密钥 | `ERPSRV_REGISTER_SECRET`（留空＝只按 IP 限流） |
-| Host 白名单 | `ERPSRV_ALLOW_HOST: ${ERP_PUBLIC_HOST}`，即客户端实际写的 `host:port` |
-| 限流 IP | `ERPSRV_TRUST_PROXY=1`（确实有 nginx 才开） |
-| **附件代理基地址** | `ERP_PUBLIC_BASE`（留空 = 自动用 `X-Forwarded-Proto` + `Host`，经 nginx 进来时就是对的） |
+| bind / 明文 | `config.yaml` 的 `server.bind: 0.0.0.0:8765` + `allow_plaintext: true`（TLS 在 nginx） |
+| 数据库 | `server.storage: postgres` + `pg_dsn`（up.sh 按 `POSTGRES_*` + `db:5432` 拼好） |
+| 服务注册密钥 | `server.register_secret: auto`（首次启动生成到卷里 `register.secret`） |
+| Host 白名单 | `allow_hosts: auto` + `public_host`（客户端实际写的 `host:port`） |
+| 限流 IP | `trust_proxy: true`（确实有 nginx 才开；up.sh 生成的配置已带） |
+| **附件代理基地址** | `ERP_PUBLIC_BASE` 环境变量（留空 = 自动用 `X-Forwarded-Proto` + `Host`） |
 | 附件大小 | `docker/nginx.conf` 的 `client_max_body_size`（默认 24m） |
 
-所以 **A/B 两种玩法在 docker 里对应的是改配置，而不是在宿主机上再起一个进程**：
+所以 **A/B 两种玩法在 docker 里对应的是改 `config.yaml`，而不是在宿主机上再起一个进程**：
 
 - 只要附件代理给外部用 → 不用改任何东西，`proxy_url` 会自动是
   `https://<ERP_PUBLIC_HOST>/v1/files?...`（nginx 的 `location /` 已经代理 `/v1/*`）。
-- 要让外部 MCP 客户端连 → 把 `ERP_PUBLIC_HOST` 设成对外地址、证书 SAN 写全，
-  `ERPSRV_ALLOW_HOST` 会自动跟着它走。
+- 要让外部 MCP 客户端连 → 把 `public_host` 设成对外地址、证书 SAN 写全，
+  `allow_hosts: auto` 会自动跟着它走。
 
 > 数据分两处：api-key 与 MCP 服务注册信息在 PostgreSQL 命名卷 `pgdata`，
-> cookie / `proxy.secret` 在 `erpdata`；重建堆栈都不丢，`docker compose down -v` 会清空两者。
+> cookie / `proxy.secret` / 自动签的证书在 `erpdata`；重建堆栈都不丢，`docker compose down -v` 会清空两者。
 
 **必须对齐的一处配置**
 
 ```ini
-ERP_PUBLIC_HOST=erp-tools.lan:8443     # = 客户端实际访问的 host:port
+ERP_PUBLIC_HOST=erp-tools.lan:8443     # = 客户端实际访问的 host:port（写进 config.yaml 的 public_host）
 ```
 
-compose 会注入成 `ERPSRV_ALLOW_HOST`。nginx 用 `proxy_set_header Host $http_host;`
-原样透传（**带端口**），应用侧逐字比对：
+nginx 用 `proxy_set_header Host $http_host;` 原样透传（**带端口**），应用侧逐字比对白名单：
 
 - 用 `https://192.168.1.226:8443/mcp` 访问 → 白名单里也要有它，
   多个地址逗号分隔：`ERP_PUBLIC_HOST=erp-tools.lan:8443,192.168.1.226:8443`。
@@ -596,7 +622,7 @@ compose 会注入成 `ERPSRV_ALLOW_HOST`。nginx 用 `proxy_set_header Host $htt
 **其它要点**
 
 - **不发布 app 端口**：`app` 只 `expose: 8765`，宿主机只能通过 nginx 访问。
-- **`ERPSRV_TRUST_PROXY=1` 必须开**（镜像里已设），否则限流按 nginx 的 IP 统计。
+- **`trust_proxy: true` 必须开**（up.sh 生成的配置已带），否则限流按 nginx 的 IP 统计。
 - **换纯 HTTP**：`.env` 加 `NGINX_CONF=docker/nginx-http.conf`，并把
   `ERP_PUBLIC_HOST` 改成 `erp-tools.lan:8080`。
 - **端口冲突**：改 `ERP_HTTP_PORT` / `ERP_HTTPS_PORT`（默认 8080 / 8443）。
@@ -705,12 +731,11 @@ git clone git@github.com:Senthie/hb-erp-mcp.git /srv/hb-erp-mcp
 cd /srv/hb-erp-mcp
 
 # 1) 仓库外的配置与证书（不进 git）
-cp .env.example .env && vi .env          # 只填 ERP_HOST / ERP_PUBLIC_HOST / ERP_CERT_DIR
-bash scripts/gen-cert.sh --host 192.168.1.10 --host erp-tools.lan
+cp docker/env.example .env && vi .env    # 填 ERP_HOST / ERP_PUBLIC_HOST / POSTGRES_PASSWORD
+bash scripts/up.sh                        # 生成 config.yaml + 自签证书 + 起栈 + 健康检查
 #    证书默认就落到 $ERP_CERT_DIR；不需要 python、不需要额外装包
 
-# 2) 首次构建
-docker compose up -d --build
+# 2) 首次构建后自检
 curl --cacert /srv/erp-tools/certs/erp-tools.crt https://localhost:8443/healthz
 
 # 3) 之后交给 deploy.sh（cron / systemd timer）
@@ -735,7 +760,7 @@ curl --cacert /srv/erp-tools/certs/erp-tools.crt https://localhost:8443/healthz
 | 403 | `account_disabled` | 账号已被管理员禁用（会话与 token 都已失效） |
 | 403 | `admin_required` | 需要管理员权限 |
 | 403 | `signup_disabled` | 本实例关闭了平台账号自助注册（`--no-signup`） |
-| 403 | `register_secret_invalid` | 服务端配了 `ERPSRV_REGISTER_SECRET`，请求头密钥不对 |
+| 403 | `register_secret_invalid` | 服务端启用了注册共享密钥（`register_secret: auto` 默认生成），请求头密钥不对 |
 | 404 | `token_not_found` | 撤销的 token 不属于当前账号或已撤销 |
 | 404 | `user_not_found` | 管理员操作的账号不存在 |
 | 409 | `username_taken` | 平台用户名已被占用 |
@@ -798,19 +823,22 @@ git log --oneline -1
 sudo mkdir -p /srv/erp-tools/certs /srv/erp-tools/backup
 sudo chown -R "$USER" /srv/erp-tools
 cd /srv/hb-erp-mcp
-cp .env.example .env
+cp docker/env.example .env
 ```
 
-`.env` 必须改这五项（其余保持注释即可）：
+`.env` 只需要这几个（其余保持注释即可）：
 
 ```ini
 ERP_HOST=http://192.168.1.199:8889
 ERP_PUBLIC_HOST=erp-tools.lan:8443        # ★ 等于客户端实际访问的 host:port
 POSTGRES_PASSWORD=change-me               # ★ 请用 URL 安全字符（会拼进连接串）
 ERP_CERT_DIR=/srv/erp-tools/certs         # 证书放仓库外，重新 clone 也不丢
-# 可选：ERP_CAPTCHA_HOST / ERP_HTTPS_PORT / ERP_HTTP_PORT / ERPSRV_CONCURRENCY
-#       POSTGRES_USER / POSTGRES_DB / ERPSRV_PG_DSN / ERPSRV_REGISTER_SECRET
+# 可选：ERP_ADMIN_USER（第一个管理员）/ ERP_CAPTCHA_HOST / ERP_HTTPS_PORT / ERP_HTTP_PORT
+#       POSTGRES_USER / POSTGRES_DB
 ```
+
+应用的其它参数（并发、注册接口密钥、信任代理…）都在 `config.yaml` 里，
+`scripts/up.sh` 会按 `.env` 生成；要改就改 `config.yaml`，不用再往 `.env` 里塞。
 
 证书二选一：
 
@@ -834,11 +862,13 @@ bash scripts/gen-cert.sh
 ### 3. 渲染检查（不启动也能验配置）
 
 ```bash
-docker compose config | grep -E 'ERP_HOST|ERPSRV_ALLOW_HOST|ERP_CERT_DIR|source:'
+docker compose config | grep -E 'ERP_HOST|ERP_PUBLIC_HOST|POSTGRES|source:'
+cat config.yaml                    # up.sh 生成的应用配置（mode/bind/storage/pg_dsn…）
 ```
 
-必须看到：`ERP_HOST` 已渲染出真实地址（没渲染会直接报 `请在 .env 里设置 ERP_HOST`）、
-`ERPSRV_ALLOW_HOST` 是 `erp-tools.lan:8443`、certs 的 source 指向 `/srv/erp-tools/certs`。
+必须看到：`ERP_HOST` / `ERP_PUBLIC_HOST` / `POSTGRES_PASSWORD` 都已渲染出真实值，
+certs 的 source 指向 `/srv/erp-tools/certs`，`config.yaml` 里 `storage: postgres`
+且 `pg_dsn` 指向 `db:5432`。
 
 ### 4. 首次构建与启动
 
@@ -942,7 +972,7 @@ docker compose exec -T db pg_dump -U erp erp | gzip > /srv/erp-tools/backup/erp-
 docker run --rm -v erp-tools-erpdata:/data -v /srv/erp-tools/backup:/backup alpine \
     tar czf /backup/erpdata-$(date +%F).tar.gz -C /data .
 
-# 手动升级 / 强制重建（改了 .env 必须加 --force，否则代码没变不会重建）
+# 手动升级 / 强制重建（改了 .env 或 config.yaml 必须加 --force，否则代码没变不会重建）
 bash scripts/deploy.sh
 bash scripts/deploy.sh --force
 
@@ -962,7 +992,7 @@ docker compose logs -f --tail=100 app nginx
 | --- | --- | --- |
 | 0 | `curl` 到 ERP 超时 | 服务器与 ERP 不在同一网段 / 有防火墙；先在服务器上 `ping`/`curl` 通 |
 | 1 | `Permission denied (publickey)` | 服务器没配部署密钥；改用 `https://<PAT>@github.com/...` |
-| 3 | `请在 .env 里设置 ERP_HOST` | `.env` 没建或变量名拼错（compose 只从同目录 `.env` 读） |
+| 3 | `请在 .env 里设置 ERP_HOST` | `.env` 没建或变量名拼错（compose 只从同目录 `.env` 读）；也可直接改 `config.yaml` 的 `erp.host` |
 | 4 | `421 Invalid Host header` | `ERP_PUBLIC_HOST` 与客户端实际用的 `host:port` 不一致（含端口） |
 | 4 | 容器 healthy 但 `curl` 502 | 容器内到 ERP 不通，或 `ERP_HOST` 写错；`docker compose exec app python -c "import urllib.request;print(urllib.request.urlopen('http://192.168.1.199:8889/Admin/Login.aspx').status)"` |
 | 4 | nginx 起不来 / `cannot load certificate` | `ERP_CERT_DIR` 下没有 `erp-tools.crt`/`.key`，或文件名不符 |

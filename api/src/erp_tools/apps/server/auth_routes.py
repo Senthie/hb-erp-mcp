@@ -2,7 +2,7 @@
 
 `POST /v1/auth/login` 与 `POST /v1/mcp/register` 是**无需 api-key 的写接口**，
 因此防护最重：IP 双维度限流、连续失败锁定、统一错误文案、恒定耗时失败路径；
-注册接口另外支持可选的共享密钥（`ERPSRV_REGISTER_SECRET`）。
+注册接口另外支持可选的共享密钥（`server.register_secret`，默认 `auto` 自动生成）。
 """
 
 from __future__ import annotations
@@ -147,7 +147,7 @@ def build_routes(state: ServerState) -> list[Route]:
                 raise Forbidden(
                     "注册密钥不正确",
                     code="register_secret_invalid",
-                    hint="请求头需带 X-Register-Secret，与服务端 ERPSRV_REGISTER_SECRET 一致",
+                    hint="请求头需带 X-Register-Secret，与服务端 register.secret 里的值一致",
                 )
 
         try:

@@ -39,7 +39,7 @@ def connect(
 | --- | --- |
 | `username` / `password` | 覆盖配置里的账号密码；`password` 只在登录那一次用到 |
 | `host` | 覆盖 ERP 地址，如 `http://192.168.1.199:8889`（同时重置验证码端口推导） |
-| `env_file` | 指定 `.env` 路径；`None` 时自动查找 `./.env` 与 `%APPDATA%\erp-tools\.env` |
+| `env_file` | **已废弃**（自 0.4 不再读取 `.env`）；保留参数只为兼容旧调用，传了也会被忽略 |
 | `login` | 默认 `True` 会**验证登录态**；`False` 只构造客户端（后面自己 `auth.login()`） |
 | `interactive` | 验证码 OCR 失败时是否允许人工输入；服务/脚本里必须是 `False` |
 | `captcha` | 直接给定验证码文本（调试/特定环境用） |

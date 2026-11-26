@@ -438,6 +438,7 @@ dev = [
     { name = "pytest" },
 ]
 server = [
+    { name = "cryptography" },
     { name = "mcp" },
     { name = "psycopg", extra = ["binary"] },
     { name = "pydantic" },
@@ -447,6 +448,7 @@ server = [
 [package.metadata]
 requires-dist = [
     { name = "beautifulsoup4", specifier = ">=4.15.0" },
+    { name = "cryptography", marker = "extra == 'server'", specifier = ">=42" },
     { name = "ddddocr", specifier = ">=1.6.1" },
     { name = "lxml", specifier = ">=6.1.1" },
     { name = "mcp", marker = "extra == 'server'", specifier = ">=1.10" },

@@ -65,8 +65,7 @@ scripts/deploy.sh 服务器上按需重建（配合 cron / systemd timer）
 ```powershell
 cd api
 uv sync --extra dev --extra server                    # --extra server 仅 MCP 服务需要
-Copy-Item ..\packaging\config.example.yaml config.yaml   # 填 ERP 地址 / 工号 / 密码
-.\.venv\Scripts\erp.exe setup                         # 向导：写配置 + 缓存 cookie
+.\.venv\Scripts\erp.exe init --mode cli               # 只问 ERP 地址 / 工号，生成 config.yaml
 ```
 
 确认环境：
@@ -82,13 +81,17 @@ Copy-Item ..\packaging\config.example.yaml config.yaml   # 填 ERP 地址 / 工�
 .\.venv\Scripts\erp.exe query --customer IBL --status 需求审批 --out ..\out\ibl.csv
 ```
 
-启动 MCP 服务（可选）：
+启动 MCP 服务（可选，配置由 `erp init --mode mcp` 一次生成）：
 
 ```powershell
-.\.venv\Scripts\erp.exe serve --db .\dev.db                          # 本地 SQLite，默认 127.0.0.1:8765
-.\.venv\Scripts\erp.exe serve --pg-dsn postgresql://erp:secret@127.0.0.1:5432/erp
-.\.venv\Scripts\erp.exe key --server http://127.0.0.1:8765 -u 21146  # 换一把 api-key
+.\.venv\Scripts\erp.exe init --mode mcp          # 只问 ERP 地址 / 监听地址 / 存储 / 管理员
+.\.venv\Scripts\erp.exe serve                    # 127.0.0.1:8765；--db 可临时改用 SQLite
+.\.venv\Scripts\erp.exe key --server http://127.0.0.1:8765 -u 21146 --write-mcp-json mcp.json
 ```
+
+`config.yaml` 里生成物一律写 `auto`，不需要回填：
+`tls: auto`（非回环监听自动签证书）、`allow_hosts: auto`（由 bind 派生）、
+`register_secret: auto`（首次启动生成）；PostgreSQL 的 DSN 也由 init 直接拼好。
 
 可视化界面（http://127.0.0.1:8765/ui/）：平台账号登录/注册 → 绑定 ERP → 申请 MCP Token。
 
@@ -99,8 +102,9 @@ npm run dev      # 开发模式（自动代理 /v1、/healthz 到 127.0.0.1:8765
 npm run build    # 产物落进 api/src/erp_tools/apps/server/static，由 erp serve 托管
 ```
 
-配置优先级：命令行 `--host/--user/--password` > 真实环境变量 > `config.yaml`
-> 旧版 `.env` > 内置默认值。`erp config` 可随时确认生效来源，详见 [docs/cli.md](docs/cli.md)。
+配置只有一份 `config.yaml`（`erp init --mode cli|mcp` 生成）；
+优先级：命令行 `--host/--user/--password` > 临时环境变量 > `config.yaml` > 内置默认值。
+旧版 `.env` 自 0.4 起不再读取。`erp config` 可随时确认生效来源，详见 [docs/cli.md](docs/cli.md)。
 
 **密码不落盘**：CLI 登录只缓存 cookie；MCP 服务端只在 `/v1/auth/login` 那一次请求里使用密码，
 库里只存 api-key 的 sha256。

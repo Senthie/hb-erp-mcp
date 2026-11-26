@@ -92,14 +92,17 @@ def cmd_qxid(args) -> int:
 def cmd_key(args) -> int:
     """向 erp-tools 网关换取 api-key。
 
-    密码**只在本次请求里用一次**：既不进 `.env`，也不写任何文件。
+    密码**只在本次请求里用一次**：既不进配置文件，也不写任何文件。
     每个人都用**自己的** ERP 工号/密码换**自己的** key，服务端只存 key 的 sha256。
+
+    `--write-mcp-json` 会把拿到的 key 直接写进 MCP 客户端配置，省掉复制粘贴。
     """
     import requests
 
-    server = (args.server or "").strip().rstrip("/")
+    server = (args.server or "").strip().rstrip("/") or _guess_server_url()
     if not server:
-        _log("[ERROR] 需要 --server，例如 --server https://erp-tools.lan:8443")
+        _log("[ERROR] 需要 --server，例如 --server https://erp-tools.lan:8443"
+             "（本机用 config.yaml 里的 server 段时可省略）")
         return 2
 
     username = (args.user or "").strip()
@@ -161,8 +164,39 @@ def cmd_key(args) -> int:
     pages = payload.get("erp_pages") or {}
     if pages:
         _log(f"[OK] 该账号可访问页面：{', '.join(sorted(pages))}")
+    target = getattr(args, "write_mcp_json", None)
+    if target:
+        from .core.provision import write_mcp_json
+
+        path = write_mcp_json(target.strip() or "mcp.json", server, payload["api_key"])
+        _log(f"[OK] 已写入 MCP 客户端配置：{path}")
+        _log("     该文件含本次的 api-key，别提交到仓库、别外发。")
     _log("提示：这把 key 会随 ERP 会话失效；换机器/换人请各自重新执行本命令。")
     return 0
+
+
+def _guess_server_url() -> str:
+    """本机没写 --server 时，从 config.yaml 的 server 段推一个能连的地址。
+
+    只有**确实存在** server 段才猜（否则容易连到一台不相干的默认地址）。
+    """
+    from .apps.server.config import ServerConfig
+    from .core import provision as prov
+    from .core.paths import find_config_file
+    from .core.settings import read_yaml
+
+    found = find_config_file()
+    if found is None:
+        return ""
+    data = read_yaml(found)
+    if not isinstance(data.get("server"), dict):
+        return ""
+    block = data["server"]
+    cfg = ServerConfig.from_settings(data)
+    if cfg.public_host:
+        text = cfg.public_host.split(",")[0].strip()
+        return text if "://" in text else f"https://{text}"
+    return prov.server_base_url(block)
 
 
 # ══════════════════ 菜单 → 接口 对照 ══════════════════
@@ -440,48 +474,137 @@ def cmd_doctor(args) -> int:
     return 0 if ok else 1
 
 
-def cmd_setup(args) -> int:
-    """首次配置向导：写 config.yaml（并可选立即登录缓存 cookie）。"""
+def cmd_init(args) -> int:
+    """`erp init --mode cli|mcp`：只问必要的几项，生成 config.yaml。
+
+    * **cli**：本机命令行直连 ERP —— 地址 + 工号（密码可留空）
+    * **mcp**：MCP 网关 —— 监听地址 + 存储 + 管理员；证书 / Host 白名单 /
+      注册密钥全部 `auto`，首次启动自动生成，不用回填
+    """
+    from .core import provision as prov
     from .core.paths import app_data_dir, preferred_config_path
-    from .core.settings import update_yaml
 
-    cfg = _build_config(args)
-    target = Path(args.config) if args.config else preferred_config_path()
-    print("═" * 56)
-    print(" erp-tools 配置向导        （直接回车沿用括号内默认值）")
-    print("═" * 56)
-    print(f" 配置文件将写入：{target}")
-    print(f" 数据目录      ：{app_data_dir()}")
-    print()
-
-    try:
-        host = input(f"ERP 地址  [{cfg.host}]: ").strip() or cfg.host
-        user = input(f"工号     [{cfg.username or ''}]: ").strip() or cfg.username
-        password = getpass.getpass("密码     [留空则不修改]: ").strip()
-    except EOFError:
-        _log("[ERROR] 当前不是交互式终端，无法运行向导；可直接编辑 config.yaml")
+    mode = (getattr(args, "mode", None) or prov.MODE_CLI).strip().lower()
+    if mode not in prov.MODES:
+        _log(f"[ERROR] --mode 只能是 {' / '.join(prov.MODES)}")
         return 2
 
-    erp_section: dict[str, str] = {"host": host}
-    if user:
-        erp_section["username"] = user
-    if password:
-        erp_section["password"] = password
-    update_yaml(target, {"erp": erp_section})
-    _log(f"[OK] 已写入 {target}")
+    cfg = _build_config(args)
+    target = Path(args.config) if getattr(args, "config", None) else preferred_config_path()
+    if target.exists() and not args.force:
+        _log(f"[INFO] 将更新已有配置：{target}（保留 qxid 等未涉及的段落；--force 可重问全部）")
+    interactive = not args.yes and sys.stdin.isatty()
 
-    if not password:
-        _log("[提示] 未修改密码；如需要可编辑 config.yaml 或使用 --password")
+    def ask(label: str, default: str) -> str:
+        shown = default or ""
+        if not interactive:
+            return shown
+        try:
+            raw = input(f"{label} [{shown}]: ").strip()
+        except EOFError:
+            raise ErpError("当前不是交互式终端；加 --yes 走默认值，或用参数直给") from None
+        return raw or shown
+
+    def ask_password(label: str) -> str:
+        if not interactive:
+            return ""
+        try:
+            return getpass.getpass(f"{label} [留空=稍后登录时输入]: ").strip()
+        except EOFError:
+            return ""
+
+    print("═" * 60)
+    print(f" erp init --mode {mode}    （直接回车沿用括号内默认值）")
+    print("═" * 60)
+    print(f" 配置文件：{target}")
+    print(f" 数据目录：{app_data_dir()}")
+    print()
+
+    if mode == prov.MODE_CLI:
+        host = ask("ERP 地址", (getattr(args, "erp_host", None) or cfg.host))
+        username = ask("工号", (getattr(args, "erp_user", None) or cfg.username))
+        password = getattr(args, "erp_password", None) or ask_password("密码")
+        cookie_dir = ask("Cookie 目录", str(cfg.cookie_dir) if args.force else "")
+        data = prov.cli_config(host, username=username, password=password,
+                               cookie_dir=cookie_dir)
+    else:
+        erp_host = ask("ERP 地址（上游 ERP 主站）",
+                       (getattr(args, "erp_host", None) or cfg.host))
+        bind = ask("监听地址（0.0.0.0=团队模式，自动签 TLS）",
+                   (getattr(args, "bind", None) or "127.0.0.1:8765"))
+        storage = ask("存储 (sqlite/postgres)", getattr(args, "storage", None) or "sqlite")
+        storage = storage.strip().lower()
+        if storage not in (prov.STORAGE_SQLITE, prov.STORAGE_POSTGRES):
+            _log(f"[ERROR] 存储只能是 sqlite / postgres，收到 {storage!r}")
+            return 2
+
+        pg: dict[str, object] | None = None
+        sqlite_path = ""
+        if storage == prov.STORAGE_POSTGRES:
+            pg = {
+                "host": ask("PG 主机", getattr(args, "pg_host", None) or "127.0.0.1"),
+                "port": ask("PG 端口", str(getattr(args, "pg_port", None) or 5432)),
+                "user": ask("PG 用户", getattr(args, "pg_user", None) or "erp"),
+                "password": getattr(args, "pg_password", None) or ask_password("PG 密码"),
+                "db": ask("PG 库名", getattr(args, "pg_db", None) or "erp"),
+            }
+        else:
+            sqlite_path = ask("SQLite 文件", getattr(args, "sqlite_path", None) or "auth.db")
+
+        admin = getattr(args, "admin_user", None) or []
+        admin_name = ask("第一个管理员用户名（可留空，之后在 /ui 注册）",
+                         admin[0] if admin else "")
+        public_host = ask("对外访问地址（反向代理/docker 用，可留空）",
+                          getattr(args, "public_host", None) or "")
+        data = prov.mcp_config(
+            erp_host=erp_host,
+            bind=bind,
+            storage=storage,
+            sqlite_path=sqlite_path,
+            pg=pg,
+            admin_users=[admin_name] if admin_name else [],
+            public_host=public_host,
+        )
+
+    path = prov.write_config(target, data)
+    _log(f"[OK] 已写入 {path}")
+
+    print()
+    if mode == prov.MODE_CLI:
+        print("下一步：")
+        print("  erp login          # 登录并缓存 cookie（密码没写进配置时会提示输入）")
+        print("  erp config         # 查看当前配置来源")
         return 0
 
-    if input("现在就登录并缓存 cookie？[Y/n]: ").strip().lower() in ("", "y", "yes"):
-        new_cfg = ErpConfig(**{**cfg.__dict__, **{
-            "host": host, "captcha_host": "", "username": user, "password": password,
-        }})
-        auth = _build_auth(new_cfg)
-        auth.ensure_login(force=True)
-        _log(f"[OK] 登录成功，cookie 已缓存到 {new_cfg.cookie_dir}")
+    server = (data.get("server") or {})
+    base = prov.server_base_url(server)
+    _log("[OK] TLS：auto（非回环监听时首次启动自动签发自签证书）"
+         if not server.get("allow_plaintext") else
+         "[OK] TLS：由上游反向代理终止（明文只在内网）")
+    _log(f"[OK] 注册接口共享密钥：auto → 首次启动生成到 {app_data_dir() / 'register.secret'}"
+         f"（如需关闭注册接口，把 server.register_secret 改成空字符串）")
+
+    mcp_json = getattr(args, "mcp_json", None)
+    if not args.no_mcp_json:
+        from .core.provision import write_mcp_json
+
+        mcp_path = write_mcp_json(mcp_json or "mcp.json", base)
+        _log(f"[OK] 已生成 MCP 客户端配置模板：{mcp_path}（token 待申请后自动写入）")
+
+    print()
+    print("下一步：")
+    print("  1) erp serve")
+    print(f"  2) 打开 {base}/ui 注册平台账号"
+          + (f"（管理员：{admin_name}）" if admin_name else "")
+          + " → 绑定 ERP → 申请 MCP token")
+    print("  3) erp key --write-mcp-json ./mcp.json    # 把 api-key 直接写进客户端配置")
     return 0
+
+
+def cmd_setup(args) -> int:
+    """兼容旧用法：等价于 `erp init --mode cli`。"""
+    args.mode = args.mode or "cli"
+    return cmd_init(args)
 
 
 def cmd_quote(args) -> int:
@@ -886,7 +1009,7 @@ def cmd_grid_attachment(args) -> int:
 
 # ══════════════════ 服务模式 ══════════════════
 def cmd_serve(args) -> int:
-    """启动 api-key 网关（认证 + 未来的 MCP Streamable HTTP 挂载点）。"""
+    """启动 MCP 网关（认证 + MCP Streamable HTTP + /ui）。"""
     try:
         import uvicorn
     except ImportError:
@@ -895,19 +1018,27 @@ def cmd_serve(args) -> int:
 
     from .apps.server.app import build_state, create_app
     from .apps.server.config import ServerConfig
+    from .core.paths import find_config_file
 
-    server_cfg = ServerConfig.from_args(args)
+    if find_config_file(getattr(args, "config", None)) is None:
+        _log("[提示] 没找到 config.yaml：先运行 `erp init --mode mcp` 生成配置"
+             "（也可以继续用命令行参数临时启动）")
+
+    server_cfg = ServerConfig.from_args(args).resolve()
     problems = server_cfg.validate()
     if problems:
         for item in problems:
             _log(f"[ERROR] {item}")
         return 2
 
+    for note in server_cfg.notes:
+        _log(f"[INFO] {note}")
+
     erp_cfg = _build_config(args)
     if (erp_cfg.password or "").strip():
-        _log("[WARN] 检测到 ERP_PASSWORD 已配置：**服务端不会使用它**。"
+        _log("[WARN] 配置里存在 ERP 密码：**服务端不会使用它**。"
              "每个使用者自己调 POST /v1/auth/login（或 `erp key`）传工号密码换 api-key，"
-             "服务端只存 api-key 的 sha256。建议把密码从 .env / 环境变量里删掉。")
+             "服务端只存 api-key 的 sha256。建议从 config.yaml 的 erp.password 里删掉。")
     state = build_state(server_cfg, erp_cfg)
     app = create_app(state)
 
@@ -916,11 +1047,12 @@ def cmd_serve(args) -> int:
          f"全局并发={server_cfg.global_concurrency}")
     _log(f"[INFO] 存储：{server_cfg.describe()['store']}")
     if server_cfg.db_path is not None:
-        _log("[WARN] 正在使用 SQLite（--db / ERPSRV_DB）：仅适合本地开发与测试；"
-             "生产请配置 ERPSRV_PG_DSN 走 PostgreSQL")
+        _log("[WARN] 正在使用 SQLite：仅适合本地开发与测试；"
+             "生产把 config.yaml 的 server.storage 改成 postgres")
     if server_cfg.register_secret:
-        _log("[INFO] 服务注册接口已启用共享密钥（请求头 X-Register-Secret）")
-    _log(f"[INFO] 可视化界面：http://{host}:{port}/ui/  "
+        _log("[INFO] 服务注册接口已启用共享密钥（请求头 X-Register-Secret，"
+             f"值见 {server_cfg.data_dir / 'register.secret'}）")
+    _log(f"[INFO] 可视化界面：{'https' if server_cfg.tls_enabled else 'http'}://{host}:{port}/ui/  "
          f"（平台账号自助注册={'开放' if server_cfg.allow_signup else '关闭'}）")
     _log(f"[INFO] cookie 目录：{erp_cfg.cookie_dir}")
     _log("[INFO] 回环模式，仅本机可访问" if server_cfg.is_loopback else
@@ -948,8 +1080,6 @@ def build_parser() -> argparse.ArgumentParser:
     common.add_argument("--host", help="覆盖 ERP 地址，如 http://14.12.0.172:8889")
     common.add_argument("--user", "-u", help="ERP 工号")
     common.add_argument("--password", "-p", help="ERP 密码")
-    common.add_argument("--env-file", default=None,
-                        help="旧版 .env 路径（默认自动查找，优先级低于 config.yaml）")
     common.add_argument("--config", default=None,
                         help="config.yaml 路径（默认自动查找）")
     common.add_argument("--concurrency", type=int, help="全局并发上限")
@@ -984,8 +1114,9 @@ def build_parser() -> argparse.ArgumentParser:
     p.set_defaults(func=cmd_menu)
 
     p = sub.add_parser("key", help="向网关换取 api-key（密码只用于这一次请求）")
-    p.add_argument("--server", required=True,
-                   help="网关地址，如 https://erp-tools.lan:8443")
+    p.add_argument("--server", default=None,
+                   help="网关地址，如 https://erp-tools.lan:8443"
+                        "（省略时按 config.yaml 的 server 段推断本机地址）")
     p.add_argument("--user", "-u", default=None, help="ERP 工号（缺省时交互输入）")
     p.add_argument("--password", "-p", default=None,
                    help="ERP 密码（建议省略，用交互输入以免留在 shell 历史里）")
@@ -993,6 +1124,9 @@ def build_parser() -> argparse.ArgumentParser:
                    help="自签证书的 CA 路径（不装系统信任时用它校验）")
     p.add_argument("--insecure", action="store_true",
                    help="跳过 TLS 证书校验（仅临时排查）")
+    p.add_argument("--write-mcp-json", dest="write_mcp_json", default=None,
+                   metavar="PATH",
+                   help="拿到 key 后直接写进 MCP 客户端配置（默认 mcp.json）")
     p.add_argument("--timeout", type=float, default=30.0, help="请求超时秒数，默认 30")
     p.set_defaults(func=cmd_key)
 
@@ -1002,8 +1136,38 @@ def build_parser() -> argparse.ArgumentParser:
     p = sub.add_parser("doctor", parents=[common], help="自检：端口、登录页、验证码、cookie")
     p.set_defaults(func=cmd_doctor)
 
-    p = sub.add_parser("setup", parents=[common], help="首次配置向导（写 .env + 缓存 cookie）")
-    p.set_defaults(func=cmd_setup)
+    init_help = "初始化配置（cli=本机命令行 / mcp=网关），只问必要项"
+    for name, alias in (("init", False), ("setup", True)):
+        p = sub.add_parser(name, parents=[common], help=init_help)
+        p.add_argument("--mode", default="cli" if alias else None,
+                       choices=["cli", "mcp"],
+                       help="cli=本机命令行直连 ERP；mcp=MCP 网关")
+        p.add_argument("--erp-host", dest="erp_host", default=None, help="ERP 地址")
+        p.add_argument("--erp-user", dest="erp_user", default=None, help="ERP 工号")
+        p.add_argument("--erp-password", dest="erp_password", default=None,
+                       help="ERP 密码（会写进 config.yaml，建议交互输入）")
+        p.add_argument("--bind", default=None,
+                       help="监听地址（mcp 模式；0.0.0.0 表示团队模式，会自动签 TLS）")
+        p.add_argument("--storage", default=None, choices=["sqlite", "postgres"],
+                       help="存储后端（mcp 模式，默认 sqlite）")
+        p.add_argument("--sqlite-path", dest="sqlite_path", default=None,
+                       help="SQLite 文件（默认 auth.db，相对数据目录）")
+        p.add_argument("--pg-host", dest="pg_host", default=None, help="PG 主机")
+        p.add_argument("--pg-port", dest="pg_port", default=None, help="PG 端口")
+        p.add_argument("--pg-user", dest="pg_user", default=None, help="PG 用户")
+        p.add_argument("--pg-password", dest="pg_password", default=None, help="PG 密码")
+        p.add_argument("--pg-db", dest="pg_db", default=None, help="PG 库名")
+        p.add_argument("--public-host", dest="public_host", default=None,
+                       help="对外访问地址（反向代理/docker 用）")
+        p.add_argument("--admin-user", dest="admin_user", action="append",
+                       help="第一个管理员用户名，可重复")
+        p.add_argument("--mcp-json", dest="mcp_json", default=None,
+                       help="MCP 客户端配置写到哪（默认 mcp.json）")
+        p.add_argument("--no-mcp-json", dest="no_mcp_json", action="store_true",
+                       help="不生成 MCP 客户端配置")
+        p.add_argument("--yes", action="store_true", help="不提问，全用默认值")
+        p.add_argument("--force", action="store_true", help="重新询问每一项（默认沿用已有值）")
+        p.set_defaults(func=cmd_init)
 
     p = sub.add_parser("quote", parents=[common], help="采集客户报价需求单")
     p.add_argument("--csv", help="输入 CSV（列：id 或 记录ID；可带制单人）")
@@ -1236,31 +1400,34 @@ def build_parser() -> argparse.ArgumentParser:
     p.set_defaults(func=cmd_attendance)
 
     p = sub.add_parser("serve", parents=[common],
-                       help="启动 api-key 网关（MCP Streamable HTTP）")
+                       help="启动 MCP 网关（Streamable HTTP + /ui，配置见 server 段）")
     p.add_argument("--bind", default=None,
-                   help="监听地址，默认 127.0.0.1:8765；非回环地址必须配 --tls-cert/--tls-key，"
-                        "或显式 --allow-plaintext（TLS 由上游代理终止时）")
+                   help="监听地址，默认取 config.yaml 的 server.bind（127.0.0.1:8765）；"
+                        "非回环地址自动签 TLS，或用 --tls-cert/--tls-key 指定现成证书")
     p.add_argument("--pg-dsn", dest="pg_dsn", default=None,
-                   help="PostgreSQL 连接串（生产存储），如 postgresql://erp:secret@127.0.0.1:5432/erp；"
-                        "也可用 ERPSRV_PG_DSN")
+                   help="临时覆盖 PostgreSQL 连接串（生产存储）")
     p.add_argument("--db", default=None,
-                   help="改用 SQLite 文件（仅本地开发/测试；生产请用 --pg-dsn）")
+                   help="临时改用 SQLite 文件（仅本地开发/测试）")
     p.add_argument("--register-secret", dest="register_secret", default=None,
-                   help="服务注册接口的共享密钥；留空则只按 IP 限流")
+                   help="覆盖服务注册接口的共享密钥（默认自动生成到 register.secret）")
     p.add_argument("--no-signup", dest="no_signup", action="store_true",
                    help="关闭平台账号自助注册（只能由管理员建号）")
     p.add_argument("--admin-user", dest="admin_user", action="append",
-                   help="管理员用户名，可重复；也可用 ERPSRV_ADMIN_USERS（逗号分隔）")
+                   help="管理员用户名，可重复")
     p.add_argument("--global-concurrency", type=int, dest="global_concurrency",
                    default=None, help="全局 ERP 并发上限，默认 6（实测 4~8 饱和）")
-    p.add_argument("--tls-cert", dest="tls_cert", default=None, help="TLS 证书（团队模式必填）")
-    p.add_argument("--tls-key", dest="tls_key", default=None, help="TLS 私钥（团队模式必填）")
+    p.add_argument("--tls", default=None, choices=["auto", "off"],
+                   help="auto=非回环监听时自动签发自签证书（默认）；off=不加密")
+    p.add_argument("--tls-cert", dest="tls_cert", default=None, help="TLS 证书（用现成证书时）")
+    p.add_argument("--tls-key", dest="tls_key", default=None, help="TLS 私钥（用现成证书时）")
     p.add_argument("--allow-host", dest="allow_host", action="append",
-                   help="允许的 Host，可重复（团队模式必填，如 erp-tools.lan:8765）")
+                   help="Host 白名单，可重复；默认由 bind 自动派生")
+    p.add_argument("--public-host", dest="public_host", default=None,
+                   help="对外访问地址（反向代理/docker，参与白名单与证书 SAN）")
     p.add_argument("--trust-proxy", dest="trust_proxy", action="store_true",
                    help="信任 X-Forwarded-For（放在反向代理后面时打开）")
     p.add_argument("--allow-plaintext", dest="allow_plaintext", action="store_true",
-                   help="显式允许非回环 + 明文 HTTP（仅当 TLS 由上游反向代理终止，如 docker compose + nginx）")
+                   help="显式允许非回环 + 明文 HTTP（仅当 TLS 由 nginx 等代理终止）")
     p.set_defaults(func=cmd_serve)
 
     return parser

@@ -78,7 +78,7 @@ def find_env_file(explicit: str | Path | None = None) -> Path | None:
 
 
 def preferred_env_path() -> Path:
-    """写 .env 时应该写到哪里（打包后写数据目录，源码运行写当前目录）。"""
+    """写 .env 时应该写到哪里（已废弃：配置统一走 config.yaml）。"""
     if is_frozen():
         return app_data_dir() / ".env"
     return Path.cwd() / ".env"
@@ -144,16 +144,18 @@ def preferred_config_path() -> Path:
 def describe_paths() -> dict[str, str]:
     """给 `erp config` 用的路径总览。"""
     from .config import ErpConfig
-    from .settings import load_config_file
+    from .settings import read_yaml
 
     cfg = ErpConfig.from_env()
-    _env, yaml_path = load_config_file()
-    env_file = find_env_file()
+    yaml_path = find_config_file()
+    mode = ""
+    if yaml_path is not None:
+        mode = str(read_yaml(yaml_path).get("mode") or "").strip()
     return {
         "运行方式": "PyInstaller 打包" if is_frozen() else "源码/venv",
         "程序位置": sys.executable,
         "数据目录": str(app_data_dir()),
-        "配置(yaml)": str(yaml_path) if yaml_path else "(未找到，可用 erp setup 生成)",
-        "配置(.env)": str(env_file) if env_file else "(无)",
+        "配置(yaml)": str(yaml_path) if yaml_path else "(未找到，运行 erp init --mode cli|mcp 生成)",
+        "模式": mode or "(未指定)",
         "Cookie 目录": str(cfg.cookie_dir),
     }

@@ -157,7 +157,7 @@ def test_build_store_requires_a_backend(tmp_path: Path) -> None:
     from erp_tools.apps.server.state import build_store
     from erp_tools.core.errors import ConfigError
 
-    with pytest.raises(ConfigError, match="ERPSRV_PG_DSN"):
+    with pytest.raises(ConfigError, match="config.yaml"):
         build_store(ServerConfig(bind="127.0.0.1:8765"))
 
 
