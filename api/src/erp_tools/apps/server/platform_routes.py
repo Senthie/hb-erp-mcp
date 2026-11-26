@@ -159,6 +159,7 @@ def build_snippet(origin: str, token: str, account: str) -> dict:
         f"请求头：Authorization: Bearer {token}\n"
         f"这是平台账号 {account} 的专属 token：只在本地客户端配置里使用，"
         f"不要写进代码仓库、日志或分享给他人。"
+        f"Workbuddy或其他软件使用可能会出现CA问题，需要你把服务端证书加进本地 CA bundle"
     )
     return {
         "url": url,

@@ -40,7 +40,7 @@ export function TokenResultBody({
               <code className="text-sky-300">mcp.json</code>：
             </p>
             <pre className="overflow-x-auto rounded-lg bg-slate-950/70 p-3 font-mono text-xs leading-5 text-slate-200">
-{created.mcp.config_json}
+              {created.mcp.config_json}
             </pre>
             <div className="mt-2">
               <CopyButton value={created.mcp.config_json} label="复制配置" />
@@ -52,7 +52,7 @@ export function TokenResultBody({
               或者直接把这段提示粘给 AI，让它自己接上这个 MCP：
             </p>
             <pre className="overflow-x-auto whitespace-pre-wrap rounded-lg bg-slate-950/70 p-3 font-mono text-xs leading-5 text-sky-100">
-{created.mcp.prompt}
+              {created.mcp.prompt}
             </pre>
             <div className="mt-2">
               <CopyButton value={created.mcp.prompt} label="复制提示" />
