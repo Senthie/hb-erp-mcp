@@ -179,7 +179,9 @@ class ServerConfig:
 
         cert_dir = self.data_dir / TLS_DIR
         try:
-            crt, key = ensure_self_signed(cert_dir, self.derive_allow_hosts() + [self.host])
+            crt, key = ensure_self_signed(
+                cert_dir, self.derive_allow_hosts() + [self.host]
+            )
         except TlsUnavailable as exc:
             self.notes.append(str(exc))
             return  # tls_mode 保持 auto：validate() 会据此给出可操作的报错
@@ -239,11 +241,15 @@ class ServerConfig:
         elif self.pg_dsn and not self.pg_dsn.lower().startswith(
             ("postgresql://", "postgres://")
         ):
-            problems.append("server.pg_dsn 必须是 postgresql:// 或 postgres:// 开头的连接串")
+            problems.append(
+                "server.pg_dsn 必须是 postgresql:// 或 postgres:// 开头的连接串"
+            )
 
         for item in self.allow_hosts:
             if "/" in item or " " in item:
-                problems.append(f"--allow-host 取值非法：{item!r}（示例：erp-tools.lan:8765）")
+                problems.append(
+                    f"--allow-host 取值非法：{item!r}（示例：erp-tools.lan:8765）"
+                )
         return problems
 
     # ---------- 构造 ----------
@@ -268,7 +274,11 @@ class ServerConfig:
             db_path = candidate
 
         tls_cert, tls_key = _text(block.get("tls_cert")), _text(block.get("tls_key"))
-        tls_raw = _text(block.get("tls")).lower()
+        # YAML 1.1 把 `off` / `false` 解析成布尔 False，`_text` 会把 False 变成空串；
+        # 不单独处理的话 `tls: off` 会被当成「未填」→ 自动签自签证书，
+        # docker + nginx（代理终止 TLS）部署时 nginx 和健康检查会全部失败。
+        tls_value = block.get("tls")
+        tls_raw = ("false" if tls_value is False else _text(tls_value)).lower()
         if tls_cert or tls_key:
             tls_mode = "manual"
         elif tls_raw in ("off", "false", "no", "0", "none"):
@@ -278,8 +288,11 @@ class ServerConfig:
 
         hosts_raw = block.get("allow_hosts")
         auto_hosts = not isinstance(hosts_raw, list)
-        allow_hosts = [] if auto_hosts and _text(hosts_raw).lower() in ("", AUTO) \
+        allow_hosts = (
+            []
+            if auto_hosts and _text(hosts_raw).lower() in ("", AUTO)
             else _split_hosts(hosts_raw)
+        )
 
         register_raw = block.get("register_secret")
         register_secret = AUTO if register_raw is None else _text(register_raw)
@@ -290,7 +303,9 @@ class ServerConfig:
             db_path=db_path,
             register_secret=register_secret or AUTO,
             allow_signup=_as_bool(block.get("allow_signup", True)),
-            admin_users=[name.lower() for name in _split_hosts(block.get("admin_users"))],
+            admin_users=[
+                name.lower() for name in _split_hosts(block.get("admin_users"))
+            ],
             global_concurrency=max(1, int(block.get("concurrency") or 6)),
             tls_cert=tls_cert,
             tls_key=tls_key,
@@ -351,8 +366,11 @@ class ServerConfig:
         if getattr(args, "no_signup", False):
             cfg.allow_signup = False
         if getattr(args, "admin_user", None):
-            cfg.admin_users = [str(name).strip().lower() for name in args.admin_user
-                               if str(name).strip()]
+            cfg.admin_users = [
+                str(name).strip().lower()
+                for name in args.admin_user
+                if str(name).strip()
+            ]
         if getattr(args, "global_concurrency", None):
             cfg.global_concurrency = int(args.global_concurrency)
         if getattr(args, "tls_cert", None):
@@ -365,7 +383,9 @@ class ServerConfig:
             cfg.tls_mode = "off"
             cfg.tls_cert = cfg.tls_key = ""
         if getattr(args, "allow_host", None):
-            cfg.allow_hosts = [str(h).strip() for h in args.allow_host if str(h).strip()]
+            cfg.allow_hosts = [
+                str(h).strip() for h in args.allow_host if str(h).strip()
+            ]
         if getattr(args, "public_host", None):
             cfg.public_host = str(args.public_host).strip()
         if getattr(args, "trust_proxy", False):
@@ -377,10 +397,15 @@ class ServerConfig:
     def describe(self) -> dict[str, str]:
         return {
             "bind": self.bind,
-            "store": (f"postgresql({mask_dsn(self.pg_dsn)})"
-                      if self.db_path is None else f"sqlite({self.db_path})"),
+            "store": (
+                f"postgresql({mask_dsn(self.pg_dsn)})"
+                if self.db_path is None
+                else f"sqlite({self.db_path})"
+            ),
             "global_concurrency": str(self.global_concurrency),
-            "tls": "on" if self.tls_enabled else ("plaintext(behind proxy)" if self.allow_plaintext else "off"),
+            "tls": "on"
+            if self.tls_enabled
+            else ("plaintext(behind proxy)" if self.allow_plaintext else "off"),
             "allow_hosts": ",".join(self.allow_hosts) or "(回环模式，无需配置)",
             "trust_proxy": "on" if self.trust_proxy else "off",
             "register_secret": "on" if self.register_secret else "off",
