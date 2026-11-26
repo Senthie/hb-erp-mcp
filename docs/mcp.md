@@ -700,7 +700,7 @@ compose 里有两类挂载，**重建（`up -d --build`）都不会丢**，区�
 | 挂载 | 类型 | 内容 | 会不会丢 |
 | --- | --- | --- | --- |
 | `pgdata:/var/lib/postgresql/data` | **命名卷**（默认名 `erp-tools-pgdata`） | `api_keys`（api-key 的 sha256）、`mcp_services`（服务注册信息） | `up -d` / `restart` / `down` 都保留；只有 **`down -v`** 或 `docker volume rm` 才删 |
-| `erpdata:/data` | **命名卷**（默认名 `erp-tools-erpdata`） | `cookies/<工号>.json`、`qxid-<工号>.json`、`proxy.secret` | 同上 |
+| `erpdata:/data` | **命名卷**（默认名 `erp-tools-erpdata`） | `cookies/<工号>.json`、`qxid-<工号>.json`、`proxy.secret`、`register.secret`、**`erp_credentials.key`（解密 ERP 密码用）** | 同上 |
 | `${ERP_CERT_DIR:-./certs}` | 绑定挂载 | nginx 的 `.crt` / `.key` | 与容器无关，宿主机文件在就一直在 |
 | `./${NGINX_CONF:-docker/nginx.conf}` | 绑定挂载 | nginx 站点配置 | 来自仓库，**跟着 git 更新** |
 
@@ -710,13 +710,23 @@ compose 里有两类挂载，**重建（`up -d --build`）都不会丢**，区�
   或用 `-p` 指定别的项目名，都不会「凭空多出一个空卷」导致所有人 key 失效。
 - `docker compose down` 只删容器和网络；**永远不要**图省事敲 `down -v`，
   那等于让所有人重新 `erp key` 一次。
-- 备份两个卷（PG 建议走 `pg_dump`，比拷数据目录干净）：
+- 备份/恢复用仓库自带的 **`scripts/backup.sh`**（备份、校验、恢复同一份脚本）：
 
   ```bash
-  docker compose exec -T db pg_dump -U erp erp | gzip > backup/erp-$(date +%F).sql.gz
-  docker run --rm -v erp-tools-erpdata:/data -v "$PWD":/backup alpine \
-      tar czf /backup/erpdata-$(date +%F).tar.gz -C /data .
+  bash scripts/backup.sh                  # 备份到 ./backup/<时间戳>/
+  bash scripts/backup.sh list             # 有哪些备份
+  bash scripts/backup.sh verify latest    # 只校验（sha256 + 包完整性），不动数据
+  bash scripts/backup.sh restore latest   # 恢复（要输 RESTORE 确认；--yes 跳过）
+  bash scripts/backup.sh backup --keep 14 # 保留最近 14 份
   ```
+
+  一份备份 = `erp.sql.gz`（`pg_dump` 逻辑备份）+ `erpdata.tgz`（卷 tar）+
+  `config.yaml` / `.env` / `certs/` + `MANIFEST.txt`（含 sha256）。
+
+- **两者必须成对恢复**：库里存的是 ERP 密码的 AES-GCM **密文**，解密用的
+  `erp_credentials.key` 却在数据卷里（同卷还有 `proxy.secret`、`register.secret`）。
+  只恢复一边不会降低安全性，但会出现「全员需重新绑定 ERP / 附件链接失效」。
+  `restore` 默认会先自动做一份安全备份（`--no-safety` 关闭）。
 
 - 证书与 `.env` **不在 git 里**（`.gitignore` 已排除）。如果服务器是「重新 clone 再重建」，
   把这两样放到仓库外，用变量指过去：
@@ -1043,10 +1053,14 @@ systemctl list-timers erp-tools-deploy.timer
 ### 9. 日常运维
 
 ```bash
-# 备份（两处有状态：PostgreSQL + 运行时卷）
-docker compose exec -T db pg_dump -U erp erp | gzip > /srv/erp-tools/backup/erp-$(date +%F).sql.gz
-docker run --rm -v erp-tools-erpdata:/data -v /srv/erp-tools/backup:/backup alpine \
-    tar czf /backup/erpdata-$(date +%F).tar.gz -C /data .
+# 备份（两处有状态：PostgreSQL + 运行时卷，必须成对）
+BACKUP_DIR=/srv/erp-tools/backup bash scripts/backup.sh --keep 14
+bash scripts/backup.sh list                # 看已有备份（表数/用户数/key 数）
+bash scripts/backup.sh verify latest       # 校验 sha256 与包完整性
+
+# 恢复（默认先自动安全备份，然后覆盖库 + 卷；要输 RESTORE 确认）
+bash scripts/backup.sh restore latest
+bash scripts/backup.sh restore /mnt/nas/erp/20261126-083155 --yes --with-config
 
 # 手动升级 / 强制重建（改了 .env 或 config.yaml 必须加 --force，否则代码没变不会重建）
 bash scripts/deploy.sh

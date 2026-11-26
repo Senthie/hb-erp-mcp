@@ -54,7 +54,7 @@ web/          React + Tailwind 可视化界面（登录换取 api-key / 注册 M
 docker/       nginx 反代配置（HTTPS / 纯 HTTP 两套）
 docs/         cli.md / api.md / mcp.md
 packaging/    PyInstaller + Inno Setup 打包
-scripts/      up.sh 一条命令起栈、gen-cert.sh 签证书、deploy.sh 定时拉取重建、build.ps1 打包
+scripts/      up.sh 一条命令起栈、backup.sh 备份/校验/恢复、gen-cert.sh 签证书、deploy.sh 定时拉取重建、build.ps1 打包
 scripts/deploy.sh 服务器上按需重建（配合 cron / systemd timer）
 ```
 

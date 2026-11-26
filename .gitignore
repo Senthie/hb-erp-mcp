@@ -111,3 +111,8 @@ htmlcov/
 .DS_Store
 Thumbs.db
 desktop.ini
+
+# ── 备份产物（含 pg 密码/密钥/cookie，绝不入库）──────────────
+backup/
+backups/
+config.yaml.bak
